@@ -1,0 +1,11 @@
+ipykernel
+langchain
+langchain-openai
+langgraph
+python-dotenv
+faiss-cpu
+langchain-community
+pypdf
+langchain-experimental
+langchain-ollama
+langchain-milvus
