@@ -35,6 +35,15 @@ distance
 quantidade
 query
 
+### Composição - Tecnologia
+
+Python
+Ollama
+
+https://ollama.com/download/windows
+irm https://ollama.com/install.ps1 | iex
+
+Langchain
 
 ### Augmentation
 
