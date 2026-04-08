@@ -31,6 +31,9 @@ O objetivo desta seção é responder uma pergunta fundamental:
 
 ---
 
+Esse projeto em primeiro momento é um exercício técnico, mas tem potencial para atender um problema real, considerando a necessidade de respostas e discussões que acontecem dentro do universo de RPG (Tormenta20).
+Com essa situação em mente, o projeto tem potencial para ser utilizado por jogadores e mestres, que buscam respostas rápidas e precisas para suas dúvidas sobre regras, cenários e mecânicas do jogo.
+
 ## 1.1 Contexto e Problema
 
 Descreva claramente o problema que motivou o projeto.
@@ -38,6 +41,7 @@ Descreva claramente o problema que motivou o projeto.
 Explique:
 
 - Quem sofre com esse problema
+  -- Jogadores e Mestres que jogam Tormenta20
 - Em que contexto ele ocorre
 - Como esse problema é resolvido atualmente
 - Quais são as limitações das soluções atuais
@@ -538,21 +542,21 @@ Sempre que possível inclua **imagens, protótipos ou referências visuais**.
 
 (A ser preenchido pelos professores)
 
-**Avaliador 1:** ************\_\_************  
+**Avaliador 1:** ****\*\*\*\*****\_\_****\*\*\*\*****  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
 
 ---
 
-**Avaliador 2:** ************\_\_************  
+**Avaliador 2:** ****\*\*\*\*****\_\_****\*\*\*\*****  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
 
 ---
 
-**Avaliador 3:** ************\_\_************  
+**Avaliador 3:** ****\*\*\*\*****\_\_****\*\*\*\*****  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
