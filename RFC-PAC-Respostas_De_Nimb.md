@@ -64,16 +64,12 @@ Apresente pelo menos **uma evidência concreta**.
 
 Projeto solicitado por:
 
-- empresa
-- ONG
-- órgão público
 - grupo de usuários
 
 Inclua:
 
-- nome da organização
-- contexto da demanda
-- descrição do problema relatado
+- Campeões de Svallas
+- Dúvidas e discussões sobre as regras do jogo
 
 ---
 
@@ -182,12 +178,9 @@ Exemplo:
 
 Como saberemos que o projeto foi bem sucedido?
 
-Exemplos:
-
-- latência inferior a 200ms
 - acurácia da IA superior a 85%
-- suporte a 100 usuários simultâneos
-- redução do tempo de um processo em 30%
+- Respostas geradas com menos de 1 segundo de latência
+- Respostas com nível de satisfação do usuário superior a 4 em uma escala de 1 a 5
 
 ---
 
@@ -542,21 +535,21 @@ Sempre que possível inclua **imagens, protótipos ou referências visuais**.
 
 (A ser preenchido pelos professores)
 
-**Avaliador 1:** ****\*\*\*\*****\_\_****\*\*\*\*****  
+**Avaliador 1:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
 
 ---
 
-**Avaliador 2:** ****\*\*\*\*****\_\_****\*\*\*\*****  
+**Avaliador 2:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
 
 ---
 
-**Avaliador 3:** ****\*\*\*\*****\_\_****\*\*\*\*****  
+**Avaliador 3:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
 **Status:** [ ] Aprovado [ ] Ajustar
 
 Observações:
