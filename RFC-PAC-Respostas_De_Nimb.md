@@ -64,7 +64,7 @@ Apresente pelo menos **uma evidência concreta**.
 
 Projeto solicitado por:
 
-- grupo de usuários
+- grupo de usuários de RPG do Aluno
 
 Inclua:
 
@@ -129,9 +129,9 @@ Inclua **prints da interface ou diagramas simplificados**.
 
 Explique claramente:
 
-- por que criar algo novo
-- qual lacuna não foi resolvida pelas soluções existentes
-- qual nicho específico será atendido
+- A ideia de fóruns e debates em comunidade para as regras já existentes é uma pratica comum dentro do contexto do RPG. A ideia é trazer uma ferramenta que ao ser alimentda e trabalhada consiga trazer um entendimento mais objetivo e direto da regra.
+- As lacunas existentes hoje estão a nível comparativo a discussões juridicas na interpretação de leis, o que acaba ocorrendo é o vies de cada um dos envolvidos no debate, a ideia da IA é remover justamente o vies existente.
+- O nicho atendido em primeira instancia é o do grupo de RPG que o aluno participa
 
 ---
 
@@ -159,6 +159,8 @@ Descreva:
 ### Objetivo Geral
 
 Qual transformação o projeto pretende gerar.
+
+O projeto tem como objetivo criar um sistema de perguntas e respostas para o universo de Tormenta20 (RPG), utilizando técnicas de IA e Processamento de Linguagem Natural para fornecer respostas rápidas e precisas sobre regras, cenários e mecânicas do jogo, atendendo às necessidades de jogadores e mestres.
 
 ---
 
