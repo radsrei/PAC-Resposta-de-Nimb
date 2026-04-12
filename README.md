@@ -50,3 +50,7 @@ context lenght
 ### Evaluation
 
 ### Versão final completa
+
+### Sugestão pares
+Bruno Luis Pereira - Sugestão
+Melhorar a descrição do problema, quem vai afetar/ajudar e definir melhor o objetivo final
