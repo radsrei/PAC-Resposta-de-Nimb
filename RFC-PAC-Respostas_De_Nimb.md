@@ -10,13 +10,13 @@
   Respostas de Nimb.
 
 - **Linha de Projeto (Direction):**  
-  IA e Processamento de Linguagem Natural
+  RAG usando IA e Processamento de Linguagem Natural para fornecer respostas rápidas e precisas sobre regras, cenários e mecânicas do jogo de RPG Tormenta20.
 
 - **Autor:**  
   Rafael dos Santos Pereira
 
 - **Data da Proposta:**  
-  19/06/1997
+  19/02/2026
 
 - **Versão:**  
   1.0
@@ -43,8 +43,11 @@ Explique:
 - Quem sofre com esse problema
   -- Jogadores e Mestres que jogam Tormenta20
 - Em que contexto ele ocorre
+  -- Durante sessões de RPG, onde por conta da narrativa e contexto, surgem dúvidas sobre regras, cenários e mecânicas do jogo.
 - Como esse problema é resolvido atualmente
+  -- Entre os jogadores presencialmente e em alguns casos atravessa para o cenário online através de fóruns, grupos de discussão e debates em comunidades online, onde os jogadores buscam respostas para suas dúvidas.
 - Quais são as limitações das soluções atuais
+  -- O processo hoje se dá de forma manual, onde os jogadores conversam e discutem as regras entre si, trazendo um viés de cada um dos envolvidos, o que pode levar a interpretações divergentes e discussões prolongadas
 
 Sempre que possível apresente:
 
@@ -68,7 +71,7 @@ Projeto solicitado por:
 
 Inclua:
 
-- Campeões de Svallas
+- Campeões de Svallas (grupo de RPG do aluno)
 - Dúvidas e discussões sobre as regras do jogo
 
 ---
@@ -79,6 +82,7 @@ Pode incluir:
 
 - entrevistas
 - questionários
+  -- [Formulário publicado no Reddit](https://forms.cloud.microsoft/r/DxYnjK8A9F)
 - observação de processos
 
 Inclua:
