@@ -14,6 +14,10 @@ pip install -r requirements.txt
 oi eu sou
 o curso tal e tal
 
+### Levantamento
+
+- [Formulário publicado no Reddit](https://forms.cloud.microsoft/r/DxYnjK8A9F)
+
 ### Revisão de RAG
 
 na mão, simples
@@ -53,6 +57,8 @@ context lenght
 
 Ramires silva Paes > Avaliçao do trabalho
 Observações: O trabalho está acima da média em organização e clareza, com uma base muito boa para evolução. Para chegar em um nível ainda mais alto (quase profissional), faltam: evidências mais concretas (dados, prints, pesquisa) maior profundidade técnica na solução
+
 ### Sugestão pares
+
 Bruno Luis Pereira - Sugestão
 Melhorar a descrição do problema, quem vai afetar/ajudar e definir melhor o objetivo final
