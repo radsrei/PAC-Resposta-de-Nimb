@@ -145,16 +145,15 @@ Defina quem usará o sistema.
 
 Exemplos:
 
-- estudantes
-- contadores
-- equipes de suporte
 - jogadores
 
 Descreva:
 
-- perfil do usuário
-- contexto de uso
-- nível de conhecimento técnico esperado
+### Jogadores e Mestres de Tormenta20
+
+- Perfil do usuário: Jogadores e mestres de RPG que utilizam o sistema de regras de Tormenta20.
+- Contexto de uso: Durante sessões de RPG, onde surgem dúvidas sobre regras, cenários e mecânicas do jogo.
+- Nível de conhecimento técnico esperado: Qualquer nível de conhecimento no tema, e sem alto nível para uso o sistema, o objetivo é justamente trazer uma solução acessível para todos os níveis de jogadores e mestres.
 
 ---
 
@@ -174,9 +173,10 @@ Liste **3 a 5 objetivos técnicos ou de produto**.
 
 Exemplo:
 
-- automatizar um processo manual
-- permitir análise de dados
-- criar um sistema de recomendação
+- Agilizar busca por regras e informações do jogo
+- Permitir gerar contexto de aplicação das regras
+- Fornecer respostas precisas e contextualizadas
+- Criar uma base de conhecimento estruturada sobre o universo de Tormenta20
 
 ---
 
