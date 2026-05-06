@@ -3,3 +3,8 @@
 env/**
 langchain
 *.ipynb_checkpoints
+nimb/*
+.vscode/settings.json
+Livros/*
+
+
