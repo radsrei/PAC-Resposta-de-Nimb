@@ -1,5 +1,15 @@
 # 4910
 
+## Start do Projeto
+
+### Acessar o ambiente
+
+```
+Acessar o ambiente venv
+nimb
+
+```
+
 ## Setup
 
 ```
@@ -10,9 +20,6 @@ pip install -r requirements.txt
 ```
 
 ## Agenda
-
-oi eu sou
-o curso tal e tal
 
 ### Levantamento
 
