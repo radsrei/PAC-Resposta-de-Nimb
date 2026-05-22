@@ -145,7 +145,9 @@ Defina quem usará o sistema.
 
 Exemplos:
 
-- jogadores
+- jogadores novatos
+- jogadores veteranos
+- mestres de RPG
 
 Descreva:
 
@@ -204,13 +206,31 @@ Crie **1 a 3 personas principais**.
 
 Inclua:
 
-- nome fictício
-- contexto
-- objetivos
-- principais dificuldades
+- Nome fictício
+- Contexto
+- Objetivos
+- Principais dificuldades
 
 Adicionar **imagens ou ilustrações** pode ajudar na compreensão.
 
+### Persona - Mestre
+- Nome: Cleber "Alface"
+- Contexto: Cleber é um mestre de Tormenta 20, com anos de experiencia, conhecimento dos livros e das regras. Sabe como balancear conflitos e conhece das regras com grande maestria
+- Objetivos: Tem como objetivo base pesquisar 
+- Principais dificuldades: Lembrar de valores especificos de magias/itens, caracteristicas de condições e caracteristicas de habilidades pontuais.
+
+
+### Persona - Jogador Veterano
+- Nome: Vanderler
+- Contexto: Vanderler é um jogador veterano de Tormenta 20, com anos de experiencia, conhece as regras e tem uma boa compreensão do jogo. Ele gosta de explorar as mecânicas e criar estratégias complexas durante as sessões.
+- Objetivos: Vanderler tem como objetivo base pesquisar regras e mecânicas específicas para otimizar suas jogadas e criar estratégias mais eficazes durante as sessões de RPG.
+- Principais dificuldades: Lembrar de detalhes específicos de regras, como interações entre habilidades, efeitos de magias e condições, o que pode impactar suas decisões durante o jogo.
+
+### Persona - Jogador Novato
+- Nome: Robson
+- Contexto: Robson é um jogador novato de Tormenta 20, com pouco conhecimento das regras e mecânicas do jogo. Ele está começando a aprender sobre o universo de RPG e tem dificuldades para entender as regras complexas.
+- Objetivos: Robson tem como objetivo base aprender as regras e mecânicas do jogo de forma rápida e fácil, para poder participar das sessões de RPG sem se sentir perdido ou confuso.
+- Principais dificuldades: Entender as regras complexas, lembrar de detalhes específicos e encontrar informações relevantes durante as sessões de RPG, o que pode levar a frustração e desmotivação para jogar.
 ---
 
 ## 2.2 Casos de Uso Principais
@@ -219,10 +239,8 @@ Liste os principais fluxos do sistema.
 
 Exemplo:
 
-- criar conta
-- registrar dados
-- consultar informações
-- gerar relatórios
+- Gerar respostas para perguntas sobre regras
+
 
 Sempre que possível inclua **diagramas de caso de uso**.
 
@@ -236,11 +254,21 @@ Use a estrutura:
 
 Exemplo:
 
-RF01 — O sistema deve permitir que o usuário crie uma conta.
+RF01 — O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas.
 
-RF02 — O sistema deve permitir que o usuário registre informações.
+RF02 — O sistema deve permitir que o usuário envie perguntas sobre regras do jogo.
 
-RF03 — O sistema deve permitir que o usuário visualize dados registrados.
+RF03 — O sistema deve permitir que o usuário visualize respostas geradas.
+
+RF04 - O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas sem necessidade de instalação local, via navegador web.
+
+RF05 — O sistema deve permitir que o usuário envie perguntas em linguagem natural sobre regras, mecânicas e cenários do Tormenta20. 
+
+RF06 — O sistema deve permitir que o usuário visualize a resposta gerada pela IA com indicação da(s) fonte(s) do livro de regras consultada(s).
+
+RF07 — O sistema deve permitir que o usuário visualize o histórico de perguntas realizadas durante a sessão atual.
+
+RF08 — O sistema deve exibir uma mensagem clara quando não houver informação suficiente na base de conhecimento para responder à pergunta.
 
 ---
 
@@ -256,8 +284,8 @@ Inclua requisitos relacionados a:
 
 Exemplo:
 
-RNF01 — O sistema deve suportar 100 usuários simultâneos.  
-RNF02 — O tempo de resposta deve ser inferior a 300ms.  
+RNF01 — Desempenho — O tempo de resposta do sistema para perguntas deve ser inferior a 3 segundos em condições normais de uso 
+RNF02 — Latência do pipeline RAG — O tempo total entre o envio da pergunta e a exibição da resposta, incluindo busca vetorial e geração do modelo, deve ser inferior a 5 segundos.   
 RNF03 — O sistema deve utilizar autenticação segura.
 
 ---
@@ -473,8 +501,11 @@ Para cada tecnologia explique **por que ela foi escolhida**.
 
 Exemplo:
 
-Node.js  
-Escolhido pela capacidade de lidar com alto volume de requisições I/O.
+**Python**: Escolhido pela facilidade de uso e ampla biblioteca de IA.
+
+**Langchain**: Utilizado para facilitar a construção de aplicações de IA.
+
+
 
 ---
 
