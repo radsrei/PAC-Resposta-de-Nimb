@@ -6,9 +6,13 @@
 
 # Identificação
 
+![Nimb](/Front/Icon%20-%20Nimb.png)
+
 - **Título do Projeto:**  
   Respostas de Nimb.
-  ![Nimb](/Front/Icon%20-%20Nimb.png)
+
+  ![Nimb-](/Front/Nimb%20-%20Imagem.jpeg)
+
 
 - **Linha de Projeto (Direction):**  
   RAG usando IA e Processamento de Linguagem Natural para fornecer respostas rápidas e precisas sobre regras, cenários e mecânicas do jogo de RPG Tormenta20.
@@ -83,14 +87,22 @@ Pode incluir:
 
 - entrevistas
 - questionários
-  -- [Formulário publicado no Reddit](https://forms.cloud.microsoft/r/DxYnjK8A9F)
+  >[Formulário publicado no Reddit](https://forms.cloud.microsoft/r/DxYnjK8A9F)
 - observação de processos
 
 Inclua:
 
 - número de pessoas entrevistadas
+>26 respostas Obtidas até a data de 23/05/26
 - principais dores identificadas
+>![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
+
+>![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
+
+>![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
+
 - padrões observados
+>As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
 
 Adicione **tabelas, gráficos ou prints**.
 
@@ -105,6 +117,8 @@ Podem ser incluídos:
 - comentários de comunidades
 - resultados de formulários
 
+
+![Reddit](/Front/Formulario%20Reddit/Post%20Reddit.png)
 ---
 
 ## 1.3 Análise de Soluções Existentes (Benchmark)
