@@ -1,4 +1,4 @@
-# [MODELO] RFC: Request for Comments — Projeto de Portfólio
+# RFC: Request for Comments — Projeto de Portfólio
 
 **Engenharia de Software – Católica SC**
 
@@ -86,8 +86,12 @@ Inclua:
 Pode incluir:
 
 - entrevistas
+  >[Reddit](https://www.reddit.com/r/Tormenta/comments/1skhv02/projeto_de_tcc_respostas_de_nimb/)
+
 - questionários
-  >[Formulário publicado no Reddit](https://forms.cloud.microsoft/r/DxYnjK8A9F)
+  >[Formulário](https://forms.cloud.microsoft/r/DxYnjK8A9F)
+
+
 - observação de processos
 
 Inclua:
@@ -97,12 +101,14 @@ Inclua:
 - principais dores identificadas
 >![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
 
->![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
 
->![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
 
 - padrões observados
 >As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
+
+>![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
+
+>![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
 
 Adicione **tabelas, gráficos ou prints**.
 
@@ -332,7 +338,9 @@ Perguntas enviadas pelo usuário devem ter no mínimo 10 caracteres e no máximo
 
 Exemplo de rejeição: a pergunta "oi" é rejeitada com a mensagem "Por favor, elabore sua dúvida sobre as regras de Tormenta20." 
 
+**RN04** — Não substituição de consulta ao mestre 
 
+O sistema deve exibir um aviso padrão indicando que as respostas são baseadas na interpretação dos textos oficiais e que o mestre da sessão tem autoridade final sobre a aplicação das regras na mesa. 
 ---
 
 ## 2.6 Fora do Escopo
@@ -340,6 +348,24 @@ Exemplo de rejeição: a pergunta "oi" é rejeitada com a mensagem "Por favor, e
 Liste explicitamente **o que o sistema não fará**.
 
 Isso ajuda a evitar crescimento descontrolado do projeto.
+
+Os itens abaixo estão explicitamente excluídos do escopo deste projeto para garantir foco e evitar crescimento descontrolado (scope creep): 
+
+- Suporte a outros sistemas de RPG (D&D 5e, Pathfinder, Vampiro: A Máscara, etc.). 
+
+- Geração de fichas de personagem ou calculadora de atributos. 
+
+- Funcionalidade de chat em tempo real entre jogadores. 
+
+- Criação de aventuras ou encontros de forma automatizada. 
+
+- Suporte a áudio ou imagem como entrada de pergunta. 
+
+- Aplicativo mobile nativo (iOS/Android) — o sistema será acessível via navegador responsivo. 
+
+- Integração com plataformas de VTT (Virtual Tabletop) como Foundry VTT ou Roll20. 
+
+- Funcionalidade de rolagem de dados. 
 
 ---
 
