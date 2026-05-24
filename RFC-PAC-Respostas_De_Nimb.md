@@ -242,9 +242,9 @@ Adicionar **imagens ou ilustrações** pode ajudar na compreensão.
 
 
 ### Persona - Jogador Veterano
->- Nome: Vanderler
->- Contexto: Vanderler é um jogador veterano de Tormenta 20, com anos de experiencia, conhece as regras e tem uma boa compreensão do jogo. Ele gosta de explorar as mecânicas e criar estratégias complexas durante as sessões.
->- Objetivos: Vanderler tem como objetivo base pesquisar regras e mecânicas específicas para otimizar suas jogadas e criar estratégias mais eficazes durante as sessões de RPG.
+>- Nome: Vanderlei
+>- Contexto: Vanderlei é um jogador veterano de Tormenta 20, com anos de experiencia, conhece as regras e tem uma boa compreensão do jogo. Ele gosta de explorar as mecânicas e criar estratégias complexas durante as sessões.
+>- Objetivos: Vanderlei tem como objetivo base pesquisar regras e mecânicas específicas para otimizar suas jogadas e criar estratégias mais eficazes durante as sessões de RPG.
 >- Principais dificuldades: Lembrar de detalhes específicos de regras, como interações entre habilidades, efeitos de magias e condições, o que pode impactar suas decisões durante o jogo.
 
 ### Persona - Jogador Novato
@@ -388,6 +388,36 @@ Utilize:
 - diagramas de sequência
 
 Inclua **imagens dos diagramas**.
+
+
+sequenceDiagram
+    autonumber
+    actor Usuario as Usuário
+    participant FE as Frontend
+    participant API as API / RAG (Python)
+    participant DB as ChromaDB
+    participant LLM as LLM (DeepSeek)
+
+    Usuario->>FE: Digita pergunta
+    Note over FE: RN03: Valida tamanho<br/>(10 a 500 chars)
+    FE->>API: POST /perguntar {pergunta}
+    
+    rect rgb(240, 245, 255)
+        Note over API: RN01: Busca apenas na<br/>base oficial Tormenta20
+        API->>DB: Consulta vetorial (Embedding)
+        DB-->>API: Retorna trechos contextuais relevantes
+    end
+
+    Note over API: RN02: Validou que existe<br/>ao menos 1 fonte
+    API->>LLM: Envia Prompt (Contexto + Pergunta)
+    LLM-->>API: Retorna texto gerado
+
+    Note over API: RN06: Anexa aviso de autoridade<br/>do mestre à resposta
+    API-->>FE: HTTP 200 (Resposta + Fontes + Aviso)
+    FE-->>Usuario: Exibe resposta formatada na tela
+    
+    Note over FE: Usuário avalia (1-5 estrelas)
+    FE-)API: POST /log (Persiste log de uso/métrica)
 
 ---
 
