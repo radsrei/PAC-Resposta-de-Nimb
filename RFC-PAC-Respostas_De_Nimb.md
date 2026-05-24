@@ -393,23 +393,14 @@ Inclua **imagens dos diagramas**.
 - O fluxo abaixo descreve o caminho feliz (happy path) de um usuário realizando uma consulta ao sistema: 
 
 >1. Usuário acessa a interface web do sistema via navegador. 
-
 >2. Sistema exibe a tela principal com campo de entrada de texto e histórico vazio. 
-
 >3. Usuário digita uma pergunta em linguagem natural sobre as regras de Tormenta20. 
-
 >4. Sistema valida a pergunta (tamanho mínimo/máximo e caracteres permitidos). 
-
 >5. Sistema realiza busca vetorial na base de conhecimento (documentos indexados via RAG). 
-
 >6. Sistema envia os trechos recuperados + pergunta original ao modelo de linguagem (LLM). 
-
 >7. LLM gera resposta contextualizada com base nos trechos recuperados. 
-
 >8. Sistema exibe a resposta ao usuário, com referência à(s) fonte(s) e trecho(s) consultado(s). 
-
 >9. Usuário avalia a resposta com nota de 1 a 5 estrelas (opcional). 
-
 >10. Sistema registra pergunta, resposta, fonte e avaliação nos logs estruturados. 
 
 ![Fluxo1](/RFC_arquivos/fluxo_happy_path.svg)
@@ -431,9 +422,7 @@ Descreva cenários como:
 - FA01 — Pergunta inválida (muito curta ou muito longa) 
 
 >1. Usuário digita menos de 10 ou mais de 500 caracteres. 
-
 >2. Sistema valida entrada e exibe mensagem: "Sua pergunta deve ter entre 10 e 500 caracteres." 
-
 >3. Usuário corrige e reenvia a pergunta. 
 
 
@@ -443,9 +432,7 @@ Descreva cenários como:
 - FA02 — Nenhum trecho relevante encontrado na base 
 
 >1. Pipeline RAG não encontra trechos com similaridade acima do limiar mínimo definido. 
-
 >2. Sistema exibe: "Não encontrei informações sobre este tema nos materiais oficiais de Tormenta20." 
-
 >3. Sistema sugere categorias relacionadas para nova consulta. 
 
 ![FA2](/RFC_arquivos/fluxo_FA02_sem_resultado.svg)
