@@ -390,34 +390,32 @@ Utilize:
 Inclua **imagens dos diagramas**.
 
 
-sequenceDiagram
-    autonumber
-    actor Usuario as Usuário
-    participant FE as Frontend
-    participant API as API / RAG (Python)
-    participant DB as ChromaDB
-    participant LLM as LLM (DeepSeek)
+- O fluxo abaixo descreve o caminho feliz (happy path) de um usuário realizando uma consulta ao sistema: 
 
-    Usuario->>FE: Digita pergunta
-    Note over FE: RN03: Valida tamanho<br/>(10 a 500 chars)
-    FE->>API: POST /perguntar {pergunta}
-    
-    rect rgb(240, 245, 255)
-        Note over API: RN01: Busca apenas na<br/>base oficial Tormenta20
-        API->>DB: Consulta vetorial (Embedding)
-        DB-->>API: Retorna trechos contextuais relevantes
-    end
+>1. Usuário acessa a interface web do sistema via navegador. 
 
-    Note over API: RN02: Validou que existe<br/>ao menos 1 fonte
-    API->>LLM: Envia Prompt (Contexto + Pergunta)
-    LLM-->>API: Retorna texto gerado
+>2. Sistema exibe a tela principal com campo de entrada de texto e histórico vazio. 
 
-    Note over API: RN06: Anexa aviso de autoridade<br/>do mestre à resposta
-    API-->>FE: HTTP 200 (Resposta + Fontes + Aviso)
-    FE-->>Usuario: Exibe resposta formatada na tela
-    
-    Note over FE: Usuário avalia (1-5 estrelas)
-    FE-)API: POST /log (Persiste log de uso/métrica)
+>3. Usuário digita uma pergunta em linguagem natural sobre as regras de Tormenta20. 
+
+>4. Sistema valida a pergunta (tamanho mínimo/máximo e caracteres permitidos). 
+
+>5. Sistema realiza busca vetorial na base de conhecimento (documentos indexados via RAG). 
+
+>6. Sistema envia os trechos recuperados + pergunta original ao modelo de linguagem (LLM). 
+
+>7. LLM gera resposta contextualizada com base nos trechos recuperados. 
+
+>8. Sistema exibe a resposta ao usuário, com referência à(s) fonte(s) e trecho(s) consultado(s). 
+
+>9. Usuário avalia a resposta com nota de 1 a 5 estrelas (opcional). 
+
+>10. Sistema registra pergunta, resposta, fonte e avaliação nos logs estruturados. 
+
+![Fluxo1](/RFC_arquivos/fluxo_happy_path.svg)
+
+
+
 
 ---
 
@@ -429,6 +427,37 @@ Descreva cenários como:
 - cancelamentos
 - exceções
 
+
+- FA01 — Pergunta inválida (muito curta ou muito longa) 
+
+>1. Usuário digita menos de 10 ou mais de 500 caracteres. 
+
+>2. Sistema valida entrada e exibe mensagem: "Sua pergunta deve ter entre 10 e 500 caracteres." 
+
+>3. Usuário corrige e reenvia a pergunta. 
+
+
+![FA1](/RFC_arquivos/fluxo_FA01_pergunta_invalida.svg)
+
+
+- FA02 — Nenhum trecho relevante encontrado na base 
+
+>1. Pipeline RAG não encontra trechos com similaridade acima do limiar mínimo definido. 
+
+>2. Sistema exibe: "Não encontrei informações sobre este tema nos materiais oficiais de Tormenta20." 
+
+>3. Sistema sugere categorias relacionadas para nova consulta. 
+
+![FA2](/RFC_arquivos/fluxo_FA02_sem_resultado.svg)
+
+
+- FA03 — Timeout ou falha no modelo de linguagem 
+
+>1. A chamada ao LLM excede o tempo limite de 10 segundos ou retorna erro. 
+
+>2. Sistema exibe: "Ocorreu um problema ao gerar a resposta. Tente novamente em instantes." 
+
+>3. Evento de erro é registrado nos logs com status e timestamp para análise. 
 ---
 
 # 4. Mockups e Experiência do Usuário (UX)
