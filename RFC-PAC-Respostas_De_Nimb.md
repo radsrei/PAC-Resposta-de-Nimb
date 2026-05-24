@@ -226,11 +226,12 @@ Adicionar **imagens ou ilustrações** pode ajudar na compreensão.
 - Objetivos: Vanderler tem como objetivo base pesquisar regras e mecânicas específicas para otimizar suas jogadas e criar estratégias mais eficazes durante as sessões de RPG.
 - Principais dificuldades: Lembrar de detalhes específicos de regras, como interações entre habilidades, efeitos de magias e condições, o que pode impactar suas decisões durante o jogo.
 
-### Persona - Jogador Novato
-- Nome: Robson
-- Contexto: Robson é um jogador novato de Tormenta 20, com pouco conhecimento das regras e mecânicas do jogo. Ele está começando a aprender sobre o universo de RPG e tem dificuldades para entender as regras complexas.
-- Objetivos: Robson tem como objetivo base aprender as regras e mecânicas do jogo de forma rápida e fácil, para poder participar das sessões de RPG sem se sentir perdido ou confuso.
-- Principais dificuldades: Entender as regras complexas, lembrar de detalhes específicos e encontrar informações relevantes durante as sessões de RPG, o que pode levar a frustração e desmotivação para jogar.
+### Persona - 
+>Jogador Novato
+>>- Nome: Robson
+>>- Contexto: Robson é um jogador novato de Tormenta 20, com pouco conhecimento das regras e mecânicas do jogo. Ele está começando a aprender sobre o universo de RPG e tem dificuldades para entender as regras complexas.
+>>- Objetivos: Robson tem como objetivo base aprender as regras e mecânicas do jogo de forma rápida e fácil, para poder participar das sessões de RPG sem se sentir perdido ou confuso.
+>>- Principais dificuldades: Entender as regras complexas, lembrar de detalhes específicos e encontrar informações relevantes durante as sessões de RPG, o que pode levar a frustração e desmotivação para jogar.
 ---
 
 ## 2.2 Casos de Uso Principais
@@ -252,23 +253,22 @@ Use a estrutura:
 
 > O sistema deve permitir que **[ator] realize [ação]**.
 
-Exemplo:
 
-RF01 — O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas.
+**RF01** — O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas.
 
-RF02 — O sistema deve permitir que o usuário envie perguntas sobre regras do jogo.
+**RF02** — O sistema deve permitir que o usuário envie perguntas sobre regras do jogo.
 
-RF03 — O sistema deve permitir que o usuário visualize respostas geradas.
+**RF03** — O sistema deve permitir que o usuário visualize respostas geradas.
 
-RF04 - O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas sem necessidade de instalação local, via navegador web.
+**RF04** - O sistema deve permitir que o usuário acesse uma interface de perguntas e respostas sem necessidade de instalação local, via navegador web.
 
-RF05 — O sistema deve permitir que o usuário envie perguntas em linguagem natural sobre regras, mecânicas e cenários do Tormenta20. 
+**RF05** — O sistema deve permitir que o usuário envie perguntas em linguagem natural sobre regras, mecânicas e cenários do Tormenta20. 
 
-RF06 — O sistema deve permitir que o usuário visualize a resposta gerada pela IA com indicação da(s) fonte(s) do livro de regras consultada(s).
+**RF06** — O sistema deve permitir que o usuário visualize a resposta gerada pela IA com indicação da(s) fonte(s) do livro de regras consultada(s).
 
-RF07 — O sistema deve permitir que o usuário visualize o histórico de perguntas realizadas durante a sessão atual.
+**RF07** — O sistema deve permitir que o usuário visualize o histórico de perguntas realizadas durante a sessão atual.
 
-RF08 — O sistema deve exibir uma mensagem clara quando não houver informação suficiente na base de conhecimento para responder à pergunta.
+**RF08** — O sistema deve exibir uma mensagem clara quando não houver informação suficiente na base de conhecimento para responder à pergunta.
 
 ---
 
@@ -276,17 +276,24 @@ RF08 — O sistema deve exibir uma mensagem clara quando não houver informaçã
 
 Inclua requisitos relacionados a:
 
-- desempenho
-- segurança
-- disponibilidade
-- escalabilidade
-- usabilidade
+- Desempenho
+- Latência
+- Segurança
+- Escalabilidade
+- Usabilidade
+- Acurácia 
 
 Exemplo:
 
-RNF01 — Desempenho — O tempo de resposta do sistema para perguntas deve ser inferior a 3 segundos em condições normais de uso 
-RNF02 — Latência do pipeline RAG — O tempo total entre o envio da pergunta e a exibição da resposta, incluindo busca vetorial e geração do modelo, deve ser inferior a 5 segundos.   
-RNF03 — O sistema deve utilizar autenticação segura.
+**RNF01** — O tempo de resposta do sistema para perguntas deve ser inferior a 3 segundos em condições normais de uso 
+
+**RNF02** — O tempo total entre o envio da pergunta e a exibição da resposta, incluindo busca vetorial e geração do modelo, deve ser inferior a 5 segundos.   
+
+**RNF03** — O sistema deve ter campos de fácil entendimento, e legibilidade de leitura nas respostas.
+
+**RNF04** — O modelo deve atingir acurácia de respostas avaliadas como corretas em ao menos 85% dos casos em testes com questões validadas por especialistas em Tormenta20.
+
+**RNF05** - A arquitetura deve suportar aumento de carga sem refatoração, permitindo escalonamento horizontal dos serviços de backend.
 
 ---
 
@@ -296,6 +303,21 @@ Exemplos:
 
 - apenas usuários autenticados podem acessar determinados recursos
 - determinadas operações exigem validação adicional
+
+**RN01** — Somente conteúdo oficial de Tormenta20 
+
+O sistema deve responder exclusivamente com base em materiais oficiais de Tormenta20 (livros, suplementos e erratas publicados pela Jambô Editora). Conteúdos de fanmade, regras-casa ou outros sistemas de RPG não devem ser indexados na base de conhecimento. 
+
+**RN02** — Obrigatoriedade de citação de fonte 
+
+Toda resposta gerada deve referenciar ao menos um trecho da base de conhecimento indexada. Respostas sem respaldo documental identificável não devem ser exibidas ao usuário. 
+
+**RN03** — Limite de tokens por pergunta 
+
+Perguntas enviadas pelo usuário devem ter no mínimo 10 caracteres e no máximo 500 caracteres, evitando consultas excessivamente vagas ou abusivas ao modelo de linguagem. 
+
+Exemplo de rejeição: a pergunta "oi" é rejeitada com a mensagem "Por favor, elabore sua dúvida sobre as regras de Tormenta20." 
+
 
 ---
 
