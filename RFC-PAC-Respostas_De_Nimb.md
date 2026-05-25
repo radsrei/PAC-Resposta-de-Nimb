@@ -441,9 +441,7 @@ Descreva cenários como:
 - FA03 — Timeout ou falha no modelo de linguagem 
 
 >1. A chamada ao LLM excede o tempo limite de 10 segundos ou retorna erro. 
-
 >2. Sistema exibe: "Ocorreu um problema ao gerar a resposta. Tente novamente em instantes." 
-
 >3. Evento de erro é registrado nos logs com status e timestamp para análise. 
 ---
 
@@ -470,13 +468,16 @@ Ferramentas sugeridas:
 
 ## 4.1 Fluxo de Navegação
 
-Apresente um diagrama mostrando como o usuário navega entre telas.
+O sistema possui navegação linear e direta, com as seguintes telas principais: 
 
-Exemplo:
+Login → Tela
 
-Login → Dashboard → Cadastro → Relatório
+![Figma](/Front/Figma/Untitled.png)
+
 
 Inclua **imagem do fluxo de navegação**.
+
+![Mapeamento](/Front/Figma/Mockup.png)
 
 ---
 
@@ -500,7 +501,38 @@ Para cada tela inclua:
 Sempre que possível:
 
 - inclua **links para protótipo navegável**
+
+([Link Figma](https://www.figma.com/proto/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=2-347&t=d1ss7nh4lTcwzYzZ-1&scaling=scale-down&content-scaling=fixed&page-id=0%3A1&starting-point-node-id=1%3A213))
+
 - inclua **prints das telas**
+
+Tela 1 — Login
+
+Descrição: Apresenta o nome do sistema, pede entrada de login e senha por validação do Google
+
+Ações principais do usuário: Fazer acesso ao sistema e validar credencial 
+
+![Login](/Front/Figma/Desktop%20-%202.png)
+
+
+Tela 2 — Inicial / Home 
+
+Descrição: Apresenta o nome do sistema, uma breve instrução de uso e o campo de entrada de pergunta centralizado na tela. 
+
+Ações principais do usuário: Digitar a pergunta; selecionar categoria opcional; clicar em "Perguntar". 
+
+Elemento de destaque: campo de texto amplo com placeholder "Qual é a sua dúvida sobre Tormenta20?". 
+![Pesquisa](/Front/Figma/Frame%203.png)
+
+
+Tela 3 — Resultado da Pergunta 
+
+Descrição: Exibe a pergunta original, a resposta gerada pelo sistema e o trecho de fonte consultada. 
+
+Ações principais do usuário: Ler a resposta; visualizar a fonte citada; avaliar com 1 a 5 estrelas; refinar a pergunta. 
+
+Elemento de destaque: card de resposta com destaque visual para o trecho do livro referenciado. 
+![Resposta](/Front/Figma/Frame%202.png)
 
 ---
 
@@ -510,10 +542,10 @@ Demonstre passo a passo um fluxo importante.
 
 Exemplo:
 
-1. usuário acessa o sistema
-2. cria conta
-3. registra dados
-4. visualiza resultados
+1. Usuário acessa o sistema pelo navegador durante a sessão de RPG. 
+2. Visualiza o campo de pergunta e digita: "Magias de ilusão afetam criaturas cegas?" 
+3. Clica em "Perguntar" e aguarda a resposta (~2-3 segundos). 
+4. Lê a resposta com referência ao Livro Básico de Tormenta20, retornando a página/referência  
 
 Inclua **sequência de telas ou fluxo visual**.
 
@@ -539,32 +571,40 @@ Esta seção demonstra **como o sistema será construído**.
 
 Apresente três níveis.
 
-## 1. Nível 1: Diagrama de Contexto
+### 1. Nível 1: Diagrama de Contexto
+
 
 É a **visão macro** do sistema. O foco aqui não é a tecnologia, mas sim como o software se encaixa no ecossistema e no mundo real.
 
 - **Objetivo:** Mostrar o sistema como uma "caixa preta" e suas interações básicas com o ambiente externo.
 - **O que incluir:**
-  - **Atores:** Diferentes perfis de usuários (Ex: Cliente, Administrador, Operador).
-  - **Sistemas Externos:** Softwares legados, serviços de terceiros ou provedores de identidade.
-  - **Fluxo de Valor:** Como a informação entra, circula e sai do sistema principal.
+
+| Elemento | Tipo | Descrição |
+| :--- | :--- | :--- |
+| Usuário (Jogador/Mestre) | Ator | Acessa o sistema via navegador para realizar perguntas sobre regras de Tormenta20. |
+| Administrador | Ator | Gerencia a base de conhecimento (upload de documentos, monitoramento). |
+| LLM Provider (ex.: Gemini / Ollama) | Sistema Externo | Provedor do modelo de linguagem que gera as respostas com base nos trechos recuperados. |
+| Base Vetorial (ex.: Pinecone / ChromaDB) | Sistema Externo | Armazena os embeddings dos documentos de regras para busca semântica. |
 
 ---
 
-## 2. Nível 2: Diagrama de Containers
+### 2. Nível 2: Diagrama de Containers
 
 Neste estágio, damos o primeiro **"zoom"**. Decompomos o sistema em suas unidades de execução independentes (containers).
 
 - **Objetivo:** Apresentar a arquitetura de alto nível e as decisões tecnológicas fundamentais.
 - **O que incluir:**
-  - **Aplicações Web/Mobile:** Interfaces de usuário (Ex: SPA em React, App Android/iOS).
-  - **Serviços de Backend:** Unidades lógicas de processamento (Ex: API Gateway, Microserviços em Node.js ou Go).
-  - **Armazenamento:** Persistência de dados (Ex: PostgreSQL, MongoDB, Redis).
-  - **Protocolos:** Como os containers se comunicam (Ex: JSON/HTTPS, gRPC, RabbitMQ).
 
+| Container | Tecnologia | Função | Protocolo |
+| :--- | :--- | :--- | :--- |
+| Frontend (SPA) | React + Vite | Interface do usuário — perguntas, respostas, histórico e avaliação. | HTTPS |
+| API Gateway | FastAPI (Python) | Recebe requisições do frontend, orquestra o pipeline RAG e retorna respostas. | JSON/HTTPS |
+| RAG Pipeline | LangChain + Python | Realiza busca vetorial, monta o contexto e chama o LLM. | Interno (função) |
+| Vector Store | ChromaDB | Armazena embeddings dos documentos de regras para busca semântica. | gRPC / HTTP |
+| Database (Logs) | PostgreSQL | Persiste perguntas, respostas, fontes e avaliações dos usuários. | SQL/TCP |
 ---
 
-## 3. Nível 3: Diagrama de Componentes
+### 3. Nível 3: Diagrama de Componentes
 
 O foco agora é o que acontece **dentro de um único container** (como uma API específica ou um serviço de backend).
 
@@ -594,10 +634,14 @@ Descreva os principais módulos do sistema.
 
 Exemplo:
 
-- API
-- sistema de autenticação
-- módulo de processamento
-- camada de persistência
+
+- RAG Pipeline (LangChain): Responsável por gerar embeddings, buscar trechos relevantes na base vetorial, montar o prompt e chamar o LLM. 
+- LLM Provider (API externa): Modelo de linguagem (ex.: Gemini ou Ollama) responsável por gerar a resposta final com base no contexto recuperado.
+
+>Passíveis de mudança (tecnologia) ou posterior validação durante processo de desenvolvimento
+>>Frontend (React + Vite): Interface responsiva para perguntas, respostas, histórico e avaliações. Comunica-se com o backend via REST API. 
+>>API Gateway (FastAPI): Ponto de entrada do backend. Valida requisições, orquestra o pipeline RAG e retorna respostas formatadas.
+>>Banco de Dados Relacional (PostgreSQL): Persiste perguntas, respostas, fontes, avaliações e logs de uso para análise de métricas. 
 
 ---
 
@@ -607,13 +651,15 @@ Liste as tecnologias utilizadas.
 
 Para cada tecnologia explique **por que ela foi escolhida**.
 
-Exemplo:
-
-**Python**: Escolhido pela facilidade de uso e ampla biblioteca de IA.
-
-**Langchain**: Utilizado para facilitar a construção de aplicações de IA.
-
-
+| Tecnologia | Camada | Justificativa |
+| :--- | :--- | :--- |
+| **Python 3.11+** | Backend / Pipeline | Amplo ecossistema de IA/ML, suporte nativo a LangChain, FastAPI e bibliotecas de NLP. |
+| **FastAPI** | API Gateway | Alta performance assíncrona, geração automática de documentação OpenAPI e tipagem forte com Pydantic. |
+| **LangChain** | RAG Pipeline | Framework consolidado para construção de pipelines RAG, abstração de múltiplos provedores de LLM e vector stores. |
+| **ChromaDB** | Vector Store | Base vetorial leve, open-source e embarcável. Ideal para o volume inicial do projeto sem necessidade de infraestrutura externa. |
+| **Gemini/Ollama** | LLM Provider | Modelos de linguagem de alta qualidade com suporte a prompts longos e contexto estruturado, adequados para respostas precisas sobre regras. |
+| **PostgreSQL** | Banco de Dados | Banco relacional robusto, open-source e bem documentado. Adequado para persistência de logs e avaliações com suporte a consultas analíticas. |
+| **React + Vite** | Frontend | Biblioteca moderna para SPAs, com ecossistema maduro e build rápido via Vite. Facilita criação de interfaces responsivas. |
 
 ---
 
