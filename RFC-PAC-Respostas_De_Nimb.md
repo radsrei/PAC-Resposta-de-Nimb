@@ -389,24 +389,20 @@ Utilize:
 
 Inclua **imagens dos diagramas**.
 
+- O fluxo abaixo descreve o caminho feliz (happy path) de um usuário realizando uma consulta ao sistema:
 
-- O fluxo abaixo descreve o caminho feliz (happy path) de um usuário realizando uma consulta ao sistema: 
-
->1. Usuário acessa a interface web do sistema via navegador. 
->2. Sistema exibe a tela principal com campo de entrada de texto e histórico vazio. 
->3. Usuário digita uma pergunta em linguagem natural sobre as regras de Tormenta20. 
->4. Sistema valida a pergunta (tamanho mínimo/máximo e caracteres permitidos). 
->5. Sistema realiza busca vetorial na base de conhecimento (documentos indexados via RAG). 
->6. Sistema envia os trechos recuperados + pergunta original ao modelo de linguagem (LLM). 
->7. LLM gera resposta contextualizada com base nos trechos recuperados. 
->8. Sistema exibe a resposta ao usuário, com referência à(s) fonte(s) e trecho(s) consultado(s). 
->9. Usuário avalia a resposta com nota de 1 a 5 estrelas (opcional). 
->10. Sistema registra pergunta, resposta, fonte e avaliação nos logs estruturados. 
+>1. Usuário acessa a interface web do sistema via navegador.
+>2. Sistema exibe a tela principal com campo de entrada de texto e histórico vazio.
+>3. Usuário digita uma pergunta em linguagem natural sobre as regras de Tormenta20.
+>4. Sistema valida a pergunta (tamanho mínimo/máximo e caracteres permitidos).
+>5. Sistema realiza busca vetorial na base de conhecimento (documentos indexados via RAG).
+>6. Sistema envia os trechos recuperados + pergunta original ao modelo de linguagem (LLM).
+>7. LLM gera resposta contextualizada com base nos trechos recuperados.
+>8. Sistema exibe a resposta ao usuário, com referência à(s) fonte(s) e trecho(s) consultado(s).
+>9. Usuário avalia a resposta com nota de 1 a 5 estrelas (opcional).
+>10. Sistema registra pergunta, resposta, fonte e avaliação nos logs estruturados.
 
 ![Fluxo1](/RFC_arquivos/fluxo_happy_path.svg)
-
-
-
 
 ---
 
@@ -602,7 +598,9 @@ Neste estágio, damos o primeiro **"zoom"**. Decompomos o sistema em suas unidad
 | RAG Pipeline | LangChain + Python | Realiza busca vetorial, monta o contexto e chama o LLM. | Interno (função) |
 | Vector Store | ChromaDB | Armazena embeddings dos documentos de regras para busca semântica. | gRPC / HTTP |
 | Database (Logs) | PostgreSQL | Persiste perguntas, respostas, fontes e avaliações dos usuários. | SQL/TCP |
+
 ---
+
 
 ### 3. Nível 3: Diagrama de Componentes
 
@@ -663,6 +661,14 @@ Para cada tecnologia explique **por que ela foi escolhida**.
 
 ---
 
+>Sugestões e Tecnologias a serem validadas e consideradas
+>Amazon AWS - S3 ![FerramentaS3](https://aws.amazon.com/pt/s3/?did=ap_card&trk=ap_card&sc_channel=ps)
+>>Buscar informações de banco de dados imagens e coisas do tipo
+>Open Router ![GerenciarChavesAPI](https://openrouter.ai/)
+>>Gerenciamento de API Keys para uso das IAs, ferramenta para buscar das IAs gratuitas reduzir consumo
+>Amazon AWS - Iam ![GerenciarAcessoAWS](https://aws.amazon.com/pt/iam/)
+>>
+
 # 6. Segurança e Privacidade
 
 Inclua preocupações básicas de segurança.
@@ -672,6 +678,9 @@ Exemplos:
 - proteção contra OWASP Top 10
 - autenticação e autorização
 - criptografia de dados sensíveis
+
+- Sem acesso a banco direto, apenas por uso do sistema.
+- Validação e checagem de login via Google
 
 ---
 
@@ -683,6 +692,10 @@ Explique:
 - como serão armazenados
 - como o usuário poderá solicitar remoção de dados
 
+
+- __Sistema de login terceirizado, onde será usada API do Google__
+- __Não é consumido ou salvo dados dos usuários ao gerar e consultar o sistema__
+- __Os dados serão armazenados online, sem acesso direto do usuário final__
 ---
 
 # 7. Planejamento do Projeto
@@ -691,6 +704,16 @@ Defina os principais marcos de desenvolvimento.
 
 | Marco | Descrição                             | Prazo    |
 | ----- | ------------------------------------- | -------- |
+| M    | Fragmentar livros e construir regras de chunks | Semana - |
+| M    | Estruturar Meta dados para pesquisa e validação| Semana - |
+| M    | Estruturar banco de dados  | Semana - |
+| M    | Gerar estrutura e banco (vetorial)    | Semana - |
+| M    | Desenvolver lógica para recuperar chunks | Semana |
+| M    | Gerar regras de segurança (Alucinação) | Semana - |
+| M    | Fragmentar primeira estrutura de Front | Semana - |
+
+
+
 | M1    | Setup do ambiente e prova de conceito | Semana X |
 | M2    | MVP funcional                         | Semana Y |
 | M3    | Testes e melhorias                    | Semana Z |
