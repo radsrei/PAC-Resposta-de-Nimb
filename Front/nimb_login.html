@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NIMB_OS | Initialize Session</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "outline": "#978da0",
+          "input-base": "#1A1A2E",
+          "background": "#13131a",
+          "surface-container-highest": "#34343c",
+          "error-container": "#93000a",
+          "error": "#ffb4ab",
+          "inverse-on-surface": "#303038",
+          "primary": "#d8b9ff",
+          "on-primary-container": "#3c0076",
+          "inverse-primary": "#7d2dd9",
+          "on-secondary": "#00391f",
+          "on-surface-variant": "#cec2d7",
+          "on-surface": "#e4e1ec",
+          "surface-bright": "#393840",
+          "surface-dim": "#13131a",
+          "on-secondary-container": "#004728",
+          "surface-container-high": "#2a2931",
+          "surface-tint": "#d8b9ff",
+          "on-error": "#690005",
+          "secondary": "#43e090",
+          "glitch-white": "#F0EEF8",
+          "secondary-container": "#00c175",
+          "inverse-surface": "#e4e1ec",
+          "surface-container-low": "#1b1b22",
+          "surface-variant": "#34343c",
+          "surface-container-lowest": "#0e0e15",
+          "secondary-fixed": "#66feaa",
+          "surface": "#13131a",
+          "neon-green-dim": "rgba(57, 217, 138, 0.25)",
+          "deep-surface": "#13131F",
+          "outline-variant": "#4b4454",
+          "on-background": "#e4e1ec",
+          "neon-purple-dim": "rgba(162, 89, 255, 0.2)",
+          "tertiary": "#ffb95d",
+          "primary-fixed": "#eedcff",
+          "primary-container": "#ae71ff",
+          "surface-container": "#1f1f26",
+          "primary-fixed-dim": "#d8b9ff",
+          "on-primary": "#450086",
+          "on-primary-fixed": "#290055",
+        },
+        borderRadius: {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "2xl": "1rem",
+          "full": "9999px"
+        },
+        fontFamily: {
+          "body-lg": ["Space Grotesk"],
+          "headline-lg": ["Space Grotesk"],
+          "code-md": ["JetBrains Mono"],
+          "body-md": ["Space Grotesk"],
+          "headline-sm": ["Space Grotesk"],
+          "label-caps": ["Space Grotesk"],
+          "metadata": ["JetBrains Mono"],
+          "headline-xl": ["Space Grotesk"]
+        },
+        fontSize: {
+          "body-lg": ["16px", {"lineHeight": "1.65", "fontWeight": "400"}],
+          "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+          "code-md": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+          "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+          "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+          "label-caps": ["10px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+          "metadata": ["11px", {"lineHeight": "1", "fontWeight": "400"}],
+          "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+        }
+      },
+    },
+  }
+</script>
+
+<style>
+  .glitch-overlay {
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+    background-size: 100% 2px;
+    pointer-events: none;
+  }
+  .rim-light { box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.05); }
+  .primary-gradient { background: linear-gradient(135deg, #ae71ff 0%, #43e090 100%); }
+  .primary-gradient:hover {
+    box-shadow: 0 0 20px rgba(174,113,255,0.3);
+    transform: scale(1.02);
+  }
+  .primary-gradient:disabled {
+    opacity: 0.6;
+    transform: none;
+    cursor: not-allowed;
+  }
+  .input-glow:focus-within { box-shadow: 0 0 12px rgba(162,89,255,0.2); }
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+  .scan-effect::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent, rgba(216,185,255,0.05), transparent);
+    animation: scanline 8s linear infinite;
+  }
+  @keyframes glitch-pulse {
+    0%, 100% { opacity: 0.3; transform: translateX(0); }
+    50% { opacity: 0.6; transform: translateX(2px); }
+  }
+  .glitch-line { animation: glitch-pulse 3s ease-in-out infinite; }
+  .glitch-line-2 { animation: glitch-pulse 3s ease-in-out infinite 0.5s; }
+
+  /* Toast notification */
+  #toast {
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  #toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  /* Google button custom style */
+  .google-btn {
+    background: rgba(26, 26, 46, 0.5);
+    border: 1px solid rgba(75, 68, 84, 0.4);
+    transition: all 0.2s ease;
+  }
+  .google-btn:hover {
+    background: rgba(57, 56, 64, 0.5);
+    border-color: rgba(216, 185, 255, 0.3);
+  }
+  .google-btn:active { transform: scale(0.98); }
+
+  /* Auth success overlay */
+  #auth-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(13,13,26,0.95);
+    backdrop-filter: blur(12px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #auth-overlay.active { display: flex; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeInUp 0.4s ease forwards; }
+
+  /* Field focus border */
+  .input-glow.focused { border-color: rgba(216, 185, 255, 0.6); }
+
+  /* Error state */
+  .input-error { border-color: rgba(255, 180, 171, 0.6) !important; }
+  .error-msg { color: #ffb4ab; font-size: 11px; margin-top: 4px; display: none; }
+  .error-msg.show { display: block; }
+</style>
+</head>
+
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen w-screen flex items-center justify-center selection:bg-primary selection:text-on-primary">
+
+<!-- Auth Success Overlay -->
+<div id="auth-overlay">
+  <div class="text-center animate-in">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full primary-gradient flex items-center justify-center shadow-[0_0_40px_rgba(174,113,255,0.4)]">
+      <span class="material-symbols-outlined text-4xl text-white" style="font-variation-settings:'FILL' 1;">verified_user</span>
+    </div>
+    <h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">Sessão Inicializada</h2>
+    <p id="overlay-msg" class="font-metadata text-metadata text-outline tracking-wider uppercase">Redirecionando para o terminal...</p>
+    <div class="mt-6 flex justify-center gap-1">
+      <span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay:0s"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style="animation-delay:0.15s"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style="animation-delay:0.3s"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl border backdrop-blur-xl font-metadata text-[11px] uppercase tracking-widest flex items-center gap-3">
+  <span id="toast-icon" class="material-symbols-outlined text-[16px]">info</span>
+  <span id="toast-msg">Mensagem</span>
+</div>
+
+<!-- Atmospheric Background -->
+<div class="fixed inset-0 z-0">
+  <div class="absolute inset-0 bg-surface-dim"></div>
+  <div class="absolute inset-0 glitch-overlay opacity-30"></div>
+  <div class="absolute inset-0 scan-effect overflow-hidden pointer-events-none"></div>
+  <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 blur-[150px] rounded-full"></div>
+</div>
+
+<!-- Main Container -->
+<main class="relative z-10 w-full max-w-[440px] px-4 md:px-0" id="main-container">
+
+  <!-- Branding -->
+  <div class="text-center mb-10 space-y-2">
+    <h1 class="font-headline-lg text-headline-lg font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+      NIMB_OS
+    </h1>
+    <p class="font-metadata text-metadata text-outline tracking-widest uppercase opacity-70">
+      v1.0.4 Kernel / Access Point
+    </p>
+  </div>
+
+  <!-- Login Card -->
+  <section class="bg-surface-container-low/60 backdrop-blur-xl rim-light border border-outline-variant/30 rounded-xl p-8 shadow-2xl">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">Initialize Session</h2>
+      <p class="font-body-md text-on-surface-variant opacity-80">
+        Verify credentials to bridge neural links.
+      </p>
+    </div>
+
+    <!-- Form -->
+    <div class="space-y-6">
+
+      <!-- Email -->
+      <div class="space-y-1.5 group">
+        <label class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center gap-2" for="email">
+          <span class="material-symbols-outlined text-[14px]">alternate_email</span>
+          Sync Email
+        </label>
+        <div class="input-glow border border-outline-variant/40 bg-input-base/50 rounded-lg overflow-hidden transition-all duration-200" id="email-wrapper">
+          <input
+            class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3 px-4 text-on-surface placeholder:text-outline/40 font-code-md"
+            id="email"
+            placeholder="operator@nimb.io"
+            type="email"
+            autocomplete="email"
+          />
+        </div>
+        <p class="error-msg" id="email-error">Formato de e-mail inválido.</p>
+      </div>
+
+      <!-- Password -->
+      <div class="space-y-1.5 group">
+        <div class="flex justify-between items-center">
+          <label class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center gap-2" for="token">
+            <span class="material-symbols-outlined text-[14px]">key</span>
+            Access Token
+          </label>
+          <button class="font-metadata text-metadata text-primary hover:text-primary-container transition-colors uppercase tracking-tight" id="recover-btn" type="button">Recover</button>
+        </div>
+        <div class="input-glow border border-outline-variant/40 bg-input-base/50 rounded-lg overflow-hidden transition-all duration-200 relative" id="token-wrapper">
+          <input
+            class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3 px-4 pr-12 text-on-surface placeholder:text-outline/40 font-code-md"
+            id="token"
+            placeholder="••••••••••••••••"
+            type="password"
+            autocomplete="current-password"
+          />
+          <button class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/50 hover:text-primary transition-colors" id="toggle-pw" type="button" title="Mostrar/ocultar senha">
+            <span class="material-symbols-outlined text-[18px]" id="pw-eye">visibility</span>
+          </button>
+        </div>
+        <p class="error-msg" id="token-error">Token deve ter ao menos 6 caracteres.</p>
+      </div>
+
+      <!-- Persistent -->
+      <div class="flex items-center gap-3">
+        <input
+          class="w-4 h-4 rounded border-outline-variant/50 bg-input-base text-primary focus:ring-primary focus:ring-offset-background transition-all"
+          id="persistent"
+          type="checkbox"
+        />
+        <label class="font-body-md text-on-surface-variant cursor-pointer select-none" for="persistent">
+          Persistent link
+        </label>
+      </div>
+
+      <!-- Primary CTA -->
+      <button
+        class="primary-gradient w-full py-4 rounded-lg text-on-primary-fixed font-headline-sm text-[16px] font-bold tracking-wider flex items-center justify-center gap-3 active:scale-95 transition-all duration-150"
+        id="login-btn"
+        type="button"
+      >
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;" id="login-icon">login</span>
+        <span id="login-label">ESTABLISH CONNECTION</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="relative flex items-center py-1">
+        <div class="flex-grow border-t border-outline-variant/20"></div>
+        <span class="flex-shrink mx-4 font-label-caps text-label-caps text-outline/50">OR</span>
+        <div class="flex-grow border-t border-outline-variant/20"></div>
+      </div>
+
+      <!-- Google OAuth Button -->
+      <button
+        class="google-btn w-full py-3 rounded-lg flex items-center justify-center gap-3 group"
+        id="google-btn"
+        type="button"
+      >
+        <!-- Google logo SVG -->
+        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span class="font-body-md text-on-surface font-medium group-hover:text-primary transition-colors" id="google-label">
+          Login via Google
+        </span>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-8 flex justify-between items-center font-metadata text-metadata text-outline/40 uppercase tracking-widest px-2">
+    <span>Terminal: 220.31.0</span>
+    <span class="flex items-center gap-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+      Protocol Secured
+    </span>
+  </footer>
+
+</main>
+
+<!-- Glitch decorative lines -->
+<div class="fixed top-20 left-10 w-12 h-[2px] bg-primary opacity-30 blur-[1px] glitch-line"></div>
+<div class="fixed top-[88px] left-14 w-8 h-[2px] bg-secondary opacity-20 blur-[1px] glitch-line-2"></div>
+<div class="fixed bottom-40 right-20 w-16 h-[2px] bg-primary/40 glitch-line"></div>
+<div class="fixed bottom-[156px] right-24 w-10 h-[2px] bg-secondary/30 glitch-line-2"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIGURATION
+//  Substitua YOUR_GOOGLE_CLIENT_ID pelo Client ID
+//  gerado no Google Cloud Console:
+//  https://console.cloud.google.com/apis/credentials
+// ─────────────────────────────────────────────
+// const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = "206311955231-snagkrvmjtpgk1q2375n03h9g3ve6pet.apps.googleusercontent.com";
+// Após login bem-sucedido, redireciona para esta URL.
+// Troque pelo caminho do seu app principal (ex: './app.html').
+const REDIRECT_URL = './app.html';
+
+// ─────────────────────────────────────────────
+//  DOM REFS
+// ─────────────────────────────────────────────
+const emailInput    = document.getElementById('email');
+const tokenInput    = document.getElementById('token');
+const emailWrapper  = document.getElementById('email-wrapper');
+const tokenWrapper  = document.getElementById('token-wrapper');
+const emailError    = document.getElementById('email-error');
+const tokenError    = document.getElementById('token-error');
+const loginBtn      = document.getElementById('login-btn');
+const loginIcon     = document.getElementById('login-icon');
+const loginLabel    = document.getElementById('login-label');
+const googleBtn     = document.getElementById('google-btn');
+const googleLabel   = document.getElementById('google-label');
+const togglePw      = document.getElementById('toggle-pw');
+const pwEye         = document.getElementById('pw-eye');
+const recoverBtn    = document.getElementById('recover-btn');
+const authOverlay   = document.getElementById('auth-overlay');
+const overlayMsg    = document.getElementById('overlay-msg');
+const toast         = document.getElementById('toast');
+const toastMsg      = document.getElementById('toast-msg');
+const toastIcon     = document.getElementById('toast-icon');
+const persistent    = document.getElementById('persistent');
+
+// ─────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const configs = {
+    success: { bg: 'bg-surface-container border-secondary/40 text-secondary', icon: 'check_circle' },
+    error:   { bg: 'bg-surface-container border-error/40 text-error', icon: 'error' },
+    info:    { bg: 'bg-surface-container border-primary/40 text-primary', icon: 'info' },
+  };
+  const cfg = configs[type];
+  toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl border backdrop-blur-xl font-metadata text-[11px] uppercase tracking-widest flex items-center gap-3 ${cfg.bg}`;
+  toastMsg.textContent = msg;
+  toastIcon.textContent = cfg.icon;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// ─────────────────────────────────────────────
+//  INPUT FOCUS
+// ─────────────────────────────────────────────
+[emailInput, tokenInput].forEach(input => {
+  const wrapper = input.parentElement.closest('.input-glow') ?? input.closest('.input-glow');
+  input.addEventListener('focus', () => wrapper.classList.add('focused'));
+  input.addEventListener('blur',  () => wrapper.classList.remove('focused'));
+});
+
+// ─────────────────────────────────────────────
+//  SHOW / HIDE PASSWORD
+// ─────────────────────────────────────────────
+togglePw.addEventListener('click', () => {
+  const isPassword = tokenInput.type === 'password';
+  tokenInput.type = isPassword ? 'text' : 'password';
+  pwEye.textContent = isPassword ? 'visibility_off' : 'visibility';
+});
+
+// ─────────────────────────────────────────────
+//  VALIDATION
+// ─────────────────────────────────────────────
+function validateEmail(v) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+function setFieldError(wrapper, errorEl, show) {
+  if (show) {
+    wrapper.classList.add('input-error');
+    errorEl.classList.add('show');
+  } else {
+    wrapper.classList.remove('input-error');
+    errorEl.classList.remove('show');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  AUTH SUCCESS HANDLER (shared)
+// ─────────────────────────────────────────────
+function handleAuthSuccess(user) {
+  // Persist session if checkbox is checked
+  const storage = persistent.checked ? localStorage : sessionStorage;
+  storage.setItem('nimb_user', JSON.stringify({
+    name:    user.name    || 'Operator',
+    email:   user.email   || '',
+    avatar:  user.picture || '',
+    method:  user.method  || 'credentials',
+    token:   user.token   || null,
+    loginAt: Date.now(),
+  }));
+
+  overlayMsg.textContent = `Neural link estabelecido para ${user.name || user.email}`;
+  authOverlay.classList.add('active');
+
+  setTimeout(() => {
+    window.location.href = REDIRECT_URL;
+  }, 2200);
+}
+
+// ─────────────────────────────────────────────
+//  EMAIL / PASSWORD LOGIN
+//  (demo: aceita qualquer e-mail + senha ≥ 6 chars)
+//  Em produção: substitua por uma chamada fetch() à sua API.
+// ─────────────────────────────────────────────
+loginBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const pwd   = tokenInput.value;
+
+  let hasError = false;
+  if (!validateEmail(email)) {
+    setFieldError(emailWrapper, emailError, true);
+    hasError = true;
+  } else {
+    setFieldError(emailWrapper, emailError, false);
+  }
+  if (pwd.length < 6) {
+    setFieldError(tokenWrapper, tokenError, true);
+    hasError = true;
+  } else {
+    setFieldError(tokenWrapper, tokenError, false);
+  }
+  if (hasError) return;
+
+  // Loading state
+  loginBtn.disabled = true;
+  loginIcon.innerHTML = '<span class="spinner"></span>';
+  loginLabel.textContent = 'SYNCING NEURAL BRIDGE...';
+
+  try {
+    // ── PRODUCTION EXAMPLE ──────────────────────
+    // const res = await fetch('/api/auth/login', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ email, password: pwd }),
+    // });
+    // if (!res.ok) throw new Error('Credenciais inválidas');
+    // const data = await res.json();
+    // handleAuthSuccess({ ...data.user, method: 'credentials', token: data.token });
+    // ────────────────────────────────────────────
+
+    // DEMO SIMULATION (remove in production)
+    await new Promise(r => setTimeout(r, 1400));
+    handleAuthSuccess({
+      name: email.split('@')[0],
+      email,
+      method: 'credentials',
+      token: 'demo-token-' + Date.now(),
+    });
+
+  } catch (err) {
+    showToast(err.message || 'Falha ao estabelecer conexão.', 'error');
+    loginBtn.disabled = false;
+    loginIcon.textContent = 'login';
+    loginLabel.textContent = 'ESTABLISH CONNECTION';
+  }
+});
+
+// Enter key support
+[emailInput, tokenInput].forEach(el => {
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') loginBtn.click();
+  });
+});
+
+// ─────────────────────────────────────────────
+//  GOOGLE OAUTH — Google Identity Services
+// ─────────────────────────────────────────────
+
+// Called by Google GIS after the user picks an account
+function handleGoogleCredential(response) {
+  // response.credential is a signed JWT (ID token)
+  const idToken = response.credential;
+
+  // Decode payload (header.payload.signature — no verification needed client-side)
+  const payload = JSON.parse(atob(idToken.split('.')[1]));
+
+  // ── PRODUCTION: send idToken to your backend for verification ───
+  // fetch('/api/auth/google', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({ credential: idToken }),
+  // }).then(r => r.json()).then(data => handleAuthSuccess({ ...data.user, method: 'google', token: data.token }));
+  // ────────────────────────────────────────────────────────────────
+
+  // DEMO: use the JWT payload directly
+  handleAuthSuccess({
+    name:    payload.name,
+    email:   payload.email,
+    picture: payload.picture,
+    method:  'google',
+    token:   idToken,
+  });
+}
+
+// Initialize GIS after script loads
+window.addEventListener('load', () => {
+  if (!window.google?.accounts?.id) {
+    console.warn('[NIMB_OS] Google Identity Services not loaded. Configure GOOGLE_CLIENT_ID.');
+    return;
+  }
+
+  google.accounts.id.initialize({
+    client_id:         GOOGLE_CLIENT_ID,
+    callback:          handleGoogleCredential,
+    auto_select:       false,
+    cancel_on_tap_outside: true,
+    ux_mode:           'popup',
+  });
+});
+
+// Manual trigger on button click
+googleBtn.addEventListener('click', () => {
+  if (!window.google?.accounts?.id) {
+    showToast('Configure GOOGLE_CLIENT_ID para ativar OAuth.', 'info');
+    return;
+  }
+
+  // Visual feedback
+  googleLabel.textContent = 'Aguardando Google...';
+  googleBtn.disabled = true;
+
+  google.accounts.id.prompt(notification => {
+    googleBtn.disabled = false;
+    googleLabel.textContent = 'Login via Google';
+
+    if (notification.isNotDisplayed()) {
+      showToast('Popup bloqueado. Verifique as permissões do navegador.', 'error');
+    } else if (notification.isSkippedMoment()) {
+      showToast('Login cancelado pelo operador.', 'info');
+    }
+  });
+});
+
+// ─────────────────────────────────────────────
+//  PASSWORD RECOVERY
+// ─────────────────────────────────────────────
+recoverBtn.addEventListener('click', () => {
+  const email = emailInput.value.trim();
+  if (!validateEmail(email)) {
+    setFieldError(emailWrapper, emailError, true);
+    showToast('Insira um e-mail válido para recuperação.', 'error');
+    emailInput.focus();
+    return;
+  }
+  // In production: POST to /api/auth/recover
+  showToast(`Link de recuperação enviado para ${email}`, 'success');
+});
+
+// ─────────────────────────────────────────────
+//  MOUSE PARALLAX
+// ─────────────────────────────────────────────
+document.addEventListener('mousemove', (e) => {
+  const container = document.querySelector('main');
+  const xAxis = (window.innerWidth  / 2 - e.pageX) / 50;
+  const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
+  container.style.transform = `perspective(1000px) rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+});
+
+// ─────────────────────────────────────────────
+//  AUTO-RESTORE SESSION
+// ─────────────────────────────────────────────
+;(function checkExistingSession() {
+  const user = JSON.parse(sessionStorage.getItem('nimb_user') || localStorage.getItem('nimb_user') || 'null');
+  if (user?.token) {
+    overlayMsg.textContent = `Restaurando sessão de ${user.name || user.email}...`;
+    authOverlay.classList.add('active');
+    setTimeout(() => { window.location.href = REDIRECT_URL; }, 1500);
+  }
+})();
+</script>
+</body>
+</html>

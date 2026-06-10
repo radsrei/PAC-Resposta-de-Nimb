@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NIMB_OS | Initialize Session</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#978da0",
+                        "on-tertiary-fixed": "#2a1700",
+                        "input-base": "#1A1A2E",
+                        "background": "#13131a",
+                        "surface-container-highest": "#34343c",
+                        "on-primary-fixed": "#290055",
+                        "on-tertiary-container": "#3d2400",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#303038",
+                        "primary": "#d8b9ff",
+                        "on-primary-container": "#3c0076",
+                        "inverse-primary": "#7d2dd9",
+                        "on-secondary": "#00391f",
+                        "tertiary-fixed": "#ffddb7",
+                        "on-surface-variant": "#cec2d7",
+                        "on-surface": "#e4e1ec",
+                        "surface-bright": "#393840",
+                        "surface-dim": "#13131a",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-secondary-container": "#004728",
+                        "surface-container-high": "#2a2931",
+                        "surface-tint": "#d8b9ff",
+                        "on-error": "#690005",
+                        "on-secondary-fixed": "#002110",
+                        "secondary": "#43e090",
+                        "glitch-white": "#F0EEF8",
+                        "secondary-container": "#00c175",
+                        "inverse-surface": "#e4e1ec",
+                        "surface-container-low": "#1b1b22",
+                        "surface-variant": "#34343c",
+                        "tertiary-fixed-dim": "#ffb95d",
+                        "surface-container-lowest": "#0e0e15",
+                        "secondary-fixed": "#66feaa",
+                        "surface": "#13131a",
+                        "on-primary-fixed-variant": "#6300bb",
+                        "neon-green-dim": "rgba(57, 217, 138, 0.25)",
+                        "deep-surface": "#13131F",
+                        "outline-variant": "#4b4454",
+                        "on-background": "#e4e1ec",
+                        "secondary-fixed-dim": "#43e090",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#00522f",
+                        "neon-purple-dim": "rgba(162, 89, 255, 0.2)",
+                        "tertiary": "#ffb95d",
+                        "primary-fixed": "#eedcff",
+                        "tertiary-container": "#c68218",
+                        "surface-container": "#1f1f26",
+                        "primary-fixed-dim": "#d8b9ff",
+                        "on-primary": "#450086"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1280px",
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "28px",
+                        "gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Space Grotesk"],
+                        "headline-sm": ["Space Grotesk"],
+                        "label-caps": ["Space Grotesk"],
+                        "metadata": ["JetBrains Mono"],
+                        "headline-xl": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "1.65", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "code-md": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "label-caps": ["10px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "metadata": ["11px", {"lineHeight": "1", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glitch-overlay {
+            background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+            background-size: 100% 2px;
+            pointer-events: none;
+        }
+        
+        .rim-light {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .primary-gradient {
+            background: linear-gradient(135deg, #ae71ff 0%, #43e090 100%);
+        }
+
+        .primary-gradient:hover {
+            box-shadow: 0 0 20px rgba(174, 113, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 12px rgba(162, 89, 255, 0.2);
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .scan-effect::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(216, 185, 255, 0.05), transparent);
+            animation: scanline 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md overflow-hidden h-screen w-screen flex items-center justify-center selection:bg-primary selection:text-on-primary">
+<!-- Atmospheric Background Layers -->
+<div class="fixed inset-0 z-0">
+<!-- Deep Space Canvas -->
+<div class="absolute inset-0 bg-surface-dim"></div>
+<!-- Subtle Reference Image Integration -->
+<div class="absolute inset-0 opacity-20 mix-blend-screen overflow-hidden">
+<img alt="Atmospheric background texture" class="w-full h-full object-cover grayscale brightness-50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANnWytVVSAnuMxMXeMPCeJDUp1FB0Xhe1gsNL6R2q0YpMomiB-6oiUFQUcl-eMvqy7hVK2XyaoDCnkvguCOYTUAfHUWj0kn5bgZjycQjUPxv73Xfwi4ty7XAEvOa7LAZyRtMfzQX3A-DrJfje2rdP3faVMCVZAWe5LUl428fCCA1NrR9VgYXx18iwyHUxcj7tVq1H-JOW9chOYbGJziZOYQujpGdtlKu9JkRF6AU3I0B5rp_4neFt7HlDbgJmKmxro6BPIcKlr5mQ"/>
+</div>
+<!-- Glitch & Tech Elements -->
+<div class="absolute inset-0 glitch-overlay opacity-30"></div>
+<div class="absolute inset-0 scan-effect overflow-hidden pointer-events-none"></div>
+<!-- Dynamic Glows -->
+<div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[150px] rounded-full"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/10 blur-[150px] rounded-full"></div>
+</div>
+<!-- Main Login Container -->
+<main class="relative z-10 w-full max-w-[420px] px-margin-mobile md:px-0">
+<!-- System Branding Header -->
+<div class="text-center mb-10 space-y-2">
+<h1 class="font-headline-lg text-headline-lg font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                NIMB_OS
+            </h1>
+<p class="font-metadata text-metadata text-outline tracking-widest uppercase opacity-70">
+                v1.0.4 Kernel / Access Point
+            </p>
+</div>
+<!-- Login Card -->
+<section class="bg-surface-container-low/60 backdrop-blur-xl rim-light border border-outline-variant/30 rounded-xl p-8 shadow-2xl transition-all duration-300">
+<!-- Header Group -->
+<div class="mb-8">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-1">
+                    Initialize Session
+                </h2>
+<p class="font-body-md text-on-surface-variant opacity-80">
+                    Verify credentials to bridge neural links.
+                </p>
+</div>
+<!-- Login Form -->
+<form class="space-y-6" onsubmit="return false">
+<!-- Sync Email Field -->
+<div class="space-y-2 group">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center gap-2" for="email">
+<span class="material-symbols-outlined text-[14px]">alternate_email</span>
+                        Sync Email
+                    </label>
+<div class="input-glow border border-outline-variant/40 bg-input-base/50 rounded-lg overflow-hidden transition-all duration-200">
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3 px-4 text-on-surface placeholder:text-outline/40 font-code-md" id="email" placeholder="operator@nimb.io" type="email"/>
+</div>
+</div>
+<!-- Access Token Field -->
+<div class="space-y-2 group">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase flex items-center gap-2" for="token">
+<span class="material-symbols-outlined text-[14px]">key</span>
+                            Access Token
+                        </label>
+<a class="font-metadata text-metadata text-primary hover:text-primary-container transition-colors uppercase tracking-tight" href="#">Recover</a>
+</div>
+<div class="input-glow border border-outline-variant/40 bg-input-base/50 rounded-lg overflow-hidden transition-all duration-200">
+<input class="w-full bg-transparent border-none focus:ring-0 text-body-md py-3 px-4 text-on-surface placeholder:text-outline/40 font-code-md" id="token" placeholder="••••••••••••••••" type="password"/>
+</div>
+</div>
+<!-- Persistence Option -->
+<div class="flex items-center gap-3">
+<div class="relative flex items-center">
+<input class="w-4 h-4 rounded border-outline-variant/50 bg-input-base text-primary focus:ring-primary focus:ring-offset-background transition-all" id="persistent" type="checkbox"/>
+</div>
+<label class="font-body-md text-on-surface-variant cursor-pointer select-none" for="persistent">
+                        Persistent link
+                    </label>
+</div>
+<!-- Primary Action -->
+<button class="primary-gradient w-full py-4 rounded-lg text-on-primary-fixed font-headline-sm text-[16px] font-bold tracking-wider flex items-center justify-center gap-3 active:scale-95 transition-all duration-150" type="submit">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">login</span>
+                    ESTABLISH CONNECTION
+                </button>
+<!-- Divider -->
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-outline-variant/20"></div>
+<span class="flex-shrink mx-4 font-label-caps text-label-caps text-outline/50">OR</span>
+<div class="flex-grow border-t border-outline-variant/20"></div>
+</div>
+<!-- Secondary Social Action -->
+<button class="w-full py-3 rounded-lg border border-outline-variant/40 hover:bg-surface-bright/50 transition-colors flex items-center justify-center gap-3 group active:scale-[0.98]" type="button">
+<svg class="w-5 h-5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+</svg>
+<span class="font-body-md text-on-surface font-medium group-hover:text-primary transition-colors">Login via Google</span>
+</button>
+</form>
+</section>
+<!-- Footer Meta -->
+<footer class="mt-8 flex justify-between items-center font-metadata text-metadata text-outline/40 uppercase tracking-widest px-2">
+<span>Terminal: 220.31.0</span>
+<span class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                Protocol Secured
+            </span>
+</footer>
+</main>
+<!-- Visual Artifacts: Glitch Lines -->
+<div class="fixed top-20 left-10 w-12 h-[2px] bg-primary opacity-30 blur-[1px]"></div>
+<div class="fixed top-22 left-14 w-8 h-[2px] bg-secondary opacity-20 blur-[1px]"></div>
+<div class="fixed bottom-40 right-20 w-16 h-[2px] bg-primary/40"></div>
+<script>
+        // Micro-interaction: Mouse parallax on the container
+        document.addEventListener('mousemove', (e) => {
+            const container = document.querySelector('main');
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
+            container.style.transform = `perspective(1000px) rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        // Input focus states for the whole form
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.closest('.input-glow').classList.add('border-primary/60');
+            });
+            input.addEventListener('blur', () => {
+                input.closest('.input-glow').classList.remove('border-primary/60');
+            });
+        });
+    </script>
+</body></html>

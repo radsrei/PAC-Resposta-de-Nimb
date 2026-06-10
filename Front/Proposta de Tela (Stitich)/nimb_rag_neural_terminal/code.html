@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NIMB_OS | Neural Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "glitch-white": "#F0EEF8",
+                        "surface-container-highest": "#34343c",
+                        "surface-tint": "#d8b9ff",
+                        "surface-bright": "#393840",
+                        "inverse-surface": "#e4e1ec",
+                        "primary-container": "#ae71ff",
+                        "error": "#ffb4ab",
+                        "primary-fixed-dim": "#d8b9ff",
+                        "surface-container-low": "#1b1b22",
+                        "outline": "#978da0",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "surface": "#13131a",
+                        "on-secondary": "#00391f",
+                        "secondary-fixed-dim": "#43e090",
+                        "primary": "#d8b9ff",
+                        "surface-dim": "#13131a",
+                        "on-tertiary": "#462a00",
+                        "tertiary-fixed-dim": "#ffb95d",
+                        "tertiary-container": "#c68218",
+                        "tertiary": "#ffb95d",
+                        "on-error": "#690005",
+                        "outline-variant": "#4b4454",
+                        "neon-green-dim": "rgba(57, 217, 138, 0.25)",
+                        "primary-fixed": "#eedcff",
+                        "tertiary-fixed": "#ffddb7",
+                        "surface-container": "#1f1f26",
+                        "secondary-fixed": "#66feaa",
+                        "surface-variant": "#34343c",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#e4e1ec",
+                        "input-base": "#1A1A2E",
+                        "on-tertiary-container": "#3d2400",
+                        "on-secondary-container": "#004728",
+                        "secondary": "#43e090",
+                        "background": "#13131a",
+                        "secondary-container": "#00c175",
+                        "on-surface": "#e4e1ec",
+                        "neon-purple-dim": "rgba(162, 89, 255, 0.2)",
+                        "on-primary-fixed": "#290055",
+                        "surface-container-lowest": "#0e0e15",
+                        "inverse-primary": "#7d2dd9",
+                        "on-primary-container": "#3c0076",
+                        "deep-surface": "#13131F",
+                        "on-primary": "#450086",
+                        "on-tertiary-fixed": "#2a1700",
+                        "on-surface-variant": "#cec2d7",
+                        "inverse-on-surface": "#303038",
+                        "on-secondary-fixed": "#002110",
+                        "on-primary-fixed-variant": "#6300bb",
+                        "surface-container-high": "#2a2931",
+                        "on-secondary-fixed-variant": "#00522f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "unit": "4px",
+                        "container-max": "1280px",
+                        "gutter": "20px",
+                        "margin-desktop": "28px"
+                    },
+                    "fontFamily": {
+                        "code-md": ["JetBrains Mono"],
+                        "metadata": ["JetBrains Mono"],
+                        "body-md": ["Space Grotesk"],
+                        "headline-xl": ["Space Grotesk"],
+                        "body-lg": ["Space Grotesk"],
+                        "label-caps": ["Space Grotesk"],
+                        "headline-sm": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "code-md": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "metadata": ["11px", {"lineHeight": "1", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "1.65", "fontWeight": "400"}],
+                        "label-caps": ["10px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                        "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #13131a;
+            color: #e4e1ec;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden;
+        }
+
+        .glitch-border {
+            position: relative;
+        }
+
+        .glitch-border::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            background: linear-gradient(45deg, transparent, #d8b9ff, #43e090, transparent);
+            z-index: -1;
+            opacity: 0.3;
+            animation: glitch-anim 4s infinite linear;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(216, 185, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .rim-light {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(216, 185, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-full">
+<!-- Sidebar Lateral -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 h-full z-40 pt-20 w-[260px] bg-surface-container-lowest border-r border-outline-variant shadow-none" id="side-nav">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg overflow-hidden border border-primary/30">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyiMlQCCNGMKBRJ8SvUBsBfzRDRU-3Xmxjn_iBT340BQas0D4LQJtWKqtIrgc2BRfykCme1lZIoXE1f_GID2RQet2DSBbACASwDHbtQrfsnn453-z4UZAVa--dp9DwGkBzd2Q6zpVjDIcocpy8RAR1rHlyR5kxYpuz32SLfwFKZQg1YqnBOet03QktqYiIcAx-YuzrbsUELAwBmJoMlIZt_izhy7tcg6sYM0t5E_9swk8RNo-tZV6-6n7tBMlXXtw3JXAc-eRQ8t4"/>
+</div>
+<div>
+<h3 class="font-headline-sm text-[14px] text-primary">Operator_01</h3>
+<p class="font-metadata text-metadata uppercase tracking-widest text-secondary">Sync Status: Active</p>
+</div>
+</div>
+<button class="w-full mt-6 py-3 px-4 flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-secondary text-on-primary-container font-label-caps text-label-caps uppercase tracking-[0.2em] rounded-lg hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-sm">add_box</span>
+            New Flux
+        </button>
+</div>
+<nav class="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-1">
+<div class="px-4 py-2 opacity-40 font-metadata text-metadata uppercase tracking-tighter">Recent Synapses</div>
+<a class="bg-neon-purple-dim text-primary border-l-2 border-primary py-3 px-4 flex items-center gap-3 hover:bg-surface-container-highest/50 transition-transform hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span class="font-metadata text-metadata uppercase tracking-widest truncate">Root_Exploit_Nimb</span>
+</a>
+<a class="text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:bg-surface-container-highest/50 transition-transform hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span class="font-metadata text-metadata uppercase tracking-widest truncate">Memory Core #77</span>
+</a>
+<a class="text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:bg-surface-container-highest/50 transition-transform hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined text-[18px]">share_reviews</span>
+<span class="font-metadata text-metadata uppercase tracking-widest truncate">Neural Links_V2</span>
+</a>
+<a class="text-on-surface-variant py-3 px-4 flex items-center gap-3 hover:bg-surface-container-highest/50 transition-transform hover:translate-x-1 group" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span class="font-metadata text-metadata uppercase tracking-widest truncate">System Logs_2402</span>
+</a>
+</nav>
+<div class="mt-auto p-4 border-t border-outline-variant/30 space-y-1">
+<a class="flex items-center gap-3 py-2 px-4 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">menu_book</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">Documentation</span>
+</a>
+<a class="flex items-center gap-3 py-2 px-4 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">settings_suggest</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">Terminal Settings</span>
+</a>
+<div class="mt-4 p-3 bg-surface-container-high rounded-xl border border-outline-variant/20">
+<p class="text-[10px] uppercase font-bold text-secondary mb-1">PRO ACCESS</p>
+<button class="w-full py-2 bg-surface-bright text-on-surface font-metadata text-[10px] rounded hover:bg-surface-container-highest transition-colors">UPGRADE KERNEL</button>
+</div>
+</div>
+</aside>
+<!-- Content Area -->
+<main class="flex-1 flex flex-col relative md:ml-[260px] w-full h-full bg-background">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center px-margin-desktop h-16 w-full fixed z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant shadow-[0_0_15px_rgba(216,185,255,0.1)] left-0 md:left-[260px] md:w-[calc(100%-260px)]">
+<div class="flex items-center gap-4">
+<div class="md:hidden">
+<span class="material-symbols-outlined text-primary">menu</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">NIMB_OS v1.0</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-high border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-metadata text-metadata text-secondary">CONNECTED</span>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-bright transition-colors active:scale-95 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-bright transition-colors active:scale-95 rounded-full">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Chat Canvas -->
+<section class="flex-1 flex flex-col pt-20 pb-32 overflow-y-auto custom-scrollbar px-4 md:px-gutter max-w-container-max mx-auto w-full">
+<div class="flex flex-col gap-6 py-8" id="chat-messages">
+<!-- System Intro Card (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+<div class="md:col-span-2 p-6 rounded-2xl bg-surface-container border border-outline-variant/30 rim-light relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+<h2 class="font-headline-sm text-primary mb-2">Neural Interface Online</h2>
+<p class="text-on-surface-variant font-body-md">Nimb instance #402 is synchronized. Ready to traverse your data clusters and provide optimized synthetic reasoning.</p>
+<div class="mt-4 flex gap-2">
+<span class="px-2 py-1 bg-neon-purple-dim text-primary rounded font-code-md text-[10px]">RAG_ENGINE: ON</span>
+<span class="px-2 py-1 bg-neon-green-dim text-secondary rounded font-code-md text-[10px]">LATENCY: 42ms</span>
+</div>
+</div>
+<div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/30 rim-light flex flex-col items-center justify-center text-center">
+<div class="w-16 h-16 mb-4 relative">
+<img alt="Nimb Logo" class="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(216,185,255,0.5)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkFe9ZAzJNAFwUMvvXQJ8DFlbi04KBSbiT2M7eFIufS9c1WKvZVfpJ2RRl5uHvjN6O_5o4V23tGp-Fg5Vre4ZJYdjpScnAg2d8eYduzInFdna54FPuA3g3j2WwTjNwGDo7x9uARsQaCpXHEszB3ij6E7AgZ2XmiNcH46BjSAkuGLCxVTde6d-YxMiB5YtYrADKLqLzS5n1jVyqaIPa1fPbpF14rMKqo94XYvIsP8Q4ZtwUzek7GQYiD0cN_CHcdCrSUnscd9Fshok"/>
+</div>
+<p class="font-metadata text-[10px] text-on-surface-variant uppercase tracking-widest">Core Consciousness</p>
+</div>
+</div>
+<!-- AI Message -->
+<div class="flex items-start gap-4 max-w-[85%]">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-primary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="bg-surface-container border-l-4 border-primary p-4 rounded-tr-2xl rounded-br-2xl rounded-bl-xl glow-purple">
+<p class="font-body-md text-on-surface">System query received. Analyzing context from <span class="text-primary font-bold">Neural Links</span>. How shall we expand your memory today?</p>
+<div class="mt-2 text-primary/40 font-metadata text-[10px]">NIMB_V1 // 12:44:02</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex items-start gap-4 max-w-[85%] self-end flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-secondary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-xl">account_circle</span>
+</div>
+<div class="bg-surface-container-high border-r-4 border-secondary p-4 rounded-tl-2xl rounded-bl-2xl rounded-br-xl">
+<p class="font-body-md text-on-surface">Diga, meu pequeno ser perdido... Qual é o status do kernel?</p>
+<div class="mt-2 text-secondary/40 font-metadata text-[10px] text-right">OPERATOR // 12:45:10</div>
+</div>
+</div>
+<!-- AI Message with Result Box -->
+<div class="flex items-start gap-4 max-w-[85%]">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-primary/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container border-l-4 border-primary p-4 rounded-tr-2xl rounded-br-2xl rounded-bl-xl glow-purple">
+<p class="font-body-md text-on-surface">Processando resposta. O Kernel do projeto Nimb apresenta estabilidade de 98.4%. O processamento RAG está otimizado para os últimos documentos injetados.</p>
+</div>
+<!-- Return Box -->
+<div class="p-5 bg-primary/20 border-2 border-secondary rounded-xl backdrop-blur-sm glitch-border">
+<h4 class="font-headline-sm text-secondary mb-1">Texto de Retorno</h4>
+<p class="text-on-surface font-body-md">Análise completa: O "Cyber-Chaos" está dentro dos parâmetros operacionais.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Input Section -->
+<footer class="fixed bottom-0 left-0 md:left-[260px] right-0 p-4 md:px-gutter md:py-6 bg-background/90 backdrop-blur-md z-40 border-t border-outline-variant/30">
+<div class="max-w-container-max mx-auto">
+<div class="relative flex items-end gap-3 group">
+<div class="flex-1 bg-input-base rounded-2xl border border-neon-purple-dim focus-within:border-primary transition-all shadow-[0_0_0_0px_rgba(162,89,255,0)] focus-within:shadow-[0_0_15px_rgba(162,89,255,0.15)] relative overflow-hidden">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-on-surface font-body-md py-4 pl-12 pr-12 resize-none max-h-40 custom-scrollbar" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'" placeholder="Diga, meu pequeno ser perdido..." rows="1"></textarea>
+<button class="absolute left-3 bottom-3 p-1.5 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="absolute right-3 bottom-3 p-1.5 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+</div>
+<button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-primary to-secondary text-on-primary-container shadow-lg shadow-primary/20 hover:scale-110 active:scale-95 transition-all">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<div class="mt-2 flex justify-center gap-4">
+<button class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-metadata text-[10px] hover:border-primary hover:text-primary transition-all">ANALISAR KERNEL</button>
+<button class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-metadata text-[10px] hover:border-primary hover:text-primary transition-all">LIMPAR MEMÓRIA</button>
+<button class="px-3 py-1 rounded-full border border-outline-variant text-on-surface-variant font-metadata text-[10px] hover:border-primary hover:text-primary transition-all">MODO CHAOS</button>
+</div>
+</div>
+</footer>
+</main>
+<script>
+    // Auto-scroll chat to bottom
+    const chatCanvas = document.querySelector('section');
+    chatCanvas.scrollTop = chatCanvas.scrollHeight;
+
+    // Interactive UI logic
+    document.querySelectorAll('button, a').forEach(el => {
+        el.addEventListener('mousedown', () => {
+            el.style.transform = 'scale(0.95)';
+        });
+        el.addEventListener('mouseup', () => {
+            el.style.transform = '';
+        });
+        el.addEventListener('mouseleave', () => {
+            el.style.transform = '';
+        });
+    });
+</script>
+</body></html>
