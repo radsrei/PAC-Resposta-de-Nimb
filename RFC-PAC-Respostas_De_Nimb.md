@@ -6,12 +6,12 @@
 
 # Identificação
 
-![Nimb](/Front/Icon%20-%20Nimb.png)
+![Nimb](/Front/Icon%20-%20Nimb.png "Símbolo de Nimb")
 
 - **Título do Projeto:**  
   Respostas de Nimb.
 
-  ![Nimb-](/Front/Nimb%20-%20Imagem.jpeg)
+  ![Nimb-](/Front/Nimb%20-%20Imagem.jpeg "Arte Oficial do Personagem")
 
 
 - **Linha de Projeto (Direction):**  
@@ -93,22 +93,8 @@ Pode incluir:
 
 
 - observação de processos
+[Resultados Encontrados](#91-resultados-de-pesquisa)
 
-Inclua:
-
-- número de pessoas entrevistadas
->26 respostas Obtidas até a data de 23/05/26
-- principais dores identificadas
->![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
-
-
-
-- padrões observados
->As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
-
->![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
-
->![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
 
 Adicione **tabelas, gráficos ou prints**.
 
@@ -704,13 +690,13 @@ Defina os principais marcos de desenvolvimento.
 
 | Marco | Descrição                             | Prazo    |
 | ----- | ------------------------------------- | -------- |
-| M    | Fragmentar livros e construir regras de chunks | Semana - |
-| M    | Estruturar Meta dados para pesquisa e validação| Semana - |
-| M    | Estruturar banco de dados  | Semana - |
-| M    | Gerar estrutura e banco (vetorial)    | Semana - |
-| M    | Desenvolver lógica para recuperar chunks | Semana |
-| M    | Gerar regras de segurança (Alucinação) | Semana - |
-| M    | Fragmentar primeira estrutura de Front | Semana - |
+| []    | Fragmentar livros e construir regras de chunks | Semana - |
+| []    | Estruturar Meta dados para pesquisa e validação| Semana - |
+| []    | Estruturar banco de dados  | Semana - |
+| []    | Gerar estrutura e banco (vetorial)    | Semana - |
+| []    | Desenvolver lógica para recuperar chunks | Semana |
+| []    | Gerar regras de segurança (Alucinação) | Semana - |
+| []    | Fragmentar primeira estrutura de Front | Semana - |
 
 
 
@@ -727,6 +713,12 @@ Inclua:
 - artigos
 - documentação técnica
 - ferramentas utilizadas
+>Stitich
+>Ferramenta para Prototipação de tela
+>>[Stitich](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+>Figma
+>Construção de base de telas e como as informações serão apresentadas e definidas
+>>[Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
 - repositórios
 
 ---
@@ -735,11 +727,26 @@ Inclua:
 
 Podem incluir:
 
-- mockups adicionais
-- resultados de pesquisa
+
+## 9.1 resultados de pesquisa
+>[Formulário](https://forms.cloud.microsoft/r/DxYnjK8A9F)
+número de pessoas entrevistadas
+>26 respostas Obtidas até a data de 23/05/26
+ principais dores identificadas
+>![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
+
+- padrões observados
+>As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
+>![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
+
+>![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
+
+
 - entrevistas com usuários
 - diagramas complementares
 - links para protótipos ou repositórios
+- mockups adicionais
+
 
 Sempre que possível inclua **imagens, protótipos ou referências visuais**.
 
