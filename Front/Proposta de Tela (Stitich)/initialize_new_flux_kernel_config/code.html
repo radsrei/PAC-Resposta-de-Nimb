@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NIMB_OS | Initialize New Flux</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        :root {
+            --purple-500: #ae71ff;
+            --green-500: #43e090;
+        }
+
+        body {
+            background-color: #13131a;
+            color: #e4e1ec;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .glitch-border {
+            position: relative;
+        }
+
+        .glitch-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #d8b9ff, transparent, #43e090);
+            z-index: -1;
+            opacity: 0.3;
+            filter: blur(4px);
+        }
+
+        .gradient-button {
+            background: linear-gradient(135deg, #ae71ff 0%, #00c175 100%);
+            box-shadow: 0 0 20px rgba(174, 113, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .gradient-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(174, 113, 255, 0.5);
+        }
+
+        .scan-line {
+            height: 2px;
+            background: rgba(216, 185, 255, 0.1);
+            width: 100%;
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan {
+            from { top: 0; }
+            to { top: 100%; }
+        }
+
+        .glass-panel {
+            background: rgba(31, 31, 38, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(216, 185, 255, 0.1);
+        }
+
+        .flux-type-card {
+            transition: all 0.2s ease;
+        }
+
+        .flux-type-card:hover {
+            border-color: #d8b9ff;
+            background: rgba(162, 89, 255, 0.05);
+        }
+
+        .flux-type-card.active {
+            border-color: #d8b9ff;
+            background: rgba(162, 89, 255, 0.1);
+            box-shadow: inset 0 0 10px rgba(162, 89, 255, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary": "#00391f",
+                      "surface": "#13131a",
+                      "secondary-fixed-dim": "#43e090",
+                      "tertiary-fixed": "#ffddb7",
+                      "surface-container-low": "#1b1b22",
+                      "inverse-surface": "#e4e1ec",
+                      "surface-bright": "#393840",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "secondary-container": "#00c175",
+                      "tertiary-container": "#c68218",
+                      "on-surface": "#e4e1ec",
+                      "surface-container-high": "#2a2931",
+                      "on-tertiary": "#462a00",
+                      "on-secondary-fixed": "#002110",
+                      "secondary-fixed": "#66feaa",
+                      "inverse-on-surface": "#303038",
+                      "glitch-white": "#F0EEF8",
+                      "outline-variant": "#4b4454",
+                      "on-secondary-container": "#004728",
+                      "secondary": "#43e090",
+                      "neon-green-dim": "rgba(57, 217, 138, 0.25)",
+                      "on-background": "#e4e1ec",
+                      "tertiary": "#ffb95d",
+                      "primary-fixed-dim": "#d8b9ff",
+                      "primary-fixed": "#eedcff",
+                      "surface-container": "#1f1f26",
+                      "primary": "#d8b9ff",
+                      "on-primary-fixed": "#290055",
+                      "primary-container": "#ae71ff",
+                      "on-tertiary-container": "#3d2400",
+                      "deep-surface": "#13131F",
+                      "surface-dim": "#13131a",
+                      "on-surface-variant": "#cec2d7",
+                      "background": "#13131a",
+                      "on-primary": "#450086",
+                      "error-container": "#93000a",
+                      "neon-purple-dim": "rgba(162, 89, 255, 0.2)",
+                      "tertiary-fixed-dim": "#ffb95d",
+                      "surface-container-highest": "#34343c",
+                      "surface-variant": "#34343c",
+                      "on-error": "#690005",
+                      "outline": "#978da0",
+                      "surface-container-lowest": "#0e0e15",
+                      "error": "#ffb4ab",
+                      "inverse-primary": "#7d2dd9",
+                      "on-tertiary-fixed": "#2a1700",
+                      "on-primary-fixed-variant": "#6300bb",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#00522f",
+                      "surface-tint": "#d8b9ff",
+                      "on-primary-container": "#3c0076",
+                      "input-base": "#1A1A2E"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "28px",
+                      "gutter": "20px",
+                      "margin-mobile": "16px",
+                      "container-max": "1280px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-sm": ["Space Grotesk"],
+                      "code-md": ["JetBrains Mono"],
+                      "body-lg": ["Space Grotesk"],
+                      "headline-lg": ["Space Grotesk"],
+                      "body-md": ["Space Grotesk"],
+                      "metadata": ["JetBrains Mono"],
+                      "label-caps": ["Space Grotesk"],
+                      "headline-xl": ["Space Grotesk"]
+              },
+              "fontSize": {
+                      "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "code-md": ["13px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "1.65", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "metadata": ["11px", {"lineHeight": "1", "fontWeight": "400"}],
+                      "label-caps": ["10px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}],
+                      "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- TopAppBar Execution -->
+<header class="bg-background/80 backdrop-blur-xl text-primary font-headline-sm text-headline-sm border-b border-outline-variant shadow-[0_0_15px_rgba(216,185,255,0.1)] flex justify-between items-center px-margin-desktop h-16 w-full fixed z-50 top-0">
+<div class="font-headline-lg text-headline-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">NIMB_OS v1.0</div>
+<div class="hidden md:flex items-center gap-8">
+<span class="text-on-surface-variant hover:bg-surface-bright transition-colors px-3 py-1 rounded cursor-pointer">Network</span>
+<span class="text-on-surface-variant hover:bg-surface-bright transition-colors px-3 py-1 rounded cursor-pointer">History</span>
+<span class="text-primary hover:bg-surface-bright transition-colors px-3 py-1 rounded cursor-pointer">Kernel</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer active:scale-95 duration-150">settings</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer active:scale-95 duration-150">logout</span>
+</div>
+</header>
+<!-- SideNavBar Execution -->
+<nav class="hidden md:flex flex-col fixed left-0 top-0 h-full z-40 pt-20 bg-surface-container-lowest border-r border-outline-variant w-[260px] flat">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary">terminal</span>
+</div>
+<div>
+<p class="font-metadata text-metadata uppercase tracking-widest text-primary">Operator_01</p>
+<p class="text-[9px] text-secondary font-mono">Sync Status: Active</p>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="bg-neon-purple-dim text-primary border-l-2 border-primary py-3 px-4 hover:bg-surface-container-highest/50 cursor-pointer flex items-center gap-3 transition-transform hover:translate-x-1">
+<span class="material-symbols-outlined">add_box</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">New Flux</span>
+</div>
+<div class="text-on-surface-variant py-3 px-4 hover:bg-surface-container-highest/50 cursor-pointer flex items-center gap-3 transition-transform hover:translate-x-1">
+<span class="material-symbols-outlined">history</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">Memory Core</span>
+</div>
+<div class="text-on-surface-variant py-3 px-4 hover:bg-surface-container-highest/50 cursor-pointer flex items-center gap-3 transition-transform hover:translate-x-1">
+<span class="material-symbols-outlined">share_reviews</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">Neural Links</span>
+</div>
+<div class="text-on-surface-variant py-3 px-4 hover:bg-surface-container-highest/50 cursor-pointer flex items-center gap-3 transition-transform hover:translate-x-1">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-metadata text-metadata uppercase tracking-widest">System Logs</span>
+</div>
+</div>
+<div class="mt-auto p-6 space-y-4">
+<button class="w-full py-3 border border-secondary text-secondary font-metadata text-metadata tracking-widest hover:bg-secondary/10 transition-colors uppercase">
+                UPGRADE KERNEL
+            </button>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface-variant text-[10px] uppercase font-mono hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-sm">menu_book</span> Documentation
+                </div>
+<div class="flex items-center gap-2 text-on-surface-variant text-[10px] uppercase font-mono hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-sm">settings_suggest</span> Terminal Settings
+                </div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="md:ml-[260px] pt-16 min-h-screen relative overflow-hidden">
+<!-- Background Stylized Character -->
+<div class="absolute right-0 bottom-0 w-[600px] h-[600px] opacity-10 pointer-events-none mix-blend-screen overflow-hidden">
+<img alt="Nimb Character Background" class="w-full h-full object-contain object-right-bottom scale-125 translate-x-1/4 translate-y-1/4 grayscale contrast-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-1GCmGV8Yk5M1SHLveoEx7K2qzUsvcuaRkt7Jq4mvpHTWtWNtj-FxPeUGTUXMQ4YDYeFldzhT0DmmX-f43AlyYsyaPN7_ffWJX8TxoNseiyJeocKa8Bh0p1Gpr9FwdPLlU14HjczksqkphE6TYPd1jbgYQXzra5APhnbo7FrsVQPKhTHO0CB4j9h7qOba-7m7EFJvYcZTrdvvlbZQzPUs0C1ddP0tfO-ZOeI2BSo792XTEXYk2iI98TQSgvQlcFd4WFd4aVdguDQ"/>
+</div>
+<div class="scan-line"></div>
+<!-- Create Flux Modal / Content Area -->
+<div class="max-w-4xl mx-auto px-6 py-12 relative z-20">
+<div class="flex flex-col gap-2 mb-10">
+<div class="flex items-center gap-2">
+<span class="h-1 w-8 bg-primary"></span>
+<span class="font-metadata text-metadata uppercase tracking-[0.3em] text-primary">Process Initialization</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-primary">Initialize New Flux</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Configure your neural subprocess parameters to deploy a new persistent computational instance within the Nimb ecosystem.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Main Form Section -->
+<div class="lg:col-span-8 space-y-8">
+<div class="glass-panel p-8 rounded-xl glitch-border space-y-6">
+<!-- Flux Name -->
+<div class="space-y-2">
+<label class="font-metadata text-metadata uppercase tracking-widest text-secondary block">Flux Name</label>
+<input class="w-full bg-input-base border border-neon-purple-dim rounded-lg p-4 font-code-md text-code-md text-primary focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all placeholder:opacity-30" placeholder="ENTER_ENTITY_ID..." type="text"/>
+</div>
+<!-- Flux Description -->
+<div class="space-y-2">
+<label class="font-metadata text-metadata uppercase tracking-widest text-secondary block">Flux Description</label>
+<textarea class="w-full bg-input-base border border-neon-purple-dim rounded-lg p-4 font-code-md text-code-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all placeholder:opacity-30 resize-none" placeholder="DEFINE_OBJECTIVE_PARAMETERS..." rows="4"></textarea>
+</div>
+</div>
+<!-- Flux Type Selection -->
+<div class="space-y-4">
+<label class="font-metadata text-metadata uppercase tracking-widest text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">hub</span> Select Flux Archetype
+                        </label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Option 1 -->
+<div class="flux-type-card active border border-outline-variant p-5 rounded-xl cursor-pointer flex flex-col gap-3 group" onclick="selectType(this)">
+<span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform">analytics</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Data Analysis</h3>
+<p class="font-metadata text-metadata text-on-surface-variant/70 leading-relaxed">High-throughput recursive statistical crunching.</p>
+</div>
+<!-- Option 2 -->
+<div class="flux-type-card border border-outline-variant p-5 rounded-xl cursor-pointer flex flex-col gap-3 group" onclick="selectType(this)">
+<span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform">data_object</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Code Generation</h3>
+<p class="font-metadata text-metadata text-on-surface-variant/70 leading-relaxed">Synthesizing optimized logic fragments.</p>
+</div>
+<!-- Option 3 -->
+<div class="flux-type-card border border-outline-variant p-5 rounded-xl cursor-pointer flex flex-col gap-3 group" onclick="selectType(this)">
+<span class="material-symbols-outlined text-secondary group-hover:scale-110 transition-transform">psychology</span>
+<h3 class="font-headline-sm text-headline-sm text-primary">Neural Simulation</h3>
+<p class="font-metadata text-metadata text-on-surface-variant/70 leading-relaxed">Modeling complex behavioral nodes.</p>
+</div>
+</div>
+</div>
+<!-- Submit Action -->
+<div class="pt-6 flex items-center justify-between">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="material-symbols-outlined animate-pulse text-secondary">sensors</span>
+<span class="font-metadata text-metadata uppercase">Kernel Ready for deployment</span>
+</div>
+<button class="gradient-button font-headline-sm text-headline-sm text-on-primary-container py-4 px-10 rounded-full tracking-wider flex items-center gap-3">
+                            ACTIVATE FLUX
+                            <span class="material-symbols-outlined">bolt</span>
+</button>
+</div>
+</div>
+<!-- Sidebar Metadata/Tips -->
+<div class="lg:col-span-4 space-y-gutter">
+<div class="glass-panel p-6 rounded-xl border-l-2 border-l-secondary">
+<h4 class="font-metadata text-metadata uppercase tracking-widest text-secondary mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">info</span> Operator Tip
+                        </h4>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                            Neural Simulation fluxes require <span class="text-primary">2.4TB</span> of buffer space in the Memory Core. Ensure your kernel is upgraded before high-load execution.
+                        </p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant/30 bg-surface-container-low/40">
+<h4 class="font-metadata text-metadata uppercase tracking-widest text-primary mb-4">System Metrics</h4>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="font-metadata text-metadata text-on-surface-variant">SYNC_LATENCY</span>
+<span class="font-code-md text-code-md text-secondary">14ms</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[85%]"></div>
+</div>
+<div class="flex justify-between items-end">
+<span class="font-metadata text-metadata text-on-surface-variant">THREAD_CAPACITY</span>
+<span class="font-code-md text-code-md text-primary">0/128</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[10%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Execution (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center h-16 px-4 bg-surface-container/90 backdrop-blur-md border-t border-outline-variant rounded-t-xl shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 active:scale-90 transition-all">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-caps text-label-caps">Chat</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 active:scale-90 transition-all">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-label-caps text-label-caps">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 active:scale-90 transition-all">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-caps text-label-caps">Network</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary scale-110 active:scale-90 transition-all">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</div>
+</nav>
+<script>
+        function selectType(element) {
+            document.querySelectorAll('.flux-type-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Subtle sound or haptic feedback mock
+            console.log('Archetype mapped: ' + element.querySelector('h3').innerText);
+        }
+
+        // Simple Glitch Micro-interaction
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('glitch-active');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('glitch-active');
+            });
+        });
+    </script>
+</body></html>

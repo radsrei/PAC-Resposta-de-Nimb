@@ -713,13 +713,17 @@ Inclua:
 - artigos
 - documentação técnica
 - ferramentas utilizadas
->Stitich
+>Stitch
 >Ferramenta para Prototipação de tela
->>[Stitich](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+>>[Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
 >Figma
 >Construção de base de telas e como as informações serão apresentadas e definidas
 >>[Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
 - repositórios
+
+- ferramentas de IA
+>Validação encaminhada pelo Professor Diogo
+>[Validação RFC](https://chatgpt.com/g/g-6a277857474081919777d857496ce513-avaliador-de-app-gdd-portfolio-catolica-sc)
 
 ---
 
@@ -730,7 +734,7 @@ Podem incluir:
 
 ## 9.1 resultados de pesquisa
 >[Formulário](https://forms.cloud.microsoft/r/DxYnjK8A9F)
-número de pessoas entrevistadas
+Número de pessoas entrevistadas
 >26 respostas Obtidas até a data de 23/05/26
  principais dores identificadas
 >![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
