@@ -644,16 +644,33 @@ Para cada tecnologia explique **por que ela foi escolhida**.
 | **Gemini/Ollama** | LLM Provider | Modelos de linguagem de alta qualidade com suporte a prompts longos e contexto estruturado, adequados para respostas precisas sobre regras. |
 | **PostgreSQL** | Banco de Dados | Banco relacional robusto, open-source e bem documentado. Adequado para persistência de logs e avaliações com suporte a consultas analíticas. |
 | **React + Vite** | Frontend | Biblioteca moderna para SPAs, com ecossistema maduro e build rápido via Vite. Facilita criação de interfaces responsivas. |
+| **Stitch** | Frontend | Ferramenta para Prototipação de tela|
+| **Figma** | Frontend | Construção de base de telas e como as informações serão apresentadas e definidas|
+
+>Ferramenta para Prototipação de tela
+>>Stitch![Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+
+>Construção de base de telas e como as informações serão apresentadas e definidas
+>>Figma![Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
 
 ---
 
->Sugestões e Tecnologias a serem validadas e consideradas
+
+># Sugestões e Tecnologias a serem validadas e consideradas
 >Amazon AWS - S3 ![FerramentaS3](https://aws.amazon.com/pt/s3/?did=ap_card&trk=ap_card&sc_channel=ps)
 >>Buscar informações de banco de dados imagens e coisas do tipo
+
 >Open Router ![GerenciarChavesAPI](https://openrouter.ai/)
 >>Gerenciamento de API Keys para uso das IAs, ferramenta para buscar das IAs gratuitas reduzir consumo
+
 >Amazon AWS - Iam ![GerenciarAcessoAWS](https://aws.amazon.com/pt/iam/)
 >>
+
+>Stitch![Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+>>Ferramenta para Prototipação de tela
+
+>Figma![Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
+>>Construção de base de telas e como as informações serão apresentadas e definidas
 
 # 6. Segurança e Privacidade
 
@@ -713,12 +730,7 @@ Inclua:
 - artigos
 - documentação técnica
 - ferramentas utilizadas
->Stitch
->Ferramenta para Prototipação de tela
->>[Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
->Figma
->Construção de base de telas e como as informações serão apresentadas e definidas
->>[Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
+
 - repositórios
 
 - ferramentas de IA
