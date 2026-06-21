@@ -613,9 +613,187 @@ Apresente:
 - esquema relacional
 - modelo de documentos (NoSQL)
 
-Inclua **diagramas do modelo de dados**.
+### 5.2.1 Esquema Relacional (PostgreSQL)
+
+| Tabela | Finalidade |
+| :--- | :--- |
+| `fonte_oficial` | Catálogo dos livros/suplementos/erratas oficiais de Tormenta20 que alimentam a base (RN01). |
+| `documento_indexado` | Metadados de cada chunk de texto extraído de uma fonte e indexado no banco vetorial. |
+| `categoria` | Taxonomia de assuntos (Magias, Combate, Classes, Condições, Itens etc.) usada para filtrar a busca. |
+| `documento_categoria` | Associação N:N entre chunks e categorias. |
+| `interacao` | Log estruturado de cada pergunta/resposta (passo 10 do fluxo principal, Seção 3.1). |
+| `interacao_fonte` | Associação N:N entre uma interação e os chunks citados como fonte da resposta (RN02). |
+| `avaliacao` | Nota de 1 a 5 estrelas dada pelo usuário a uma resposta (RF, Tela 3). |
+| `administrador` | Conta dos curadores responsáveis por enviar/atualizar documentos na base de conhecimento. |
+
+```sql
+CREATE TABLE fonte_oficial (
+    id              SERIAL PRIMARY KEY,
+    titulo          VARCHAR(150) NOT NULL,
+    tipo            VARCHAR(30)  NOT NULL,      -- livro | suplemento | errata
+    editora         VARCHAR(80)  NOT NULL DEFAULT 'Jambô Editora',
+    versao          VARCHAR(20),
+    data_publicacao DATE
+);
+
+CREATE TABLE administrador (
+    id           SERIAL PRIMARY KEY,
+    google_id    VARCHAR(120) UNIQUE NOT NULL,
+    nome         VARCHAR(120) NOT NULL,
+    email        VARCHAR(150) NOT NULL,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE documento_indexado (
+    id              SERIAL PRIMARY KEY,
+    fonte_id        INTEGER NOT NULL REFERENCES fonte_oficial(id),
+    admin_id        INTEGER REFERENCES administrador(id),
+    pagina          INTEGER,
+    secao           VARCHAR(150),
+    texto_chunk     TEXT NOT NULL,
+    num_tokens      INTEGER NOT NULL,
+    hash_conteudo   VARCHAR(64) NOT NULL,        -- detecta duplicidade/atualização
+    vector_id       VARCHAR(64) UNIQUE NOT NULL, -- chave do registro correspondente no ChromaDB
+    data_indexacao  TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE categoria (
+    id        SERIAL PRIMARY KEY,
+    nome      VARCHAR(60) NOT NULL UNIQUE,
+    descricao TEXT
+);
+
+CREATE TABLE documento_categoria (
+    documento_id INTEGER REFERENCES documento_indexado(id),
+    categoria_id INTEGER REFERENCES categoria(id),
+    PRIMARY KEY (documento_id, categoria_id)
+);
+
+CREATE TABLE interacao (
+    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sessao_id        UUID NOT NULL,               -- identificador efêmero, sem vínculo com conta
+    pergunta_texto   TEXT NOT NULL,
+    resposta_texto   TEXT,
+    status           VARCHAR(20) NOT NULL,         -- sucesso | sem_resultado | erro_timeout
+    tempo_resposta_ms INTEGER,
+    data_hora        TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE interacao_fonte (
+    interacao_id      UUID REFERENCES interacao(id),
+    documento_id      INTEGER REFERENCES documento_indexado(id),
+    score_similaridade REAL NOT NULL,
+    PRIMARY KEY (interacao_id, documento_id)
+);
+
+CREATE TABLE avaliacao (
+    id            SERIAL PRIMARY KEY,
+    interacao_id  UUID UNIQUE REFERENCES interacao(id),
+    nota          SMALLINT NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    comentario    TEXT,
+    data_hora     TIMESTAMP NOT NULL DEFAULT now()
+);
+```
+
+
+
+### 5.2.2 Diagrama Entidade-Relacionamento (DER)
+```mermaid
+erDiagram
+    FONTE_OFICIAL ||--o{ DOCUMENTO_INDEXADO : possui
+    ADMINISTRADOR ||--o{ DOCUMENTO_INDEXADO : indexa
+    DOCUMENTO_INDEXADO ||--o{ DOCUMENTO_CATEGORIA : classificado_em
+    CATEGORIA ||--o{ DOCUMENTO_CATEGORIA : agrupa
+    DOCUMENTO_INDEXADO ||--o{ INTERACAO_FONTE : citado_em
+    INTERACAO ||--o{ INTERACAO_FONTE : referencia
+    INTERACAO ||--o| AVALIACAO : recebe
+
+    FONTE_OFICIAL {
+        int id PK
+        string titulo
+        string tipo
+        string editora
+        date data_publicacao
+    }
+    DOCUMENTO_INDEXADO {
+        int id PK
+        int fonte_id FK
+        int admin_id FK
+        int pagina
+        string secao
+        text texto_chunk
+        int num_tokens
+        string vector_id UK
+        timestamp data_indexacao
+    }
+    CATEGORIA {
+        int id PK
+        string nome
+    }
+    DOCUMENTO_CATEGORIA {
+        int documento_id FK
+        int categoria_id FK
+    }
+    INTERACAO {
+        uuid id PK
+        uuid sessao_id
+        text pergunta_texto
+        text resposta_texto
+        string status
+        int tempo_resposta_ms
+        timestamp data_hora
+    }
+    INTERACAO_FONTE {
+        uuid interacao_id FK
+        int documento_id FK
+        float score_similaridade
+    }
+    AVALIACAO {
+        int id PK
+        uuid interacao_id FK
+        smallint nota
+        text comentario
+    }
+    ADMINISTRADOR {
+        int id PK
+        string google_id UK
+        string nome
+        string email
+    }
+```
+
+
+![alt text](image.png)
+
+### 5.2.3 Modelo de Documentos (NoSQL — Banco Vetorial)
+
+O ChromaDB armazena uma **coleção** (`tormenta20_regras`) com um documento por chunk indexado. Cada registro guarda o embedding usado na busca por similaridade e um bloco de metadados que espelha a linha correspondente em `documento_indexado`, permitindo filtrar a busca vetorial por fonte, categoria ou página antes (ou depois) do cálculo de similaridade.
+
+```json
+{
+  "id": "doc_00231",
+  "embedding": [0.0123, -0.0451, 0.0872, "... (768 ou 1536 dimensões, conforme o modelo de embedding escolhido)"],
+  "document": "Criaturas cegas têm 50% de chance de errar ataques corpo a corpo contra alvos que não estejam adjacentes...",
+  "metadata": {
+    "documento_id": 231,
+    "fonte_titulo": "Tormenta20 - Livro Básico",
+    "pagina": 145,
+    "secao": "Magias - Escola de Ilusão",
+    "categorias": ["Magias", "Condições"],
+    "num_tokens": 180,
+    "data_indexacao": "2026-03-10"
+  }
+}
+```
+
+- `id` é o mesmo valor salvo em `documento_indexado.vector_id`, garantindo rastreabilidade entre a base relacional e a base vetorial.
+- `embedding` é gerado uma única vez na indexação (Etapa "Fragmentar livros e construir regras de chunks" do cronograma, Seção 7) e recalculado apenas se `hash_conteudo` mudar.
+- `metadata` é usado pelo pipeline RAG (LangChain) para aplicar filtros antes da busca por similaridade (ex.: restringir a categoria "Magias") e para montar a citação de fonte exigida por RN02.
+- O texto completo do chunk é mantido tanto no ChromaDB (`document`) quanto em `documento_indexado.texto_chunk`; isso evita uma chamada extra ao vector store apenas para exibir o trecho-fonte na Tela 3 (Resultado da Pergunta).
 
 ---
+
+
 
 ## 5.3 Principais Componentes
 
