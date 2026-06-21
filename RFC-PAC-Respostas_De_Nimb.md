@@ -83,8 +83,6 @@ Inclua:
 
 ### Pesquisa com Usuários
 
-Pode incluir:
-
 - entrevistas
   >[Reddit](https://www.reddit.com/r/Tormenta/comments/1skhv02/projeto_de_tcc_respostas_de_nimb/)
 
@@ -93,10 +91,17 @@ Pode incluir:
 
 
 - observação de processos
-[Resultados Encontrados](#91-resultados-de-pesquisa)
+>### Resultados Encontrados
+>Número de pessoas entrevistadas
+>26 respostas Obtidas até a data de 23/05/26
+>- principais dores identificadas
+>![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
 
+>- padrões observados
+>As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
+>![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
 
-Adicione **tabelas, gráficos ou prints**.
+>![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
 
 ---
 
@@ -692,13 +697,20 @@ Exemplos:
 Explique:
 
 - quais dados serão coletados
+ - Quanto a dados coletados, não será feita coleta de dados. De modo que não terá uma persistencia de perguntas entre as sessões.
+
 - como serão armazenados
+ - Os dados base referente a base de dados será disponpivel via cloud(a ser definida), assim o usuário final terá acesso apenas aos dados já tratados e com o resultado sendo apresentado em tela após o consumo da informação.
+ 
 - como o usuário poderá solicitar remoção de dados
 
 
 - __Sistema de login terceirizado, onde será usada API do Google__
 - __Não é consumido ou salvo dados dos usuários ao gerar e consultar o sistema__
-- __Os dados serão armazenados online, sem acesso direto do usuário final__
+- __Os dados(RAG) serão armazenados online, sem acesso direto do usuário final__
+
+
+
 ---
 
 # 7. Planejamento do Projeto
@@ -715,12 +727,6 @@ Defina os principais marcos de desenvolvimento.
 | []    | Gerar regras de segurança (Alucinação) | Semana - |
 | []    | Fragmentar primeira estrutura de Front | Semana - |
 
-
-
-| M1    | Setup do ambiente e prova de conceito | Semana X |
-| M2    | MVP funcional                         | Semana Y |
-| M3    | Testes e melhorias                    | Semana Z |
-
 ---
 
 # 8. Referências
@@ -730,7 +736,6 @@ Inclua:
 - artigos
 - documentação técnica
 - ferramentas utilizadas
-
 - repositórios
 
 - ferramentas de IA
@@ -742,21 +747,6 @@ Inclua:
 # 9. Apêndices
 
 Podem incluir:
-
-
-## 9.1 resultados de pesquisa
->[Formulário](https://forms.cloud.microsoft/r/DxYnjK8A9F)
-Número de pessoas entrevistadas
->26 respostas Obtidas até a data de 23/05/26
- principais dores identificadas
->![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
-
-- padrões observados
->As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
->![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
-
->![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
-
 
 - entrevistas com usuários
 - diagramas complementares
