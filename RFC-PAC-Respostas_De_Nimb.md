@@ -130,6 +130,22 @@ Para cada solução apresente:
 - funcionalidades principais
 - limitações
 
+
+
+- DeepRPG
+- https://www.deeprpg.com/
+- Jogadores de RPG
+- Gera à história, acaba não precisando planejar completamente a missão
+- Não trás as aplicações de regras ou tira as dúvidas de como deve ser aplicada a regra.
+
+
+- Yollo
+- https://www.yollo.ai/pt-BR/free-unlimited-ai-chat
+- Jogadores de RPG
+- Faz a função de mestre, onde se acompanha a narração e acompanhamento da história.
+- Não aplica a tirar dúvida ou questionamentos das regras
+
+
 Inclua **prints da interface ou diagramas simplificados**.
 
 ---
@@ -138,7 +154,8 @@ Inclua **prints da interface ou diagramas simplificados**.
 
 | Solução | Pontos Fortes | Limitações |
 | ------- | ------------- | ---------- |
-
+| **DeepRPG**| Criação de histórias a gereação de história com narrativa | Não trás os conflitos de regras apresentadas |
+| **Yollo** | Narração e jogar a aventura | Limitação visual e apenas texto fixo |
 ---
 
 ### Diferencial do Projeto
