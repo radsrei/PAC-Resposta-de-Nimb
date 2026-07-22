@@ -872,6 +872,9 @@ Para cada tecnologia explique **por que ela foi escolhida**.
 >Figma![Telas Iniciais](https://www.figma.com/design/mmPWrpSNUGNXV1SqOTu29b/Untitled?node-id=0-1&t=kaWKhMeVjtSd9fSj-1)
 >>Construção de base de telas e como as informações serão apresentadas e definidas
 
+>Google Clound![Gerenciador Nuvem](https://console.cloud.google.com/welcome?organizationId=0&orgonly=true&supportedpurview=project,organizationId,folder)
+>>Gerenciar APIs e recursos online. Além de trazer e gerencar estrutura de Infra
+
 # 6. Segurança e Privacidade
 
 Inclua preocupações básicas de segurança.
