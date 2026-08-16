@@ -6,12 +6,12 @@
 
 # Identificação
 
-![Nimb](/Front/Icon%20-%20Nimb.png "Símbolo de Nimb")
+![Nimb](/docs/Icon%20-%20Nimb.png "Símbolo de Nimb")
 
 - **Título do Projeto:**  
   Respostas de Nimb.
 
-  ![Nimb-](/Front/Nimb%20-%20Imagem.jpeg "Arte Oficial do Personagem")
+  ![Nimb-](/docs/Nimb%20-%20Imagem.jpeg "Arte Oficial do Personagem")
 
 
 - **Linha de Projeto (Direction):**  
