@@ -1,11 +1,22 @@
-ipykernel
+# RAG
 langchain
-langchain-openai
-langgraph
-python-dotenv
-faiss-cpu
 langchain-community
-pypdf
-langchain-experimental
+langchain-chroma
+
+# LLM
+langchain-openai
 langchain-ollama
-langchain-milvus
+
+# Config
+python-dotenv
+pypdf
+
+# API
+fastapi
+uvicorn[standard]
+pydantic
+
+#Revisar
+
+# langgraph -- Apenas se tiver Grafos
+# langchain-experimental -- Deixar para depois
