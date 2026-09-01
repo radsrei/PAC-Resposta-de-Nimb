@@ -7,4 +7,6 @@ nimb/*
 .vscode/settings.json
 Livros/*
 
-
+convert_file/.venv
+Convert_file/*.pdf
+Convert_file/saida.md
