@@ -13,8 +13,8 @@ nimb
 ## Setup
 
 ```
-python3.11 -m venv env
-source env/bin/activate
+python3.11 -m venv nimb
+ .nimb\Scripts\activate
 pip install -U pip
 pip install -r requirements.txt
 ```
@@ -54,11 +54,19 @@ Python
 Langchain
 
 
-[Stitich](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+[Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
 ### Augmentation
 
 prompt template
 context lenght
+
+## Proximas etapas do desenvolvimento
+Gerar script para separar e fragmentar livro confore sumário, validar se transformar pdf em MD vai servir ou ajudar na separação das informações
+A quebra de partes deve ser genérica e de fácil reaplicação por conta dos livros disintos a serem usados
+---
+Gerar botão para entrada de livro e validação em lista dos títulos "autorizados' mapeados para serem usados dentro do sistema
+---
+
 
 ### Evaluation
 
