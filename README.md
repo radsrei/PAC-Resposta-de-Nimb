@@ -67,6 +67,15 @@ A quebra de partes deve ser genérica e de fácil reaplicação por conta dos li
 Gerar botão para entrada de livro e validação em lista dos títulos "autorizados' mapeados para serem usados dentro do sistema
 ---
 
+###
+Bibliotecas para ajustes
+ - pandoc input.md -o output.pdf
+    https://quarto.org/docs/computations/python.html
+ - https://quarto.org/docs/computations/python.html
+ - pip install docling
+    https://docling.ai/
+
+
 
 ### Evaluation
 

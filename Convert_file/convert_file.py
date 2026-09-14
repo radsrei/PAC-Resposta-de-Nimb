@@ -24,7 +24,7 @@ from langchain_text_splitters import MarkdownHeaderTextSplitter
 
 # 1. Inicializa o MarkItDown e converte o PDF
 md_tool = MarkItDown()
-arquivo_pdf = "Tormenta20_base.pdf"
+arquivo_pdf = "/Livros/T20_teste.pdf"
 
 print("Convertendo PDF para Markdown...")
 resultado = md_tool.convert(arquivo_pdf)
