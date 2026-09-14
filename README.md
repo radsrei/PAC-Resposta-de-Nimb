@@ -13,8 +13,8 @@ nimb
 ## Setup
 
 ```
-python3.11 -m venv env
-source env/bin/activate
+python3.11 -m venv nimb
+ .nimb\Scripts\activate
 pip install -U pip
 pip install -r requirements.txt
 ```
