@@ -30,12 +30,12 @@ git config --global user.email "seu-email@exemplo.com"
 
 ```bash
 python3.11 -m venv env
-source env/bin/activate        # Linux/macOS
-# env\Scripts\activate         # Windows PowerShell
+# source env/bin/activate        # Linux/macOS
+ env\Scripts\activate         # Windows PowerShell
 
 pip install -U pip
 pip install -r requirements.txt
-pip install docling pypdf pandas   # dependências específicas deste script
+# pip install docling pypdf pandas   # dependências específicas deste script
 ```
 
 ### 1.4 Criar uma branch dedicada para esta funcionalidade
@@ -49,6 +49,7 @@ git checkout -b feature/docling-segmentacao-pdf
 ```
 
 ### 1.5 Adicionar os arquivos novos ao repositório
+(Copiar as pastas para o endereço definido)
 
 Sugestão de organização (seguindo o padrão de pastas que o repo já usa,
 como `estrutura-Exemplo/`):
@@ -63,24 +64,22 @@ PAC-Resposta-de-Nimb/
 ```
 
 ```bash
-mkdir -p indexing/docling-loader
-cp docling_pdf_splitter.py indexing/docling-loader/
-cp requirements.txt indexing/docling-loader/requirements-docling.txt
+mkdir -p Convert_file/indexing
 ```
 
 Adicione a pasta de saída ao `.gitignore` (o repo já tem um arquivo
 `.gitignore` — só adicionar a linha):
 
 ```bash
-echo "indexing/docling-loader/saida/" >> .gitignore
+echo "indexing/saida/" >> .gitignore
 echo "*.pdf" >> .gitignore   # opcional: não versionar os PDFs completos do livro (arquivos grandes)
 ```
 
 ### 1.6 Commit e push
 
 ```bash
-git add indexing/docling-loader/docling_pdf_splitter.py
-git add indexing/docling-loader/requirements-docling.txt
+git add indexing/docling_pdf_splitter.py
+git add indexing/requirements-docling.txt
 git add .gitignore
 
 git status                     # conferir o que vai entrar no commit
@@ -192,9 +191,9 @@ arquivo `docling_pdf_splitter.py`:
 
 ```python
 CONFIG = {
-    "pdf_entrada": "/mnt/user-data/uploads/tormenta20_livro_basico.pdf",
-    "pasta_saida": "/mnt/user-data/outputs/tormenta20_segmentado",
-    "nome_livro": "Tormenta20 - Livro Básico",
+    "pdf_entrada": "Convert_file\\Tormenta20_base.pdf",
+    "pasta_saida": "Convert_file\\indexing\\saida",
+    "nome_livro": "Tormenta20_base",
     "total_paginas_pdf": 404,
 }
 ```
@@ -217,7 +216,8 @@ diferente da impressa.
 **Passo 4 — Rode o script:**
 
 ```bash
-python3 docling_pdf_splitter.py
+# python3 docling_pdf_splitter.py
+python3 Convert_file\indexing\docling_pdf_splitter.py
 ```
 
 Isso abre o **modo revisão interativa** no terminal, trecho por trecho:

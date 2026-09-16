@@ -60,13 +60,13 @@ from typing import Optional
 
 CONFIG = {
     # Caminho do PDF original do livro
-    "pdf_entrada": "/mnt/user-data/uploads/tormenta20_livro_basico.pdf",
+    "pdf_entrada": "Convert_file\\Tormenta20_base.pdf",
 
     # Pasta onde tudo será salvo (será criada se não existir)
-    "pasta_saida": "/mnt/user-data/outputs/tormenta20_segmentado",
+    "pasta_saida": "Convert_file\\indexing\\saida",
 
     # Nome "lógico" deste livro (usado na condição de segurança abaixo)
-    "nome_livro": "Tormenta20 - Livro Básico",
+    "nome_livro": "Tormenta20_base",
 
     # Total de páginas do PDF final do índice remissivo/ficha (opcional,
     # só usado para fechar o último intervalo do sumário). Ajuste conforme
@@ -84,6 +84,7 @@ LIVROS_PERMITIDOS = [
     "Tormenta20 - Livro Básico",
     "Tormenta20 - Ameacas de Arton",
     "Tormenta20 - Guia de Cavaleiro",
+    "Tormenta20_base",
 ]
 
 
