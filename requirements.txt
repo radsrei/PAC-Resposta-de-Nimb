@@ -17,6 +17,10 @@ fastapi
 uvicorn[standard]
 pydantic
 
+# Script Docling
+docling>=2.0.0
+pandas>=2.0.0
+
 #Revisar
 
 # langgraph -- Apenas se tiver Grafos
