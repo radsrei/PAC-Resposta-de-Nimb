@@ -40,7 +40,7 @@ try:
 except ImportError:
     pymupdf = importlib.import_module("fitz")
 
-PDF = sys.argv[1] if len(sys.argv) > 1 else "/home/pablo/Downloads/Tormenta20_base.pdf"
+PDF = sys.argv[1] if len(sys.argv) > 1 else "C:\\Users\\rafab\\Documentos\\PAC-Resposta-de-Nimb\\Livros\\T20_teste.pdf"
 SAIDA = sys.argv[2] if len(sys.argv) > 2 else "tormenta20.xml"
 COR_TITULO = 13576745      # laranja dos títulos Tormenta20
 COR_VERBETE = 12003883     # vermelho dos nomes de verbete
