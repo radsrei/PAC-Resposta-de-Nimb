@@ -4,6 +4,11 @@ cd Convert_file
 python -m venv .venv
 # Windows
  .venv\Scripts\activate
+
+pip install -U pip
+cd ..
+pip install -r requirements.txt
+
 ```
 
 ```bash
@@ -25,6 +30,11 @@ python convert_html.py
 
 ```bash
 #Convert usando docling
-pip install docling
+pip install docling # Já existe no Requirements.txt
 python convert_html_docling.py
+```
+
+```bash
+pip install pymupdf # Já existe no Requirements.txt
+python convert_xml.py  
 ```

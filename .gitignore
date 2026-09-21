@@ -9,6 +9,7 @@ Livros/*
 
 convert_file/.venv
 Convert_file/*.pdf
+Convert_file/*.xml
 Convert_file/saida.md
 Convert_file/saida_estruturada.md
 Convert_file/indexing/saida/*

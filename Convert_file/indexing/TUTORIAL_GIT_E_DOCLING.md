@@ -33,6 +33,7 @@ python3.11 -m venv env
 # source env/bin/activate        # Linux/macOS
  env\Scripts\activate         # Windows PowerShell
 
+python.exe -m pip install -U pip
 pip install -U pip
 pip install -r requirements.txt
 # pip install docling pypdf pandas   # dependências específicas deste script
