@@ -49,3 +49,48 @@ else:
         # --------------------------------------------------------------
 
         st.write("Resposta: (integrar aqui a cadeia RAG do projeto)")
+
+
+from fastapi import UploadFile, File, Form
+
+class QueryRagPayload(BaseModel):
+    prompt: str
+    chaosLevel: int
+    bookIds: list[str] | None = None
+
+@app.post("/api/rag/query")
+def query_rag(payload: QueryRagPayload):
+    # TODO: plugar aqui a cadeia RAG real (retrieval + LLM)
+    return {
+        "answer": "Backend conectado — pipeline RAG ainda não implementado.",
+        "bookTitle": "N/A",
+        "page": "-",
+        "similarity": "0%",
+        "chaosApplied": payload.chaosLevel,
+    }
+
+@app.post("/api/rag/upload")
+async def upload_grimorio(
+    file: UploadFile = File(...),
+    chunkSize: int = Form(...),
+    model: str = Form(...),
+    entropy: float = Form(...),
+):
+    # TODO: indexar o PDF no vector DB
+    return {
+        "id": f"book_{file.filename}",
+        "title": file.filename,
+        "fileName": file.filename,
+        "size": "0 MB",
+        "chunks": 0,
+        "progress": 100,
+        "status": "indexed",
+    }
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5500"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
