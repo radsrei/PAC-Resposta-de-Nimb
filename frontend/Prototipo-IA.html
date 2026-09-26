@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nexus Chat</title>
+<title>Respostas de Nimb</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -549,14 +549,16 @@
   <!-- Top Bar -->
   <header class="topbar">
     <div class="logo">
+      
       <div class="logo-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <img src="..\docs\Icon - Nimb.png" alt="Nimb" style="width: 35px">
+        <!-- <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> -->
       </div>
-      <span class="logo-text">Nexus Chat</span>
+      <span class="logo-text">Respostas de Nimb</span>
     </div>
     <div class="status-pill">
       <span class="status-dot"></span>
-      Online
+      Chance de Caos:
     </div>
   </header>
 
@@ -624,10 +626,10 @@
 
       <!-- Suggestion Chips -->
       <div class="suggestions" id="suggestions" role="list" aria-label="Sugestões rápidas">
-        <button class="chip" onclick="useSuggestion(this)">✦ O que você pode fazer?</button>
-        <button class="chip" onclick="useSuggestion(this)">✦ Resuma um texto</button>
-        <button class="chip" onclick="useSuggestion(this)">✦ Me ajude a criar um e-mail</button>
-        <button class="chip" onclick="useSuggestion(this)">✦ Explique um conceito</button>
+        <button class="chip" onclick="useSuggestion(this)">✦ Porque Nimb é maravilho?</button>
+        <button class="chip" onclick="useSuggestion(this)">✦ Como faço para voar</button>
+        <button class="chip" onclick="useSuggestion(this)">✦ Consigo conjurar bola de fogo nº1?</button>
+        <button class="chip" onclick="useSuggestion(this)">✦ O que é a Tormenta?</button>
       </div>
 
       <!-- Input Zone -->
@@ -686,7 +688,7 @@ function addMessage(text, role) {
 
   const avatar = document.createElement('div');
   avatar.className = `avatar ${role === 'user' ? 'user-av' : 'ai'}`;
-  avatar.textContent = role === 'user' ? 'EU' : 'AI';
+  avatar.textContent = role === 'user' ? 'EU' : 'Nimb';
   avatar.setAttribute('aria-hidden', 'true');
 
   const right = document.createElement('div');
