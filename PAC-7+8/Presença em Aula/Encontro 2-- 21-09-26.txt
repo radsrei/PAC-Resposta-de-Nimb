@@ -1,0 +1,13 @@
+Rascunho da conversa:
+ sugestão, assumir que o arquivo chega no formato que
+
+Gerar regras ideias para arquivo perfeitamente vetorizado
+
+agente adversário - Agente critico
+	envia o pdf
+	e regras para leitura
+
+Raiku
+ollhama - 10 milhos
+
+openrouter - validar

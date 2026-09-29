@@ -1,0 +1,6 @@
+{
+  "name": "NIMB_OS - Neural Chaos RAG Terminal",
+  "description": "Interface neural de recuperação RAG e Terminal de Caos para RPG Tormenta20 e tomos de fantasia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
