@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Respostas de Nimb</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="screen" role="main">
+
+  <!-- =============================================== -->
+  <!-- HEAD / TOPBAR                                    -->
+  <!-- Nome do projeto + Logo + Medidor de Caos (v2)    -->
+  <!-- =============================================== -->
+  <header class="topbar">
+
+    <div class="logo">
+      <div class="logo-icon" aria-hidden="true">
+        <img src="assets/img/icon-nimb.png" alt="Nimb">
+      </div>
+      <span class="logo-text">Respostas de Nimb</span>
+    </div>
+
+    <!-- Medidor de Caos: funcionalidade v.2 -->
+    <!-- Quando o backend enviar "chaos_level" (0-100), chame updateChaosMeter(valor) em js/app.js -->
+    <div class="status-pill chaos-meter" id="chaosMeter" title="Disponível na v2">
+      <span class="status-dot"></span>
+      <span class="chaos-label">Chance de Caos</span>
+      <span class="chaos-value" id="chaosValue">—</span>
+      <span class="badge-v2">v2</span>
+    </div>
+
+  </header>
+
+  <div class="main">
+
+    <!-- =============================================== -->
+    <!-- SIDEBAR                                          -->
+    <!-- Perguntas anteriores + Livros carregados (v2)    -->
+    <!-- + Nome do usuário                                -->
+    <!-- =============================================== -->
+    <aside class="sidebar" aria-label="Painel lateral">
+
+      <div class="sidebar-scroll">
+
+        <!-- Histórico de conversas: preenchido via js/app.js -> NimbAPI.getConversations() -->
+        <nav aria-label="Conversas anteriores">
+          <span class="sidebar-label">Recentes</span>
+          <div id="recentList" class="sidebar-list">
+            <!-- itens injetados via JS (ver renderConversationList) -->
+          </div>
+
+          <span class="sidebar-label" style="margin-top:1rem;">Anteriores</span>
+          <div id="previousList" class="sidebar-list">
+            <!-- itens injetados via JS (ver renderConversationList) -->
+          </div>
+        </nav>
+
+        <!-- Livros carregados: funcionalidade v.2 -->
+        <nav aria-label="Livros carregados" class="sidebar-section-v2">
+          <span class="sidebar-label">
+            Livros carregados <span class="badge-v2">v2</span>
+          </span>
+          <div id="booksList" class="sidebar-list disabled">
+            <div class="sidebar-item placeholder">
+              <span class="sidebar-dot" style="background:var(--text-muted)"></span>
+              Upload de livros em breve
+            </div>
+          </div>
+        </nav>
+
+      </div>
+
+      <!-- Nome do usuário: preenchido via js/app.js -> NimbAPI.getUser() -->
+      <div class="sidebar-user" id="sidebarUser">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-info">
+          <span class="user-name" id="userName">Carregando...</span>
+          <span class="user-role" id="userRole">Convidado</span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- =============================================== -->
+    <!-- BODY / CHAT                                      -->
+    <!-- Entrada e saída de chat + caixa de entrada       -->
+    <!-- + sugestões de perguntas                         -->
+    <!-- =============================================== -->
+    <div class="chat-area">
+
+      <!-- Saída do chat (mensagens) -->
+      <section class="response-area" id="responseArea" aria-live="polite" aria-label="Área de respostas">
+
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <p class="empty-text">Inicie uma conversa<br>enviando sua mensagem abaixo</p>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator" aria-label="Processando resposta">
+          <div class="avatar ai" aria-hidden="true">AI</div>
+          <div class="typing-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Sugestões de perguntas -->
+      <div class="suggestions" id="suggestions" role="list" aria-label="Sugestões rápidas">
+        <button class="chip" data-suggestion="Porque Nimb é maravilhoso?">✦ Porque Nimb é maravilhoso?</button>
+        <button class="chip" data-suggestion="Como faço para voar?">✦ Como faço para voar?</button>
+        <button class="chip" data-suggestion="Consigo conjurar bola de fogo nº1?">✦ Consigo conjurar bola de fogo nº1?</button>
+        <button class="chip" data-suggestion="O que é a Tormenta?">✦ O que é a Tormenta?</button>
+      </div>
+
+      <!-- Entrada do chat -->
+      <div class="input-zone">
+        <div class="input-wrapper">
+          <textarea
+            id="messageInput"
+            placeholder="Digite sua mensagem..."
+            rows="1"
+            aria-label="Campo de mensagem"
+          ></textarea>
+          <button class="send-btn" id="sendBtn" aria-label="Enviar mensagem">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            <div class="spinner"></div>
+          </button>
+        </div>
+        <div class="input-hint">
+          <span class="hint-key"><kbd>Enter</kbd> para enviar</span>
+          <span class="hint-key"><kbd>Shift</kbd>+<kbd>Enter</kbd> para nova linha</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Ordem importa: config -> api -> app -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
