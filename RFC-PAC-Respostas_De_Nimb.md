@@ -95,13 +95,13 @@ Inclua:
 >Número de pessoas entrevistadas
 >26 respostas Obtidas até a data de 23/05/26
 >- principais dores identificadas
->![Resposta4](/Front/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
+>![Resposta4](/docs/Formulario%20Reddit/Resposta%204%20-%20Forms.png)
 
 >- padrões observados
 >As respostas em sua maioria foram de aprovação ao projeto/ideia, onde foi demonstrado com as respostas coletadas que parte dos usuários utilizaria e mesmo pagaria para utilizar/usufruir de um sistema de IA para tirar dúvidas.
->![Resposta5](/Front/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
+>![Resposta5](/docs/Formulario%20Reddit/Resposta%205%20-%20Forms%20Reddit.png)
 
->![Resposta8](/Front/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
+>![Resposta8](/docs/Formulario%20Reddit/Resposta%208%20-%20Forms%20Reddit.png)
 
 ---
 
@@ -115,7 +115,7 @@ Podem ser incluídos:
 - resultados de formulários
 
 
-![Reddit](/Front/Formulario%20Reddit/Post%20Reddit.png)
+![Reddit](/docs/Formulario%20Reddit/Post%20Reddit.png)
 ---
 
 ## 1.3 Análise de Soluções Existentes (Benchmark)
@@ -476,12 +476,12 @@ O sistema possui navegação linear e direta, com as seguintes telas principais:
 
 Login → Tela
 
-![Figma](/Front/Figma/Untitled.png)
+![Figma](/docs/Figma/Untitled.png)
 
 
 Inclua **imagem do fluxo de navegação**.
 
-![Mapeamento](/Front/Figma/Mockup.png)
+![Mapeamento](/docs/Figma/Mockup.png)
 
 ---
 
@@ -516,7 +516,7 @@ Descrição: Apresenta o nome do sistema, pede entrada de login e senha por vali
 
 Ações principais do usuário: Fazer acesso ao sistema e validar credencial 
 
-![Login](/Front/Figma/Desktop%20-%202.png)
+![Login](/docs/Figma/Desktop%20-%202.png)
 
 
 Tela 2 — Inicial / Home 
@@ -526,7 +526,7 @@ Descrição: Apresenta o nome do sistema, uma breve instrução de uso e o campo
 Ações principais do usuário: Digitar a pergunta; selecionar categoria opcional; clicar em "Perguntar". 
 
 Elemento de destaque: campo de texto amplo com placeholder "Qual é a sua dúvida sobre Tormenta20?". 
-![Pesquisa](/Front/Figma/Frame%203.png)
+![Pesquisa](/docs/Figma/Frame%203.png)
 
 
 Tela 3 — Resultado da Pergunta 
@@ -780,7 +780,7 @@ erDiagram
 ```
 
 
-![alt text](image.png)
+![alt text](/docs/image.png)
 
 ### 5.2.3 Modelo de Documentos (NoSQL — Banco Vetorial)
 
@@ -955,26 +955,3 @@ Podem incluir:
 Sempre que possível inclua **imagens, protótipos ou referências visuais**.
 
 ---
-
-# 10. Parecer do Comitê de Avaliação
-
-(A ser preenchido pelos professores)
-
-**Avaliador 1:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
-**Status:** [ ] Aprovado [ ] Ajustar
-
-Observações:
-
----
-
-**Avaliador 2:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
-**Status:** [ ] Aprovado [ ] Ajustar
-
-Observações:
-
----
-
-**Avaliador 3:** \***\*\*\*\*\*\*\***\_\_\***\*\*\*\*\*\*\***  
-**Status:** [ ] Aprovado [ ] Ajustar
-
-Observações:
