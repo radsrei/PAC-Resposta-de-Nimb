@@ -3,7 +3,7 @@ import { ChatMessage } from '../../types';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
-  onReroll?: (query: string) => void;
+  onReroll?: () => void;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -63,18 +63,44 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       </div>
 
       <div className="space-y-2 flex-1">
-        <div className="bg-[#181827]/95 border border-[rgba(162,89,255,0.25)] rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-[#F0EEF8] shadow-xl space-y-3">
+        <div
+          className={`bg-[#181827]/95 border rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-[#F0EEF8] shadow-xl space-y-3 ${
+            message.isError ? 'border-red-500/50' : 'border-[rgba(162,89,255,0.25)]'
+          }`}
+        >
           {/* Header syntax or RAG citation tag bar */}
-          {message.ragMetadata ? (
+          {message.isError ? (
+            <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-red-500/30 font-mono text-[11px]">
+              <span className="material-symbols-outlined text-[14px] text-red-400">error</span>
+              <span className="text-red-300 font-semibold">FALHA NA CONSULTA</span>
+            </div>
+          ) : message.ragMetadata ? (
             <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-[#34344E]/60 font-mono text-[10px]">
-              <span className="px-2 py-0.5 rounded bg-[#39D98A]/10 border border-[#39D98A]/30 text-[#39D98A] flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[12px]">verified</span>
-                Fonte RAG: {message.ragMetadata.bookTitle}
-                {message.ragMetadata.page ? ` pág. ${message.ragMetadata.page}` : ''}
-              </span>
-              <span className="text-[#8B87A8]">
-                Similaridade: {message.ragMetadata.similarity}
-              </span>
+              {message.ragMetadata.bookTitle && (
+                <span className="px-2 py-0.5 rounded bg-[#39D98A]/10 border border-[#39D98A]/30 text-[#39D98A] flex items-center gap-1 font-semibold">
+                  <span className="material-symbols-outlined text-[12px]">verified</span>
+                  Fonte RAG: {message.ragMetadata.bookTitle}
+                  {message.ragMetadata.page ? ` pág. ${message.ragMetadata.page}` : ''}
+                </span>
+              )}
+              {message.ragMetadata.model && (
+                <span
+                  className="px-2 py-0.5 rounded bg-[#A259FF]/10 border border-[#A259FF]/30 text-[#d8b9ff] flex items-center gap-1 font-semibold"
+                  title={message.ragMetadata.connectionName}
+                >
+                  <span className="material-symbols-outlined text-[12px]">hub</span>
+                  LLM: {message.ragMetadata.model}
+                </span>
+              )}
+              {message.ragMetadata.latencyMs !== undefined ? (
+                <span className="text-[#8B87A8]">
+                  {(message.ragMetadata.latencyMs / 1000).toFixed(1)}s
+                </span>
+              ) : (
+                <span className="text-[#8B87A8]">
+                  Similaridade: {message.ragMetadata.similarity}
+                </span>
+              )}
               <span className="text-[#d8b9ff] font-mono ml-auto">
                 Caos Atual: {message.ragMetadata.chaosApplied}%
               </span>
@@ -121,7 +147,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <span>•</span>
               {onReroll && (
                 <button
-                  onClick={() => onReroll(message.text)}
+                  onClick={onReroll}
                   className="hover:text-[#d8b9ff] flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[14px]">refresh</span>
