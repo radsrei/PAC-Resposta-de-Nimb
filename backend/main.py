@@ -13,6 +13,14 @@ Ponto de entrada do backend. A aplicação fica em `app/`, organizada em camadas
     └── routers/       rotas HTTP
 
 Rode com (dentro da pasta `backend/`):
+Este arquivo é a evolução de `docs/nimb_prototipo/backend/main.py`.
+Mantém o contrato original (`/api/perguntas`, usado pelo protótipo em
+`frontend/Claude` e `docs/nimb_prototipo/frontend/nimb_terminal.html`)
+e ADICIONA o contrato exigido pelo front-end React `frontend/nimb-os-react`
+(serviço `src/services/ragApi.ts`), para que os dois front-ends existentes
+no repositório consigam falar com o mesmo backend sem retrabalho.
+
+Rode com:
     python main.py
 ou
     uvicorn main:app --reload
