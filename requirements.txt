@@ -16,6 +16,9 @@ markitdown
 fastapi
 uvicorn[standard]
 pydantic
+python-multipart
+httpx
+anthropic
 
 # Script Docling
 docling>=2.0.0

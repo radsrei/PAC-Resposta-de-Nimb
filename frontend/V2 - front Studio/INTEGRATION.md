@@ -1,5 +1,8 @@
 # Integração — Front-end React (NIMB_OS) + Backend
 
+> **Documento histórico.** Os caminhos e o contrato abaixo foram substituídos.
+> O guia atual para subir o sistema e a lista de rotas estão em [`Setup-Front-Tela.md`](../../Setup-Front-Tela.md).
+
 > Repositório do projeto: https://github.com/radsrei/PAC-Resposta-de-Nimb
 
 Este guia documenta como o front-end React `nimb-os-react` (telas Terminal / Login /

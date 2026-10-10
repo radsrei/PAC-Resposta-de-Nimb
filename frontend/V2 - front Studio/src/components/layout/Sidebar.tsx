@@ -9,6 +9,8 @@ interface SidebarProps {
   activeHistoryId: string | null;
   onSelectHistory: (item: HistoryItem) => void;
   onClearHistory: () => void;
+  onDeleteHistory: (item: HistoryItem) => void;
+  backendOnline: boolean;
   books: IndexedBook[];
   onOpenUploadModal: () => void;
   onNewSession: () => void;
@@ -23,6 +25,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeHistoryId,
   onSelectHistory,
   onClearHistory,
+  onDeleteHistory,
+  backendOnline,
   books,
   onOpenUploadModal,
   onNewSession,
@@ -160,8 +164,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {history.map((item) => {
                 const isActive = activeHistoryId === item.id;
                 return (
+                  <div key={item.id} className="relative group/item">
                   <button
-                    key={item.id}
                     onClick={() => {
                       onSelectHistory(item);
                       if (window.innerWidth < 768) {
@@ -192,10 +196,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {item.title}
                       </div>
                       <div className="font-mono text-[9px] text-[#8B87A8]/80">
-                        {item.timestampDesc} // {item.refCount} refs
+                        {item.timestampDesc} // {item.refCount} msgs
                       </div>
                     </div>
                   </button>
+                  <button
+                    onClick={() => onDeleteHistory(item)}
+                    className="absolute right-1.5 top-1.5 p-1 rounded text-[#8B87A8] hover:text-red-300 hover:bg-red-500/10 opacity-0 group-hover/item:opacity-100 transition-opacity cursor-pointer"
+                    title="Excluir conversa"
+                  >
+                    <span className="material-symbols-outlined text-[14px] block">delete</span>
+                  </button>
+                  </div>
                 );
               })}
 
@@ -211,10 +223,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Bottom Status Footer */}
         <div className="p-3 border-t border-[#34344E]/60 bg-[#0A0A10]/60 flex items-center justify-between font-mono text-[10px] text-[#8B87A8]">
           <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] animate-pulse"></span>
-            Cluster RAG: Online
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                backendOnline ? 'bg-[#39D98A] animate-pulse' : 'bg-red-400'
+              }`}
+            ></span>
+            Backend: {backendOnline ? 'Online' : 'Offline'}
           </span>
-          <span className="tabular-nums">Latência: 24ms</span>
+          <span>RAG: desativado</span>
         </div>
       </aside>
     </>

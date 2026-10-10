@@ -2,6 +2,8 @@
 
 ## Start do Projeto
 
+Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md).
+
 ### Acessar o ambiente
 
 ```

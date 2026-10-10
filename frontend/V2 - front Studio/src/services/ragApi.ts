@@ -1,31 +1,41 @@
-import { ChatMessage, IndexedBook } from '../types';
+import { IndexedBook } from '../types';
+import { API_BASE, http } from './http';
 
 /**
  * RAG API Service Layer
- * Prepared for live backend connection via fetch('/api/rag/...')
- * or standalone execution with domain-rich simulated embeddings.
+ * Envia as perguntas para o backend (POST /api/rag/query), que repassa para a
+ * LLM ativa. Com VITE_USE_MOCK=true o app roda sozinho com respostas simuladas.
  */
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL || '';
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export interface QueryRagPayload {
   prompt: string;
   chaosLevel: number;
   bookIds?: string[];
+  sessionId?: string | null;
+  connectionId?: string | null;
 }
 
 export interface QueryRagResponse {
   answer: string;
   bookTitle: string;
-  page: string | number;
+  page?: string | number | null;
   similarity: string;
   chaosApplied: number;
-  quote?: string;
+  quote?: string | null;
   rollTable?: {
     title: string;
     diceRoll: string;
     description: string;
-  };
+  } | null;
+  // Dados da execução na LLM (backend real)
+  sessionId?: string;
+  messageId?: string;
+  provider?: string;
+  model?: string;
+  connectionName?: string;
+  latencyMs?: number;
 }
 
 const KNOWLEDGE_RESPONSES = [
@@ -83,25 +93,15 @@ let queryCounter = 0;
 
 export const ragApiService = {
   /**
-   * Send user prompt to RAG endpoint (or fallback to domain-accurate simulator)
+   * Envia a pergunta ao backend. Erros (backend fora do ar, sem conexão LLM,
+   * falha no provedor) são propagados como ApiError para a tela exibir.
    */
   async queryRag(payload: QueryRagPayload): Promise<QueryRagResponse> {
-    if (API_BASE) {
-      try {
-        const res = await fetch(`${API_BASE}/api/rag/query`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (err) {
-        console.warn('Backend unavailable, utilizing local RAG neural pipeline:', err);
-      }
+    if (!USE_MOCK) {
+      return http.post<QueryRagResponse>('/api/rag/query', payload);
     }
 
-    // Realistic neural simulated delay
+    // Modo simulado (VITE_USE_MOCK=true)
     await new Promise((r) => setTimeout(r, 900 + Math.random() * 400));
 
     const selected = KNOWLEDGE_RESPONSES[queryCounter % KNOWLEDGE_RESPONSES.length];
@@ -125,7 +125,7 @@ export const ragApiService = {
     file: File,
     config: { chunkSize: number; model: string; entropy: number }
   ): Promise<IndexedBook> {
-    if (API_BASE) {
+    if (!USE_MOCK) {
       try {
         const formData = new FormData();
         formData.append('file', file);
