@@ -3,8 +3,13 @@ A integração está pronta. O sistema sobe localmente: você abre a tela, cadas
 **Para subir:**
 ```bash
 cd backend && pip install -r requirements.txt && python main.py         # porta 8000
+```
+### http://localhost:8000 
+```bash
+winget install -e --id OpenJS.NodeJS.LTS
 cd "frontend/V2 - front Studio" && npm install && npm run dev            # porta 3000
 ```
+### http://localhost:3000
 Depois clique em **Conectar LLM** no topo da tela, escolha o provedor, cole a API key e pergunte. O passo a passo completo e a lista de rotas estão em [Setup-Front-Tela.md](Setup-Front-Tela.md).
 
 **Backend** ([backend/app/](backend/app/))
@@ -33,3 +38,4 @@ Depois clique em **Conectar LLM** no topo da tela, escolha o provedor, cole a AP
 - **Windows:** o pacote `anthropic` tem caminhos de arquivo muito longos. Num venv em pasta muito profunda, o `pip install` pode falhar. Anotei no guia; o venv `nimb` na raiz do projeto não deve ter esse problema.
 - **Livros e RAG:** não mexi. O upload de livros continua como stub e a lista de livros na tela continua fixa. O ponto onde o RAG vai entrar está marcado em [query_controller.py](backend/app/controllers/query_controller.py).
 - **Modelos padrão:** os nomes sugeridos (ex.: `gpt-4o-mini`) são editáveis na própria tela.
+
