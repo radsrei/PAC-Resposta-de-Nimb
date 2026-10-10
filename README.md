@@ -2,6 +2,8 @@
 
 ## Start do Projeto
 
+Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md).
+
 ### Acessar o ambiente
 
 ```
@@ -12,11 +14,43 @@ nimb
 
 ## Setup
 
+### VScode
 ```
 python3.11 -m venv nimb
  .nimb\Scripts\activate
 pip install -U pip
 pip install -r requirements.txt
+```
+
+### Git
+Gerar uma nova Branch para envio de mudanças e PR
+#### Boas Pratias
+Gerar Branch com prefixo:
+ - Feat/
+ - Fix/
+ - Docs/
+
+
+```bash
+git status
+git batch 
+```
+#### Criar uma novo branch usando o Develop como base e trocar branch de uso
+
+Puxar e atualizar a branch local
+```bash
+git checkout develop
+git pull origin develop
+```
+
+Checkout e switch (comandos para mudança) - Switch comando mais recente
+```bash
+git checkout -b nome-da-sua-branch develop
+```
+
+Subir o commit para o Git
+```bash
+git push -u origin feat/minha-nova-funcionalidade
 ```
 
 ## Agenda
@@ -53,8 +87,8 @@ Python
 
 Langchain
 
-
 [Stitch](https://stitch.withgoogle.com/projects/4150170280574443902?pli=1)
+
 ### Augmentation
 
 prompt template
@@ -88,3 +122,5 @@ Observações: O trabalho está acima da média em organização e clareza, com 
 
 Bruno Luis Pereira - Sugestão
 Melhorar a descrição do problema, quem vai afetar/ajudar e definir melhor o objetivo final
+
+

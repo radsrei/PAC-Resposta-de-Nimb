@@ -11,7 +11,9 @@ interface ChatAreaProps {
   onInputChange: (val: string) => void;
   onSendMessage: () => void;
   onSelectSuggestion: (text: string) => void;
+  onRerollMessage: (messageId: string) => void;
   onOpenUploadModal: () => void;
+  llmLabel: string | null;
   indexedBooksCount: number;
   totalChunks: number;
 }
@@ -23,7 +25,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onInputChange,
   onSendMessage,
   onSelectSuggestion,
+  onRerollMessage,
   onOpenUploadModal,
+  llmLabel,
   indexedBooksCount,
   totalChunks,
 }) => {
@@ -54,8 +58,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <span className="px-2 py-0.5 rounded bg-[#A259FF]/20 border border-[#A259FF]/30 text-[#d8b9ff] font-mono text-[11px] font-semibold">
                   PROTOCOLO DE RECUPERAÇÃO RAG
                 </span>
-                <span className="font-mono text-[10px] text-[#39D98A]">
-                  VECTOR DB CONECTADO
+                <span
+                  className={`font-mono text-[10px] ${llmLabel ? 'text-[#39D98A]' : 'text-amber-300'}`}
+                >
+                  {llmLabel ? `LLM CONECTADA: ${llmLabel}` : 'NENHUMA LLM CONECTADA'}
                 </span>
               </div>
               <h2 className="text-xl font-bold text-[#F0EEF8] tracking-tight">
@@ -81,7 +87,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   Modo Ativo
                 </span>
                 <span className="text-[#d8b9ff] font-semibold">
-                  Raciocínio Probabilístico
+                  LLM direta (RAG em breve)
                 </span>
               </div>
             </div>
@@ -94,7 +100,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <ChatMessageItem
               key={msg.id}
               message={msg}
-              onReroll={msg.sender === 'nimb' ? () => onSendMessage() : undefined}
+              onReroll={
+                msg.sender === 'nimb' && !isLoading ? () => onRerollMessage(msg.id) : undefined
+              }
             />
           ))}
 
