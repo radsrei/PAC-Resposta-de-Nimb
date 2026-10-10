@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { ChatArea } from './components/chat/ChatArea';
-import { LoginScreen } from './components/auth/LoginScreen';
+import { AccountScreen } from './components/auth/AccountScreen';
 import { PdfUploadModal } from './components/modals/PdfUploadModal';
 import { LlmConnectionModal } from './components/modals/LlmConnectionModal';
 import {
+  AuthUser,
   ChatMessage,
   ChatSession,
   HistoryItem,
@@ -16,7 +17,6 @@ import {
   SessionMessage,
 } from './types';
 import { ragApiService } from './services/ragApi';
-import { authApiService } from './services/authApi';
 import { llmApiService } from './services/llmApi';
 import { sessionApiService } from './services/sessionApi';
 import { ApiError } from './services/http';
@@ -112,13 +112,33 @@ const toChatMessage = (msg: SessionMessage): ChatMessage => {
   };
 };
 
-export default function App() {
+// Perfil exibido no Header/Sidebar a partir do usuário autenticado
+const toOperator = (user: AuthUser): OperatorProfile => ({
+  name: user.name,
+  title: user.role === 'admin' ? 'Administrador' : 'Operador',
+  email: user.email,
+  level: user.role,
+  isAuthenticated: true,
+  provider: user.googleLinked ? 'google' : 'manual',
+});
+
+interface TerminalProps {
+  user: AuthUser;
+  onUserChange: (user: AuthUser) => void;
+  /** Encerra a sessão no backend e volta ao login. */
+  onLogout: () => void;
+  /** Volta ao login sem chamar o backend (ex.: conta excluída). */
+  onSignedOut: () => void;
+}
+
+export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: TerminalProps) {
   const [currentScreen, setCurrentScreen] = useState<ScreenView>('terminal');
   const [chaosLevel, setChaosLevel] = useState<number>(50);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
-  const [operator, setOperator] = useState<OperatorProfile>(authApiService.getStoredSession());
+  const operator = toOperator(user);
+  const isAdmin = user.role === 'admin';
   const [books, setBooks] = useState<IndexedBook[]>(INITIAL_BOOKS);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -309,7 +329,7 @@ export default function App() {
         llmConnection={llmConnection}
         backendOnline={backendOnline}
         onNavigateLogin={() =>
-          setCurrentScreen(currentScreen === 'login' ? 'terminal' : 'login')
+          setCurrentScreen(currentScreen === 'account' ? 'terminal' : 'account')
         }
         operator={operator}
         currentScreen={currentScreen}
@@ -332,7 +352,7 @@ export default function App() {
             books={books}
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
             onNewSession={handleNewSession}
-            onNavigateLogin={() => setCurrentScreen('login')}
+            onNavigateLogin={() => setCurrentScreen('account')}
           />
 
           {/* CHAT BODY */}
@@ -351,14 +371,13 @@ export default function App() {
           />
         </div>
       ) : (
-        /* SCREEN 2: LOGIN & OPERATOR AUTHENTICATION */
-        <LoginScreen
-          currentOperator={operator}
-          onBackToTerminal={() => setCurrentScreen('terminal')}
-          onSuccess={(newProfile) => {
-            setOperator(newProfile);
-            setCurrentScreen('terminal');
-          }}
+        /* SCREEN 2: MINHA CONTA (perfil, senha, sessões, admin) */
+        <AccountScreen
+          user={user}
+          onUserChange={onUserChange}
+          onLogout={onLogout}
+          onAccountDeleted={onSignedOut}
+          onBack={() => setCurrentScreen('terminal')}
         />
       )}
 
@@ -373,6 +392,7 @@ export default function App() {
 
       {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}
       <LlmConnectionModal
+        isAdmin={isAdmin}
         isOpen={isLlmModalOpen}
         onClose={() => setIsLlmModalOpen(false)}
         onChanged={(active) => {

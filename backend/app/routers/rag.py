@@ -5,17 +5,19 @@ POST /api/rag/query   -> envia a pergunta para a LLM ativa e devolve a resposta
 POST /api/rag/upload  -> (stub) indexação de livros — fora do escopo desta etapa
 """
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.controllers import query_controller
+from app.core.deps import CurrentUser, require_admin, require_user
 from app.schemas.rag import IndexedBookResponse, QueryRagPayload, QueryRagResponse
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
 
 
 @router.post("/query", response_model=QueryRagResponse)
-def query_rag(payload: QueryRagPayload):
+def query_rag(payload: QueryRagPayload, user: CurrentUser = Depends(require_user)):
     result = query_controller.ask(
+        user_email=user["email"],
         prompt=payload.prompt,
         chaos_level=payload.chaos_level,
         session_id=payload.session_id,
@@ -32,7 +34,7 @@ def query_rag(payload: QueryRagPayload):
     )
 
 
-@router.post("/upload", response_model=IndexedBookResponse)
+@router.post("/upload", response_model=IndexedBookResponse, dependencies=[Depends(require_admin)])
 async def upload_grimorio(
     file: UploadFile = File(...),
     chunkSize: int = Form(...),

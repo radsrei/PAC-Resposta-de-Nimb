@@ -59,7 +59,33 @@ export interface OperatorProfile {
   avatarUrl?: string;
 }
 
-export type ScreenView = 'terminal' | 'login';
+export type ScreenView = 'terminal' | 'account';
+
+// ---------------------------------------------------------------------------
+// Autenticação (backend: /api/auth e /api/admin)
+// ---------------------------------------------------------------------------
+export interface AuthUser {
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+  mustChangePassword: boolean;
+  hasPassword: boolean;
+  googleLinked: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AuthConfig {
+  googleClientId: string | null;
+  registrationEnabled: boolean;
+  passwordMinLength: number;
+}
+
+export interface PasswordResetResult {
+  message: string;
+  temporaryPassword: string;
+}
 
 // ---------------------------------------------------------------------------
 // Conexões LLM (backend: /api/llm)

@@ -1,66 +1,61 @@
-import { OperatorProfile } from '../types';
+import { AuthConfig, AuthUser, PasswordResetResult } from '../types';
+import { http } from './http';
 
 /**
- * Authentication Service
- * Pre-configured for Google Workspace API / Google OAuth and synaptic token authentication.
+ * Autenticação (backend: /api/auth).
+ *
+ * A sessão fica num cookie HttpOnly definido pelo backend: o front nunca lê
+ * nem armazena o token (nada em localStorage), o que protege contra roubo
+ * de sessão via XSS.
  */
-
-const STORAGE_KEY = 'nimb_operator_session';
-
 export const authApiService = {
-  getStoredSession(): OperatorProfile {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {
-      // fallback
-    }
-    return {
-      name: 'Operador // Nexus',
-      title: 'Acesso Mestre Niv. 4',
-      email: 'operador@cluster-nimb.network',
-      level: 'Clearance IV',
-      isAuthenticated: true,
-      provider: 'manual',
-    };
-  },
+  getConfig: () => http.get<AuthConfig>('/api/auth/config'),
 
-  async loginWithGoogle(): Promise<OperatorProfile> {
-    // Simulated Google OAuth flow with Workspace scope verification
-    await new Promise((r) => setTimeout(r, 600));
+  me: () => http.get<AuthUser>('/api/auth/me'),
 
-    const profile: OperatorProfile = {
-      name: 'Rafael Pereira // Google Nexus',
-      title: 'Operador Conectado (Google Workspace API)',
-      email: 'rafael97pereira@gmail.com',
-      level: 'Master Clearance V',
-      isAuthenticated: true,
-      provider: 'google',
-    };
+  register: (name: string, email: string, password: string) =>
+    http.post<AuthUser>('/api/auth/register', { name, email, password }),
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    return profile;
-  },
+  login: (email: string, password: string, remember: boolean) =>
+    http.post<AuthUser>('/api/auth/login', { email, password, remember }),
 
-  async loginWithToken(email: string, _token: string): Promise<OperatorProfile> {
-    await new Promise((r) => setTimeout(r, 800));
+  loginWithGoogle: (credential: string, remember: boolean) =>
+    http.post<AuthUser>('/api/auth/google', { credential, remember }),
 
-    const profile: OperatorProfile = {
-      name: email.split('@')[0] + ' // Sinapse',
-      title: 'Operador Credenciado',
-      email,
-      level: 'Clearance IV',
-      isAuthenticated: true,
-      provider: 'manual',
-    };
+  logout: () => http.post<{ message: string }>('/api/auth/logout'),
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    return profile;
-  },
+  logoutOtherSessions: () => http.post<{ message: string }>('/api/auth/logout-all'),
 
-  logout(): void {
-    localStorage.removeItem(STORAGE_KEY);
-  },
+  updateProfile: (name: string) => http.patch<AuthUser>('/api/auth/me', { name }),
+
+  changePassword: (currentPassword: string | null, newPassword: string) =>
+    http.post<AuthUser>('/api/auth/change-password', { currentPassword, newPassword }),
+
+  forgotPassword: (email: string) =>
+    http.post<{ message: string }>('/api/auth/forgot-password', { email }),
+
+  resetPassword: (token: string) =>
+    http.post<PasswordResetResult>('/api/auth/reset-password', { token }),
+
+  deleteAccount: (password: string | null) =>
+    http.request<{ message: string }>('/api/auth/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    }),
+};
+
+/**
+ * Administração de usuários (backend: /api/admin/users) — somente admins.
+ */
+export const adminApiService = {
+  listUsers: () => http.get<AuthUser[]>('/api/admin/users'),
+
+  updateUser: (email: string, data: { role?: 'user' | 'admin'; isActive?: boolean }) =>
+    http.patch<AuthUser>(`/api/admin/users/${encodeURIComponent(email)}`, data),
+
+  resetPassword: (email: string) =>
+    http.post<PasswordResetResult>(`/api/admin/users/${encodeURIComponent(email)}/reset-password`),
+
+  deleteUser: (email: string) =>
+    http.delete<{ message: string }>(`/api/admin/users/${encodeURIComponent(email)}`),
 };

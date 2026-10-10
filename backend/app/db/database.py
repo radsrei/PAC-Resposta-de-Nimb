@@ -2,20 +2,60 @@
 Persistência local em SQLite (biblioteca padrão, sem dependências extras).
 
 Tabelas:
-- llm_connections: conexões/credenciais de LLM cadastradas pela tela
-- chat_sessions:   sessões de conversa ("Perguntas Anteriores")
-- chat_messages:   mensagens de cada sessão
+- users:                 contas de usuário (e-mail é a chave primária)
+- auth_sessions:         sessões de login (apenas o hash do token é salvo)
+- password_reset_tokens: tokens de recuperação de senha (hash, uso único)
+- llm_connections:       conexões/credenciais de LLM (API key criptografada)
+- chat_sessions:         conversas de cada usuário ("Perguntas Anteriores")
+- chat_messages:         mensagens de cada conversa
+
+Segurança: todas as consultas usam parâmetros (`?`). Nenhum valor vindo do
+usuário é concatenado em SQL, o que impede SQL injection.
 """
 
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.core.config import settings
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    email                TEXT PRIMARY KEY,
+    name                 TEXT NOT NULL,
+    password_hash        TEXT,
+    google_sub           TEXT UNIQUE,
+    role                 TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    is_active            INTEGER NOT NULL DEFAULT 1,
+    must_change_password INTEGER NOT NULL DEFAULT 0,
+    failed_attempts      INTEGER NOT NULL DEFAULT 0,
+    locked_until         TEXT,
+    last_login_at        TEXT,
+    created_at           TEXT NOT NULL,
+    updated_at           TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    token_hash  TEXT PRIMARY KEY,
+    user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
+    created_at  TEXT NOT NULL,
+    expires_at  TEXT NOT NULL,
+    ip          TEXT,
+    user_agent  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions (user_email);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token_hash  TEXT PRIMARY KEY,
+    user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
+    created_at  TEXT NOT NULL,
+    expires_at  TEXT NOT NULL,
+    used_at     TEXT
+);
+
 CREATE TABLE IF NOT EXISTS llm_connections (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
@@ -32,6 +72,7 @@ CREATE TABLE IF NOT EXISTS llm_connections (
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id         TEXT PRIMARY KEY,
+    user_email TEXT REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
     title      TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -51,8 +92,16 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_session
 """
 
 
+def now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now().isoformat()
+
+
+def iso_in(**delta) -> str:
+    return (now() + timedelta(**delta)).isoformat()
 
 
 def new_id(prefix: str) -> str:
@@ -74,7 +123,22 @@ def get_connection() -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Ajusta bancos criados por versões anteriores."""
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(chat_sessions)")}
+    if "user_email" not in columns:
+        # Conversas antigas ficam sem dono (não aparecem para nenhum usuário)
+        conn.execute(
+            "ALTER TABLE chat_sessions ADD COLUMN user_email TEXT "
+            "REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE"
+        )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions (user_email, updated_at)"
+    )
+
+
 def init_db() -> None:
     settings.database_path.parent.mkdir(parents=True, exist_ok=True)
     with get_connection() as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)

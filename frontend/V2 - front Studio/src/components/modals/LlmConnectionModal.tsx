@@ -9,6 +9,8 @@ import {
 import { llmApiService } from '../../services/llmApi';
 
 interface LlmConnectionModalProps {
+  /** Só administradores gerenciam conexões (elas guardam API keys). */
+  isAdmin: boolean;
   isOpen: boolean;
   onClose: () => void;
   /** Chamado sempre que a lista muda, com a conexão ativa atual (ou null). */
@@ -41,6 +43,7 @@ const inputClass =
 const labelClass = 'font-mono text-[10px] uppercase tracking-wider text-[#8B87A8] mb-1 block';
 
 export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
+  isAdmin,
   isOpen,
   onClose,
   onChanged,
@@ -54,6 +57,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
   const [testResults, setTestResults] = useState<Record<string, LlmTestResult>>({});
   const [error, setError] = useState<string | null>(null);
 
+  const [activeInfo, setActiveInfo] = useState<LlmConnection | null>(null);
+
   const refresh = async () => {
     const list = await llmApiService.listConnections();
     setConnections(list);
@@ -64,13 +69,55 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
+    if (!isAdmin) {
+      llmApiService
+        .getActive()
+        .then((active) => {
+          setActiveInfo(active);
+          onChanged(active);
+        })
+        .catch((err) => setError(err.message));
+      return;
+    }
     Promise.all([llmApiService.listProviders(), refresh()])
       .then(([provs]) => setProviders(provs))
       .catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   if (!isOpen) return null;
+
+  if (!isAdmin) {
+    return (
+      <div
+        className="fixed inset-0 bg-[#0A0A10]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div className="w-full max-w-md bg-[#1B1B22] border border-[rgba(162,89,255,0.3)] rounded-2xl p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-[#F0EEF8] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#d8b9ff]">hub</span> Conexão LLM
+            </h2>
+            <button onClick={onClose} className="text-[#8B87A8] hover:text-[#F0EEF8] cursor-pointer" title="Fechar">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          {error && <p className="text-xs font-mono text-red-300">{error}</p>}
+          {activeInfo ? (
+            <p className="text-sm text-[#F0EEF8]">
+              LLM ativa: <strong>{activeInfo.name}</strong>
+              <span className="block font-mono text-xs text-[#8B87A8]">{activeInfo.model}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-amber-300">Nenhuma LLM conectada no momento.</p>
+          )}
+          <p className="text-xs text-[#8B87A8]">
+            Somente administradores podem cadastrar ou alterar conexões com LLMs.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const provider = providers.find((p) => p.id === form.provider);
   const editing = connections.find((c) => c.id === editingId) || null;

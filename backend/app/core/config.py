@@ -16,10 +16,16 @@ def _csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _bool(name: str, default: bool) -> bool:
+    return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
+
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "Respostas de Nimb API"
-    version: str = "0.3.0"
+    version: str = "0.4.0"
+    # Swagger em /docs (desligue em produção)
+    enable_docs: bool = _bool("ENABLE_DOCS", True)
 
     host: str = os.getenv("API_HOST", "0.0.0.0")
     port: int = int(os.getenv("API_PORT", "8000"))
@@ -51,6 +57,39 @@ class Settings:
     default_llm_model: str | None = os.getenv("LLM_MODEL") or None
     default_llm_api_key: str | None = os.getenv("LLM_API_KEY") or None
     default_llm_base_url: str | None = os.getenv("LLM_BASE_URL") or None
+
+    # ------------------------------------------------------------------
+    # Autenticação
+    # ------------------------------------------------------------------
+    # Chave usada para criptografar as API keys das LLMs no banco. Se vazia,
+    # uma chave é gerada e salva em data/secret.key (fora do Git).
+    app_secret_key: str | None = os.getenv("APP_SECRET_KEY") or None
+
+    # Cookie de sessão (HttpOnly). Em produção com HTTPS use COOKIE_SECURE=true.
+    session_cookie_name: str = os.getenv("SESSION_COOKIE_NAME", "nimb_session")
+    cookie_secure: bool = _bool("COOKIE_SECURE", False)
+    session_ttl_hours: int = int(os.getenv("SESSION_TTL_HOURS", "8"))
+    remember_me_days: int = int(os.getenv("REMEMBER_ME_DAYS", "7"))
+
+    # Login com Google (Google Identity Services). Vazio = botão desativado.
+    google_client_id: str | None = os.getenv("GOOGLE_CLIENT_ID") or None
+
+    registration_enabled: bool = _bool("REGISTRATION_ENABLED", True)
+    # E-mails que viram administradores ao criar conta
+    admin_emails: list[str] = field(
+        default_factory=lambda: [e.lower() for e in _csv(os.getenv("ADMIN_EMAILS", ""))]
+    )
+    # A primeira conta criada no sistema vira administradora
+    first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", True)
+
+    # Senha básica e fixa aplicada nos resets (troca obrigatória no próximo login)
+    default_reset_password: str = os.getenv("DEFAULT_RESET_PASSWORD", "Nimb@12345")
+    reset_token_ttl_minutes: int = int(os.getenv("RESET_TOKEN_TTL_MINUTES", "30"))
+
+    # Proteção contra força bruta
+    max_failed_logins: int = int(os.getenv("MAX_FAILED_LOGINS", "5"))
+    lockout_minutes: int = int(os.getenv("LOCKOUT_MINUTES", "15"))
+    auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))
 
 
 settings = Settings()

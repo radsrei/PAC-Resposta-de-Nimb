@@ -39,6 +39,7 @@ def _session_title(prompt: str) -> str:
 
 
 def ask(
+    user_email: str,
     prompt: str,
     chaos_level: int = 50,
     session_id: str | None = None,
@@ -49,7 +50,7 @@ def ask(
 
     history: list[dict[str, str]] = []
     if session_id:
-        get_session_or_404(session_id)
+        get_session_or_404(user_email, session_id)
         history = [
             {"role": m["role"], "content": m["content"]}
             for m in session_repository.list_messages(session_id, limit=settings.history_limit)
@@ -66,7 +67,7 @@ def ask(
 
     # A sessão só é criada/gravada quando a LLM respondeu com sucesso
     if not session_id:
-        session_id = session_repository.create_session(_session_title(prompt))["id"]
+        session_id = session_repository.create_session(user_email, _session_title(prompt))["id"]
 
     metadata = {
         "provider": result.provider,

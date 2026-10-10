@@ -1,9 +1,15 @@
-"""Acesso a dados da tabela `llm_connections`."""
+"""
+Acesso a dados da tabela `llm_connections`.
+
+A API key é gravada criptografada (Fernet) e só é descriptografada em memória.
+"""
 
 from typing import Any
 
+from app.core import crypto
 from app.db.database import get_connection, new_id, now_iso
 
+# Lista fixa de colunas: nomes de coluna nunca vêm do usuário
 COLUMNS = (
     "name", "provider", "model", "base_url", "api_key",
     "temperature", "max_tokens", "is_active",
@@ -13,7 +19,28 @@ COLUMNS = (
 def _to_dict(row) -> dict[str, Any]:
     data = dict(row)
     data["is_active"] = bool(data["is_active"])
+    data["api_key"] = crypto.decrypt(data["api_key"])
     return data
+
+
+def _encrypt_key(data: dict[str, Any]) -> dict[str, Any]:
+    if "api_key" in data:
+        data = {**data, "api_key": crypto.encrypt(data["api_key"])}
+    return data
+
+
+def encrypt_legacy_keys() -> None:
+    """Criptografa API keys gravadas em texto puro por versões anteriores."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, api_key FROM llm_connections WHERE api_key IS NOT NULL"
+        ).fetchall()
+        for row in rows:
+            if not crypto.is_encrypted(row["api_key"]):
+                conn.execute(
+                    "UPDATE llm_connections SET api_key = ? WHERE id = ?",
+                    (crypto.encrypt(row["api_key"]), row["id"]),
+                )
 
 
 def list_all() -> list[dict[str, Any]]:
@@ -48,6 +75,7 @@ def count() -> int:
 def create(data: dict[str, Any]) -> dict[str, Any]:
     connection_id = new_id("llm")
     ts = now_iso()
+    data = _encrypt_key(data)
     with get_connection() as conn:
         # Apenas uma conexão pode estar ativa por vez
         if data.get("is_active"):
@@ -61,7 +89,7 @@ def create(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def update(connection_id: str, changes: dict[str, Any]) -> dict[str, Any] | None:
-    changes = {k: v for k, v in changes.items() if k in COLUMNS}
+    changes = _encrypt_key({k: v for k, v in changes.items() if k in COLUMNS})
     with get_connection() as conn:
         if changes.get("is_active"):
             conn.execute("UPDATE llm_connections SET is_active = 0")
