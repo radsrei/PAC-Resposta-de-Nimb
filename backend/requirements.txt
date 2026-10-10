@@ -1,0 +1,8 @@
+# Dependências mínimas para subir a API (front + LLM, sem RAG)
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-dotenv
+python-multipart   # upload de arquivos (multipart/form-data)
+httpx              # chamadas HTTP para OpenAI / Gemini / DeepSeek / Ollama
+anthropic          # SDK oficial para o provedor Claude

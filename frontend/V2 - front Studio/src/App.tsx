@@ -1,18 +1,25 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { ChatArea } from './components/chat/ChatArea';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { PdfUploadModal } from './components/modals/PdfUploadModal';
+import { LlmConnectionModal } from './components/modals/LlmConnectionModal';
 import {
   ChatMessage,
+  ChatSession,
   HistoryItem,
   IndexedBook,
+  LlmConnection,
   OperatorProfile,
   ScreenView,
+  SessionMessage,
 } from './types';
 import { ragApiService } from './services/ragApi';
 import { authApiService } from './services/authApi';
+import { llmApiService } from './services/llmApi';
+import { sessionApiService } from './services/sessionApi';
+import { ApiError } from './services/http';
 
 const INITIAL_BOOKS: IndexedBook[] = [
   {
@@ -47,84 +54,129 @@ const INITIAL_BOOKS: IndexedBook[] = [
   },
 ];
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: 'msg_01',
-    sender: 'nimb',
-    text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o grimório aberto. Os tomos de Tormenta20 estão mapeados na memória neural. O que você deseja extrair do tecido da realidade hoje?',
-    timestamp: '14:30:12',
-    syntaxTag: '#sintaxe-01',
-  },
-  {
-    id: 'msg_02',
-    sender: 'user',
-    text: 'Diga, meu pequeno ser perdido... Qual é o status do kernel e o efeito primordial da magia do Caos de acordo com o Grimório?',
-    timestamp: '14:31:05',
-  },
-  {
-    id: 'msg_03',
-    sender: 'nimb',
-    text: 'O status do Kernel Nimb permanece em estabilidade caótica (98.4% de sincronização com o banco vetorial).\n\nConsultando o Grimório do Caos.pdf e os registros de Tormenta20, quando você conjura uma magia sob a égide do Caos Primordial:',
-    timestamp: '14:31:40',
-    ragMetadata: {
-      bookTitle: 'Grimório do Caos.pdf',
-      page: 77,
-      similarity: '94.2%',
-      chaosApplied: 78,
-    },
-    rollTable: {
-      title: 'EFEITO DE RETORNO // TABELA DE ROLO ALEATÓRIO',
-      diceRoll: 'd20: Resultado 18',
-      description: '“O conjurador distorce os limites da física planar. O alvo sofre dano de essência aleatória e deve rolar Fortitude ou trocar de lugar no espaço com o objeto sólido mais próximo em até 9m.”',
-    },
-  },
-];
+const formatTime = (date: Date) =>
+  date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 
-const INITIAL_HISTORY: HistoryItem[] = [
-  {
-    id: 'hist_1',
-    title: 'Efeitos da loucura de Nimb',
-    timestampDesc: 'Hoje, 14:32',
-    refCount: 4,
-    conversation: INITIAL_MESSAGES,
-  },
-  {
-    id: 'hist_2',
-    title: 'Tabela de magias aleatórias',
-    timestampDesc: 'Ontem, 21:10',
-    refCount: 2,
-  },
-  {
-    id: 'hist_3',
-    title: 'Atributos do Clérigo Caótico',
-    timestampDesc: '18 Fev',
-    refCount: 6,
-  },
-];
+const getNow = () => formatTime(new Date());
+
+const welcomeMessage = (): ChatMessage => ({
+  id: 'msg_welcome_' + Date.now(),
+  sender: 'nimb',
+  text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o grimório aberto. O que você deseja extrair do tecido da realidade hoje?',
+  timestamp: getNow(),
+  syntaxTag: '#sintaxe-01',
+});
+
+// "Hoje, 14:32" | "Ontem, 21:10" | "18 de fev."
+const describeDate = (iso: string) => {
+  const date = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const hour = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (date.toDateString() === today.toDateString()) return `Hoje, ${hour}`;
+  if (date.toDateString() === yesterday.toDateString()) return `Ontem, ${hour}`;
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+};
+
+const sessionToHistory = (session: ChatSession): HistoryItem => ({
+  id: session.id,
+  title: session.title,
+  timestampDesc: describeDate(session.updatedAt),
+  refCount: session.messageCount,
+});
+
+const toChatMessage = (msg: SessionMessage): ChatMessage => {
+  const meta = (msg.metadata || {}) as Record<string, any>;
+  return {
+    id: msg.id,
+    sender: msg.role === 'user' ? 'user' : 'nimb',
+    text: msg.content,
+    timestamp: formatTime(new Date(msg.createdAt)),
+    ragMetadata:
+      msg.role === 'assistant'
+        ? {
+            bookTitle: '',
+            similarity: '-',
+            chaosApplied: meta.chaosApplied ?? 0,
+            provider: meta.provider,
+            model: meta.model,
+            connectionName: meta.connectionName,
+            latencyMs: meta.latencyMs,
+          }
+        : undefined,
+  };
+};
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenView>('terminal');
-  const [chaosLevel, setChaosLevel] = useState<number>(78);
+  const [chaosLevel, setChaosLevel] = useState<number>(50);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
   const [operator, setOperator] = useState<OperatorProfile>(authApiService.getStoredSession());
   const [books, setBooks] = useState<IndexedBook[]>(INITIAL_BOOKS);
-  const [history, setHistory] = useState<HistoryItem[]>(INITIAL_HISTORY);
-  const [activeHistoryId, setActiveHistoryId] = useState<string | null>('hist_1');
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [welcomeMessage()]);
   const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [backendOnline, setBackendOnline] = useState<boolean>(true);
+  const [llmConnection, setLlmConnection] = useState<LlmConnection | null>(null);
 
   // Total Chunks calculation
   const totalChunks = books.reduce((acc, b) => acc + b.chunks, 25680);
 
-  // Formatted timestamp
-  const getNow = () =>
-    new Date().toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
+  const pushNimbError = (text: string) =>
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: 'msg_err_' + Date.now(),
+        sender: 'nimb',
+        text,
+        timestamp: getNow(),
+        isError: true,
+      },
+    ]);
+
+  const handleApiError = (err: unknown, context: string) => {
+    console.error(context, err);
+    const apiErr = err instanceof ApiError ? err : null;
+    if (apiErr && (apiErr.status === 0 || apiErr.status >= 500)) {
+      // 502 com detalhe vem do provedor de LLM; sem detalhe, é o backend fora do ar
+      if (apiErr.status !== 502 || apiErr.message.startsWith('Backend')) setBackendOnline(false);
+    }
+    if (apiErr?.status === 409) setIsLlmModalOpen(true);
+    return apiErr?.message || 'Erro inesperado ao consultar o backend.';
+  };
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const sessions = await sessionApiService.list();
+      setHistory(sessions.map(sessionToHistory));
+    } catch (err) {
+      console.warn('Não foi possível carregar o histórico:', err);
+    }
+  }, []);
+
+  const loadStatus = useCallback(async () => {
+    try {
+      const active = await llmApiService.getActive();
+      setLlmConnection(active);
+      setBackendOnline(true);
+    } catch {
+      setBackendOnline(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStatus();
+    loadSessions();
+  }, [loadStatus, loadSessions]);
 
   // Handle Query Submission
   const handleSendMessage = async (textToSend?: string) => {
@@ -147,10 +199,11 @@ export default function App() {
         prompt: query,
         chaosLevel,
         bookIds: books.map((b) => b.id),
+        sessionId: activeSessionId,
       });
 
       const nimbMsg: ChatMessage = {
-        id: 'msg_res_' + Date.now(),
+        id: response.messageId || 'msg_res_' + Date.now(),
         sender: 'nimb',
         text: response.answer,
         timestamp: getNow(),
@@ -159,38 +212,42 @@ export default function App() {
           page: response.page,
           similarity: response.similarity,
           chaosApplied: response.chaosApplied,
+          provider: response.provider,
+          model: response.model,
+          connectionName: response.connectionName,
+          latencyMs: response.latencyMs,
         },
-        quote: response.quote,
-        rollTable: response.rollTable,
+        quote: response.quote || undefined,
+        rollTable: response.rollTable || undefined,
       };
 
       setMessages((prev) => [...prev, nimbMsg]);
+      setBackendOnline(true);
 
-      // Update or prepend history
-      setHistory((prev) => {
-        const titleSnippet = query.length > 32 ? query.slice(0, 32) + '...' : query;
-        const exists = prev.some((h) => h.title === titleSnippet);
-        if (exists) return prev;
-        return [
-          {
-            id: 'hist_' + Date.now(),
-            title: titleSnippet,
-            timestampDesc: 'Agora mesmo',
-            refCount: 3,
-          },
-          ...prev,
-        ];
-      });
+      if (response.sessionId) {
+        setActiveSessionId(response.sessionId);
+        loadSessions();
+      }
     } catch (err) {
-      console.error('Error querying RAG:', err);
+      pushNimbError(handleApiError(err, 'Error querying RAG:'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Reenvia a pergunta do usuário que originou a resposta selecionada
+  const handleRerollMessage = (messageId: string) => {
+    const index = messages.findIndex((m) => m.id === messageId);
+    const previousUser = messages
+      .slice(0, index)
+      .reverse()
+      .find((m) => m.sender === 'user');
+    if (previousUser) handleSendMessage(previousUser.text);
+  };
+
   // Start new clean session
   const handleNewSession = () => {
-    setActiveHistoryId(null);
+    setActiveSessionId(null);
     setMessages([
       {
         id: 'msg_fresh_' + Date.now(),
@@ -203,13 +260,37 @@ export default function App() {
   };
 
   // Select historical question
-  const handleSelectHistory = (item: HistoryItem) => {
-    setActiveHistoryId(item.id);
-    if (item.conversation && item.conversation.length > 0) {
-      setMessages(item.conversation);
-    } else {
-      // Simulate historical prompt
-      handleSendMessage(item.title);
+  const handleSelectHistory = async (item: HistoryItem) => {
+    try {
+      const session = await sessionApiService.get(item.id);
+      setActiveSessionId(session.id);
+      setMessages(
+        session.messages.length > 0 ? session.messages.map(toChatMessage) : [welcomeMessage()]
+      );
+    } catch (err) {
+      pushNimbError(handleApiError(err, 'Error loading session:'));
+    }
+  };
+
+  const handleDeleteHistory = async (item: HistoryItem) => {
+    try {
+      await sessionApiService.remove(item.id);
+      if (item.id === activeSessionId) handleNewSession();
+      await loadSessions();
+    } catch (err) {
+      pushNimbError(handleApiError(err, 'Error deleting session:'));
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (history.length === 0) return;
+    if (!window.confirm('Apagar todas as conversas salvas?')) return;
+    try {
+      await sessionApiService.removeAll();
+      setHistory([]);
+      handleNewSession();
+    } catch (err) {
+      pushNimbError(handleApiError(err, 'Error clearing history:'));
     }
   };
 
@@ -224,6 +305,9 @@ export default function App() {
         onChaosChange={setChaosLevel}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
+        onOpenLlmModal={() => setIsLlmModalOpen(true)}
+        llmConnection={llmConnection}
+        backendOnline={backendOnline}
         onNavigateLogin={() =>
           setCurrentScreen(currentScreen === 'login' ? 'terminal' : 'login')
         }
@@ -240,9 +324,11 @@ export default function App() {
             onClose={() => setIsSidebarOpen(false)}
             operator={operator}
             history={history}
-            activeHistoryId={activeHistoryId}
+            activeHistoryId={activeSessionId}
             onSelectHistory={handleSelectHistory}
-            onClearHistory={() => setHistory([])}
+            onClearHistory={handleClearHistory}
+            onDeleteHistory={handleDeleteHistory}
+            backendOnline={backendOnline}
             books={books}
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
             onNewSession={handleNewSession}
@@ -257,7 +343,9 @@ export default function App() {
             onInputChange={setInputValue}
             onSendMessage={() => handleSendMessage()}
             onSelectSuggestion={(text) => handleSendMessage(text)}
+            onRerollMessage={handleRerollMessage}
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
+            llmLabel={llmConnection ? `${llmConnection.name} (${llmConnection.model})` : null}
             indexedBooksCount={books.length}
             totalChunks={totalChunks}
           />
@@ -281,6 +369,16 @@ export default function App() {
         books={books}
         onAddBook={(newBook) => setBooks((prev) => [newBook, ...prev])}
         onRemoveBook={(id) => setBooks((prev) => prev.filter((b) => b.id !== id))}
+      />
+
+      {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}
+      <LlmConnectionModal
+        isOpen={isLlmModalOpen}
+        onClose={() => setIsLlmModalOpen(false)}
+        onChanged={(active) => {
+          setLlmConnection(active);
+          setBackendOnline(true);
+        }}
       />
     </div>
   );

@@ -1,20 +1,29 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# NIMB_OS — Front V2
 
-# Run and deploy your AI Studio app
+Tela final do projeto Respostas de Nimb (React + Vite + Tailwind).
 
-This contains everything you need to run your app locally.
+```bash
+npm install
+npm run dev     # http://localhost:3000 (com o backend rodando em http://localhost:8000)
+```
 
-View your app in AI Studio: https://ai.studio/apps/3a951089-5729-4699-b360-fb602fc87891
+O guia completo, que cobre backend, conexão com a LLM e rotas, está em [`Setup-Front-Tela.md`](../../Setup-Front-Tela.md).
 
-## Run Locally
+## Estrutura
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```text
+src/
+├── App.tsx                     estado da tela e orquestração das chamadas
+├── services/
+│   ├── http.ts                 cliente HTTP base (erros, proxy /api)
+│   ├── ragApi.ts               POST /api/rag/query (pergunta → LLM)
+│   ├── llmApi.ts               CRUD das conexões LLM
+│   ├── sessionApi.ts           CRUD das conversas (Perguntas Anteriores)
+│   └── authApi.ts              login (simulado)
+└── components/
+    ├── layout/                 Header (status da LLM), Sidebar (histórico)
+    ├── chat/                   área de chat e mensagens
+    ├── modals/LlmConnectionModal.tsx   caixa de conexão com a LLM
+    ├── modals/PdfUploadModal.tsx       upload de livros (etapa de RAG)
+    └── auth/                   tela de login
+```

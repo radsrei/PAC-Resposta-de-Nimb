@@ -1,5 +1,5 @@
 import React from 'react';
-import { OperatorProfile } from '../../types';
+import { LlmConnection, OperatorProfile } from '../../types';
 
 interface HeaderProps {
   chaosLevel: number;
@@ -7,6 +7,9 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onOpenUploadModal: () => void;
   onNavigateLogin: () => void;
+  onOpenLlmModal: () => void;
+  llmConnection: LlmConnection | null;
+  backendOnline: boolean;
   operator: OperatorProfile;
   currentScreen: 'terminal' | 'login';
 }
@@ -17,6 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   onOpenUploadModal,
   onNavigateLogin,
+  onOpenLlmModal,
+  llmConnection,
+  backendOnline,
   operator,
   currentScreen,
 }) => {
@@ -139,13 +145,46 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden md:inline">Subir PDF</span>
         </button>
 
-        {/* Neural Link Status */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#181827] border border-[#39D98A]/25">
-          <span className="w-2 h-2 rounded-full bg-[#39D98A] pulse-status"></span>
-          <span className="font-mono text-xs text-[#39D98A] font-medium hidden lg:inline">
-            Neural Link Ativo
+        {/* Conexão LLM: status + abre a caixa de configuração da API */}
+        <button
+          onClick={onOpenLlmModal}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#181827] border transition-all cursor-pointer hover:bg-[#222236] ${
+            !backendOnline
+              ? 'border-red-500/40'
+              : llmConnection
+                ? 'border-[#39D98A]/30'
+                : 'border-amber-400/40'
+          }`}
+          title={
+            !backendOnline
+              ? 'Backend offline — clique para configurar a LLM'
+              : llmConnection
+                ? `LLM ativa: ${llmConnection.name} (${llmConnection.model})`
+                : 'Nenhuma LLM conectada — clique para configurar'
+          }
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              !backendOnline
+                ? 'bg-red-400'
+                : llmConnection
+                  ? 'bg-[#39D98A] pulse-status'
+                  : 'bg-amber-400 animate-pulse'
+            }`}
+          ></span>
+          <span className="material-symbols-outlined text-[16px] text-[#d8b9ff]">hub</span>
+          <span
+            className={`font-mono text-xs font-medium hidden lg:inline truncate max-w-[160px] ${
+              !backendOnline ? 'text-red-300' : llmConnection ? 'text-[#39D98A]' : 'text-amber-300'
+            }`}
+          >
+            {!backendOnline
+              ? 'Backend Offline'
+              : llmConnection
+                ? llmConnection.model
+                : 'Conectar LLM'}
           </span>
-        </div>
+        </button>
 
         {/* Login / Operator Navigation toggle */}
         <button
