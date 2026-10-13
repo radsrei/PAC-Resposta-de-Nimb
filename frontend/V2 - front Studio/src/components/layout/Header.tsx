@@ -1,5 +1,5 @@
 import React from 'react';
-import { LlmConnection, OperatorProfile } from '../../types';
+import { LlmConnection, OperatorProfile, ScreenView } from '../../types';
 
 interface HeaderProps {
   chaosLevel: number;
@@ -11,7 +11,7 @@ interface HeaderProps {
   llmConnection: LlmConnection | null;
   backendOnline: boolean;
   operator: OperatorProfile;
-  currentScreen: 'terminal' | 'login';
+  currentScreen: ScreenView;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -190,17 +190,17 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onNavigateLogin}
           className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-            currentScreen === 'login'
+            currentScreen === 'account'
               ? 'bg-[#A259FF]/20 border-[#A259FF] text-white shadow-[0_0_12px_rgba(162,89,255,0.3)]'
               : 'bg-[#13131F] border-[rgba(162,89,255,0.25)] text-[#8B87A8] hover:text-[#F0EEF8] hover:border-[#A259FF]/50'
           }`}
-          title="Tela de Autenticação / Google Workspace"
+          title="Minha conta"
         >
           <span className="material-symbols-outlined text-[17px] text-[#A259FF]">
             account_circle
           </span>
           <span className="hidden sm:inline font-mono text-[11px] truncate max-w-[90px]">
-            {operator.isAuthenticated ? 'Nexus' : 'Login'}
+            {operator.name.split(' ')[0]}
           </span>
         </button>
       </div>

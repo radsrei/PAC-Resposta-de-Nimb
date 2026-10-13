@@ -19,6 +19,9 @@ pydantic
 python-multipart
 httpx
 anthropic
+cryptography
+google-auth
+requests
 
 # Script Docling
 docling>=2.0.0
