@@ -22,9 +22,9 @@ pip install -U pip
 pip install -r requirements.txt
 ```
 
-### Git
+## Git
 Gerar uma nova Branch para envio de mudanças e PR
-#### Boas Pratias
+### Boas Pratias
 Gerar Branch com prefixo:
  - Feat/
  - Fix/
@@ -51,6 +51,17 @@ git checkout -b nome-da-sua-branch develop
 Subir o commit para o Git
 ```bash
 git push -u origin feat/minha-nova-funcionalidade
+```
+
+Atualiza e remove as branchs já apagadas
+```bash
+git fetch -p
+```
+
+Remover as Branchs remotas
+```bash
+git checkout develop
+git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
 ```
 
 ## Agenda
