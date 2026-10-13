@@ -3,11 +3,13 @@ A integração está pronta. O sistema sobe localmente: você abre a tela, cadas
 **Para subir:**
 ```bash
 cd backend && pip install -r requirements.txt && python main.py         # porta 8000
+CTRL + C #Sair
 ```
 ### http://localhost:8000 
 ```bash
 winget install -e --id OpenJS.NodeJS.LTS
 cd "frontend/V2 - front Studio" && npm install && npm run dev            # porta 3000
+q + ENTER       #Sair
 ```
 ### http://localhost:3000
 Depois clique em **Conectar LLM** no topo da tela, escolha o provedor, cole a API key e pergunte. O passo a passo completo e a lista de rotas estão em [Setup-Front-Tela.md](Setup-Front-Tela.md).
