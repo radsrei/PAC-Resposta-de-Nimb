@@ -64,6 +64,25 @@ git checkout develop
 git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
 ```
 
+
+### Setup para Bitwarden
+```bash
+#Bitwarden - Cofre
+winget install -e --id Bitwarden.CLI
+#Biblioteca para script
+winget install jq
+###
+```
+
+
+### Entrar no cofre BW
+```bash
+bw login                           # e-mail, senha mestra e código 2FA
+export BW_SESSION="$(bw unlock --raw)"
+bw sync
+bw status | jq -r .status          # esperado: unlocked
+```
+
 ## Agenda
 
 ### Levantamento
