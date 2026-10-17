@@ -4,7 +4,6 @@ Persistência local em SQLite (biblioteca padrão, sem dependências extras).
 Tabelas:
 - users:                 contas de usuário (e-mail é a chave primária)
 - auth_sessions:         sessões de login (apenas o hash do token é salvo)
-- password_reset_tokens: tokens de recuperação de senha (hash, uso único)
 - llm_connections:       conexões/credenciais de LLM (API key criptografada)
 - chat_sessions:         conversas de cada usuário ("Perguntas Anteriores")
 - chat_messages:         mensagens de cada conversa
@@ -25,13 +24,9 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     email                TEXT PRIMARY KEY,
     name                 TEXT NOT NULL,
-    password_hash        TEXT,
     google_sub           TEXT UNIQUE,
     role                 TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     is_active            INTEGER NOT NULL DEFAULT 1,
-    must_change_password INTEGER NOT NULL DEFAULT 0,
-    failed_attempts      INTEGER NOT NULL DEFAULT 0,
-    locked_until         TEXT,
     last_login_at        TEXT,
     created_at           TEXT NOT NULL,
     updated_at           TEXT NOT NULL
@@ -47,14 +42,6 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions (user_email);
-
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-    token_hash  TEXT PRIMARY KEY,
-    user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
-    created_at  TEXT NOT NULL,
-    expires_at  TEXT NOT NULL,
-    used_at     TEXT
-);
 
 CREATE TABLE IF NOT EXISTS llm_connections (
     id          TEXT PRIMARY KEY,
@@ -135,6 +122,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_chat_sessions_user ON chat_sessions (user_email, updated_at)"
     )
+    # Login com e-mail e senha foi removido (só Google): os tokens de
+    # recuperação de senha não têm mais uso. Colunas antigas de `users`
+    # (password_hash etc.) permanecem em bancos existentes, sem uso.
+    conn.execute("DROP TABLE IF EXISTS password_reset_tokens")
 
 
 def init_db() -> None:

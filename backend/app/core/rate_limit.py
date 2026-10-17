@@ -1,8 +1,7 @@
 """
 Limite de requisições em memória (janela deslizante) por IP.
 
-Usado nas rotas de autenticação para dificultar força bruta e abuso da
-recuperação de senha. Por ser em memória, vale por processo da API.
+Usado na rota de login para dificultar abuso e força bruta. Por ser em memória, vale por processo da API.
 """
 
 import threading

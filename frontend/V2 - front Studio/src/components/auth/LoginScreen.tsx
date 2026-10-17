@@ -1,183 +1,29 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AuthConfig, AuthUser } from '../../types';
 import { authApiService } from '../../services/authApi';
 import { GoogleSignInButton } from './GoogleSignInButton';
 
-type AuthMode = 'login' | 'register' | 'forgot' | 'reset' | 'change';
-
 interface LoginScreenProps {
   config: AuthConfig | null;
-  /** Usuário logado que precisa trocar a senha (senha padrão após reset). */
-  pendingUser: AuthUser | null;
   onAuthenticated: (user: AuthUser) => void;
-  onLogout: () => void;
 }
 
-const inputClass =
-  'w-full bg-[#1A1A2E] text-[#E4E1EC] placeholder:text-[#4b4454] font-mono text-xs pl-11 pr-4 py-3 rounded-lg border border-[#34344E] focus:outline-none focus:border-[#43e090] focus:bg-[#2A2931] transition-all';
-
-const Field: React.FC<{
-  id: string;
-  label: string;
-  icon: string;
-  children: React.ReactNode;
-  hint?: string;
-}> = ({ id, label, icon, children, hint }) => (
-  <div>
-    <label
-      htmlFor={id}
-      className="font-mono text-xs text-[#cec2d7] uppercase tracking-wider mb-1.5 flex items-center justify-between"
-    >
-      <span>{label}</span>
-      {hint && <span className="text-[#8B87A8] text-[10px] normal-case">{hint}</span>}
-    </label>
-    <div className="relative">
-      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#8B87A8] text-[18px] pointer-events-none">
-        {icon}
-      </span>
-      {children}
-    </div>
-  </div>
-);
-
-const PasswordInput: React.FC<{
-  id: string;
-  value: string;
-  onChange: (v: string) => void;
-  autoComplete: string;
-  placeholder?: string;
-}> = ({ id, value, onChange, autoComplete, placeholder }) => {
-  const [visible, setVisible] = useState(false);
-  return (
-    <>
-      <input
-        id={id}
-        type={visible ? 'text' : 'password'}
-        required
-        maxLength={128}
-        autoComplete={autoComplete}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || '••••••••'}
-        className={`${inputClass} pr-11`}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible(!visible)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8B87A8] hover:text-[#E4E1EC] cursor-pointer"
-        title={visible ? 'Ocultar senha' : 'Mostrar senha'}
-      >
-        <span className="material-symbols-outlined text-[18px]">
-          {visible ? 'visibility_off' : 'visibility'}
-        </span>
-      </button>
-    </>
-  );
-};
-
-const TITLES: Record<AuthMode, [string, string]> = {
-  login: ['PROTOCOLO DE ACESSO', 'ENTRAR NO NIMB_OS'],
-  register: ['NOVO OPERADOR', 'CRIAR CONTA'],
-  forgot: ['RECUPERAÇÃO', 'ESQUECI MINHA SENHA'],
-  reset: ['RECUPERAÇÃO', 'USAR CÓDIGO DE RECUPERAÇÃO'],
-  change: ['SEGURANÇA', 'DEFINA UMA NOVA SENHA'],
-};
-
-export const LoginScreen: React.FC<LoginScreenProps> = ({
-  config,
-  pendingUser,
-  onAuthenticated,
-  onLogout,
-}) => {
-  const initialToken = new URLSearchParams(window.location.search).get('reset') || '';
-  const [mode, setMode] = useState<AuthMode>(
-    pendingUser ? 'change' : initialToken ? 'reset' : 'login'
-  );
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetToken, setResetToken] = useState(initialToken);
+/** Tela de acesso: o único método de login é o Google. */
+export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticated }) => {
   const [remember, setRemember] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (pendingUser) setMode('change');
-  }, [pendingUser]);
-
-  const minLength = config?.passwordMinLength ?? 8;
-
-  const switchMode = (next: AuthMode) => {
-    setMode(next);
-    setError(null);
-    setInfo(null);
-    setPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-  };
-
-  const run = async (action: () => Promise<void>) => {
+  const handleGoogle = async (credential: string) => {
     setBusy(true);
     setError(null);
     try {
-      await action();
+      onAuthenticated(await authApiService.loginWithGoogle(credential, remember));
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setBusy(false);
     }
-  };
-
-  const checkNewPassword = (value: string) => {
-    if (value.length < minLength) return `A senha deve ter pelo menos ${minLength} caracteres.`;
-    if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return 'A senha deve conter letras e números.';
-    if (value !== confirmPassword) return 'A confirmação da senha não confere.';
-    return null;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (mode === 'login') {
-      run(async () => onAuthenticated(await authApiService.login(email, password, remember)));
-    } else if (mode === 'register') {
-      const problem = checkNewPassword(newPassword);
-      if (problem) return setError(problem);
-      run(async () => onAuthenticated(await authApiService.register(name, email, newPassword)));
-    } else if (mode === 'forgot') {
-      run(async () => {
-        const res = await authApiService.forgotPassword(email);
-        setMode('reset');
-        setInfo(res.message);
-      });
-    } else if (mode === 'reset') {
-      run(async () => {
-        const res = await authApiService.resetPassword(resetToken);
-        window.history.replaceState(null, '', window.location.pathname);
-        switchMode('login');
-        setPassword(res.temporaryPassword);
-        setInfo(`${res.message} Senha padrão: ${res.temporaryPassword}`);
-      });
-    } else if (mode === 'change') {
-      const problem = checkNewPassword(newPassword);
-      if (problem) return setError(problem);
-      run(async () => onAuthenticated(await authApiService.changePassword(password, newPassword)));
-    }
-  };
-
-  const handleGoogle = (credential: string) =>
-    run(async () => onAuthenticated(await authApiService.loginWithGoogle(credential, remember)));
-
-  const [kicker, title] = TITLES[mode];
-  const submitLabel: Record<AuthMode, string> = {
-    login: 'Entrar',
-    register: 'Criar conta',
-    forgot: 'Gerar código de recuperação',
-    reset: 'Redefinir senha',
-    change: 'Salvar nova senha',
   };
 
   return (
@@ -225,20 +71,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[14px] text-[#d8b9ff]">shield</span>
-                Senhas com hash scrypt
+                Login exclusivo via Google
               </span>
             </div>
           </div>
 
-          {/* Coluna direita: formulário */}
+          {/* Coluna direita: acesso */}
           <div className="lg:col-span-7 flex flex-col justify-center p-6 md:p-10 bg-[#1F1F26]">
             <div className="w-full max-w-md mx-auto">
               <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#34344E]/50">
                 <div>
                   <span className="font-mono text-[11px] text-[#d8b9ff] tracking-widest uppercase block mb-1">
-                    {kicker}
+                    PROTOCOLO DE ACESSO
                   </span>
-                  <h2 className="text-xl md:text-2xl font-bold text-[#F0EEF8] tracking-tight">{title}</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-[#F0EEF8] tracking-tight">ENTRAR NO NIMB_OS</h2>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-[#2A2931] border border-[#43e090]/40 flex items-center justify-center text-[#43e090]">
                   <span className="material-symbols-outlined text-[22px]">fingerprint</span>
@@ -251,189 +97,34 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <span>{error}</span>
                 </div>
               )}
-              {info && (
-                <div className="mb-4 px-4 py-2.5 rounded-lg bg-[#43e090]/10 border border-[#43e090]/40 text-[#43e090] text-xs flex items-start gap-2">
-                  <span className="material-symbols-outlined text-[16px]">info</span>
-                  <span>{info}</span>
-                </div>
-              )}
 
-              {mode === 'change' && (
-                <p className="mb-4 text-xs text-[#cec2d7] leading-relaxed">
-                  Olá, <strong className="text-[#F0EEF8]">{pendingUser?.name}</strong>. Sua senha foi
-                  redefinida para a senha padrão. Por segurança, defina uma senha pessoal para continuar.
+              <p className="mb-5 text-xs text-[#cec2d7] leading-relaxed">
+                Use sua conta Google para entrar. No primeiro acesso, sua conta no Nimb é criada
+                automaticamente.
+              </p>
+
+              <GoogleSignInButton
+                clientId={config?.googleClientId ?? null}
+                onCredential={handleGoogle}
+                disabled={busy}
+              />
+
+              <label className="mt-5 flex items-center justify-center gap-2 text-xs cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                  className="w-4 h-4 rounded bg-[#1A1A2E] accent-[#43e090] cursor-pointer"
+                />
+                <span className="text-[#cec2d7]">Manter conectado</span>
+              </label>
+
+              {busy && (
+                <p className="mt-4 flex items-center justify-center gap-2 font-mono text-[11px] text-[#d8b9ff]">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                  Validando acesso...
                 </p>
               )}
-              {mode === 'reset' && (
-                <p className="mb-4 text-xs text-[#cec2d7] leading-relaxed">
-                  Informe o código de recuperação. A senha será redefinida para a senha padrão do
-                  sistema e você precisará trocá-la no próximo acesso.
-                </p>
-              )}
-
-              {(mode === 'login' || mode === 'register') && (
-                <>
-                  <GoogleSignInButton
-                    clientId={config?.googleClientId ?? null}
-                    onCredential={handleGoogle}
-                    disabled={busy}
-                  />
-                  <div className="relative flex items-center justify-center my-5">
-                    <div className="w-full h-px bg-[#34343C]"></div>
-                    <span className="absolute px-3 bg-[#1F1F26] font-mono text-[10px] text-[#cec2d7] uppercase tracking-wider">
-                      ou com e-mail e senha
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {mode === 'register' && (
-                  <Field id="auth-name" label="Nome" icon="badge">
-                    <input
-                      id="auth-name"
-                      required
-                      maxLength={80}
-                      autoComplete="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Seu nome"
-                      className={inputClass}
-                    />
-                  </Field>
-                )}
-
-                {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
-                  <Field id="auth-email" label="E-mail" icon="alternate_email">
-                    <input
-                      id="auth-email"
-                      type="email"
-                      required
-                      maxLength={254}
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="voce@exemplo.com"
-                      className={inputClass}
-                    />
-                  </Field>
-                )}
-
-                {mode === 'reset' && (
-                  <Field id="auth-token" label="Código de recuperação" icon="key">
-                    <input
-                      id="auth-token"
-                      required
-                      maxLength={200}
-                      autoComplete="one-time-code"
-                      value={resetToken}
-                      onChange={(e) => setResetToken(e.target.value.trim())}
-                      placeholder="Cole aqui o código recebido"
-                      className={inputClass}
-                    />
-                  </Field>
-                )}
-
-                {(mode === 'login' || mode === 'change') && (
-                  <Field
-                    id="auth-password"
-                    label={mode === 'change' ? 'Senha atual (padrão)' : 'Senha'}
-                    icon="vpn_key"
-                  >
-                    <PasswordInput
-                      id="auth-password"
-                      value={password}
-                      onChange={setPassword}
-                      autoComplete="current-password"
-                    />
-                  </Field>
-                )}
-
-                {(mode === 'register' || mode === 'change') && (
-                  <>
-                    <Field
-                      id="auth-new-password"
-                      label={mode === 'change' ? 'Nova senha' : 'Senha'}
-                      icon="lock"
-                      hint={`mín. ${minLength}, letras e números`}
-                    >
-                      <PasswordInput
-                        id="auth-new-password"
-                        value={newPassword}
-                        onChange={setNewPassword}
-                        autoComplete="new-password"
-                      />
-                    </Field>
-                    <Field id="auth-confirm" label="Confirmar senha" icon="lock_reset">
-                      <PasswordInput
-                        id="auth-confirm"
-                        value={confirmPassword}
-                        onChange={setConfirmPassword}
-                        autoComplete="new-password"
-                      />
-                    </Field>
-                  </>
-                )}
-
-                {mode === 'login' && (
-                  <div className="flex items-center justify-between pt-1 text-xs">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={remember}
-                        onChange={(e) => setRemember(e.target.checked)}
-                        className="w-4 h-4 rounded bg-[#1A1A2E] accent-[#43e090] cursor-pointer"
-                      />
-                      <span className="text-[#cec2d7]">Manter conectado</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => switchMode('forgot')}
-                      className="font-mono text-xs text-[#d8b9ff] hover:underline cursor-pointer"
-                    >
-                      Esqueci minha senha
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full mt-2 py-3.5 px-6 rounded-xl font-bold text-sm text-[#0D0D14] bg-gradient-to-r from-[#ae71ff] via-[#d8b9ff] to-[#43e090] shadow-[0_0_20px_rgba(174,113,255,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-                >
-                  <span className="uppercase tracking-wide">{busy ? 'Aguarde...' : submitLabel[mode]}</span>
-                  <span className={`material-symbols-outlined text-[20px] ${busy ? 'animate-spin' : ''}`}>
-                    {busy ? 'sync' : 'arrow_forward'}
-                  </span>
-                </button>
-              </form>
-
-              {/* Navegação entre modos */}
-              <div className="mt-6 flex flex-col items-center gap-2 text-xs text-[#cec2d7]">
-                {mode === 'login' && config?.registrationEnabled !== false && (
-                  <span>
-                    Não tem conta?{' '}
-                    <button type="button" onClick={() => switchMode('register')} className="text-[#43e090] hover:underline cursor-pointer">
-                      Criar conta
-                    </button>
-                  </span>
-                )}
-                {mode === 'login' && (
-                  <button type="button" onClick={() => switchMode('reset')} className="text-[#8B87A8] hover:text-[#d8b9ff] cursor-pointer">
-                    Já tenho um código de recuperação
-                  </button>
-                )}
-                {(mode === 'register' || mode === 'forgot' || mode === 'reset') && (
-                  <button type="button" onClick={() => switchMode('login')} className="text-[#d8b9ff] hover:underline cursor-pointer">
-                    Voltar para o login
-                  </button>
-                )}
-                {mode === 'change' && (
-                  <button type="button" onClick={onLogout} className="text-[#8B87A8] hover:text-red-300 cursor-pointer">
-                    Sair
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>

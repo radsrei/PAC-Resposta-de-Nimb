@@ -69,8 +69,6 @@ export interface AuthUser {
   name: string;
   role: 'user' | 'admin';
   isActive: boolean;
-  mustChangePassword: boolean;
-  hasPassword: boolean;
   googleLinked: boolean;
   createdAt: string;
   lastLoginAt: string | null;
@@ -78,13 +76,6 @@ export interface AuthUser {
 
 export interface AuthConfig {
   googleClientId: string | null;
-  registrationEnabled: boolean;
-  passwordMinLength: number;
-}
-
-export interface PasswordResetResult {
-  message: string;
-  temporaryPassword: string;
 }
 
 // ---------------------------------------------------------------------------

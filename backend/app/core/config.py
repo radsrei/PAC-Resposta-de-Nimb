@@ -74,6 +74,8 @@ class Settings:
     # Login com Google (Google Identity Services). Vazio = botão desativado.
     google_client_id: str | None = os.getenv("GOOGLE_CLIENT_ID") or None
 
+    # Contas são criadas no primeiro login com Google. Com false, só entram
+    # usuários que já existem no banco.
     registration_enabled: bool = _bool("REGISTRATION_ENABLED", True)
     # E-mails que viram administradores ao criar conta
     admin_emails: list[str] = field(
@@ -82,13 +84,7 @@ class Settings:
     # A primeira conta criada no sistema vira administradora
     first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", True)
 
-    # Senha básica e fixa aplicada nos resets (troca obrigatória no próximo login)
-    default_reset_password: str = os.getenv("DEFAULT_RESET_PASSWORD", "Nimb@12345")
-    reset_token_ttl_minutes: int = int(os.getenv("RESET_TOKEN_TTL_MINUTES", "30"))
-
-    # Proteção contra força bruta
-    max_failed_logins: int = int(os.getenv("MAX_FAILED_LOGINS", "5"))
-    lockout_minutes: int = int(os.getenv("LOCKOUT_MINUTES", "15"))
+    # Limite de requisições por minuto, por IP, na rota de login
     auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))
 
 

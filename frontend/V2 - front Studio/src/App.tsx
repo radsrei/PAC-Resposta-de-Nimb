@@ -7,7 +7,7 @@ import { UNAUTHORIZED_EVENT } from './services/http';
 
 /**
  * Portão de autenticação: só renderiza o terminal com uma sessão válida.
- * Sem sessão (ou com troca de senha obrigatória) mostra a tela de login.
+ * Sem sessão mostra a tela de login (somente Google).
  */
 export default function App() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -75,15 +75,10 @@ export default function App() {
     );
   }
 
-  if (!user || user.mustChangePassword) {
+  if (!user) {
     return (
       <div className="h-screen w-screen cyber-bg overflow-y-auto">
-        <LoginScreen
-          config={config}
-          pendingUser={user}
-          onAuthenticated={setUser}
-          onLogout={handleLogout}
-        />
+        <LoginScreen config={config} onAuthenticated={setUser} />
       </div>
     );
   }

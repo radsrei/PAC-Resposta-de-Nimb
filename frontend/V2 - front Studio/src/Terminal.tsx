@@ -371,7 +371,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
           />
         </div>
       ) : (
-        /* SCREEN 2: MINHA CONTA (perfil, senha, sessões, admin) */
+        /* SCREEN 2: MINHA CONTA (perfil, sessões, admin) */
         <AccountScreen
           user={user}
           onUserChange={onUserChange}

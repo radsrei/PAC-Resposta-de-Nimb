@@ -110,33 +110,15 @@ const AdminUsersPanel: React.FC<{ currentEmail: string }> = ({ currentEmail }) =
                         Inativo
                       </span>
                     )}
-                    {u.mustChangePassword && (
-                      <span className="ml-2 text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30">
-                        Troca pendente
-                      </span>
-                    )}
                   </td>
                   <td className="py-2.5 pr-3 font-mono text-[10px] text-[#8B87A8]">
-                    {[u.hasPassword && 'senha', u.googleLinked && 'google'].filter(Boolean).join(' + ')}
+                    {u.googleLinked ? 'google' : 'pendente (1º login)'}
                   </td>
                   <td className="py-2.5 pr-3 font-mono text-[10px] text-[#8B87A8]">
                     {formatDate(u.lastLoginAt)}
                   </td>
                   <td className="py-2.5">
                     <div className="flex justify-end gap-1.5 font-mono text-[10px]">
-                      <button
-                        disabled={busy}
-                        onClick={() =>
-                          window.confirm(`Redefinir a senha de ${u.email} para a senha padrão?`) &&
-                          run(u.email, async () => {
-                            const res = await adminApiService.resetPassword(u.email);
-                            return `${res.message} Senha padrão: ${res.temporaryPassword}`;
-                          })
-                        }
-                        className="px-2 py-1 rounded border border-[#A259FF]/40 text-[#d8b9ff] hover:bg-[#A259FF]/10 cursor-pointer disabled:opacity-40"
-                      >
-                        Resetar senha
-                      </button>
                       {!isSelf && (
                         <>
                           <button
@@ -191,13 +173,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
   const [name, setName] = useState(user.name);
   const [profileFeedback, setProfileFeedback] = useState<Feedback>(null);
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordFeedback, setPasswordFeedback] = useState<Feedback>(null);
-
   const [sessionFeedback, setSessionFeedback] = useState<Feedback>(null);
-  const [deletePassword, setDeletePassword] = useState('');
   const [deleteFeedback, setDeleteFeedback] = useState<Feedback>(null);
   const [busy, setBusy] = useState(false);
 
@@ -221,28 +197,11 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
     });
   };
 
-  const handlePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setPasswordFeedback({ type: 'error', text: 'A confirmação da senha não confere.' });
-      return;
-    }
-    run(setPasswordFeedback, async () => {
-      onUserChange(
-        await authApiService.changePassword(user.hasPassword ? currentPassword : null, newPassword)
-      );
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      return 'Senha alterada. As outras sessões foram encerradas.';
-    });
-  };
-
   const handleDelete = (e: React.FormEvent) => {
     e.preventDefault();
     if (!window.confirm('Excluir sua conta e todas as suas conversas? Esta ação não pode ser desfeita.')) return;
     run(setDeleteFeedback, async () => {
-      await authApiService.deleteAccount(user.hasPassword ? deletePassword : null);
+      await authApiService.deleteAccount();
       onAccountDeleted();
       return 'Conta excluída.';
     });
@@ -291,42 +250,11 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
               <input value={user.email} disabled className={`${inputClass} opacity-60`} />
             </div>
             <div className="font-mono text-[10px] text-[#8B87A8]">
-              Métodos de login: {[user.hasPassword && 'e-mail e senha', user.googleLinked && 'Google'].filter(Boolean).join(' e ')}
+              Método de login: Google
             </div>
             <FeedbackLine feedback={profileFeedback} />
             <button disabled={busy || name.trim() === user.name} className="self-start px-4 py-2 rounded-lg bg-[#39D98A]/15 border border-[#39D98A]/40 text-[#39D98A] text-xs font-semibold cursor-pointer disabled:opacity-40">
               Salvar nome
-            </button>
-          </form>
-
-          {/* Senha */}
-          <form onSubmit={handlePassword} className={cardClass}>
-            <h3 className="font-bold text-[#F0EEF8] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#d8b9ff]">lock</span>
-              {user.hasPassword ? 'Trocar senha' : 'Definir senha'}
-            </h3>
-            {!user.hasPassword && (
-              <p className="text-xs text-[#8B87A8]">
-                Sua conta usa o login do Google. Defina uma senha para também entrar com e-mail e senha.
-              </p>
-            )}
-            {user.hasPassword && (
-              <div>
-                <label className={labelClass}>Senha atual</label>
-                <input type="password" required maxLength={128} autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={inputClass} />
-              </div>
-            )}
-            <div>
-              <label className={labelClass}>Nova senha (mín. 8, letras e números)</label>
-              <input type="password" required maxLength={128} autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Confirmar nova senha</label>
-              <input type="password" required maxLength={128} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
-            </div>
-            <FeedbackLine feedback={passwordFeedback} />
-            <button disabled={busy} className="self-start px-4 py-2 rounded-lg bg-[#A259FF]/15 border border-[#A259FF]/40 text-[#d8b9ff] text-xs font-semibold cursor-pointer disabled:opacity-40">
-              {user.hasPassword ? 'Trocar senha' : 'Definir senha'}
             </button>
           </form>
 
@@ -355,12 +283,6 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
               <span className="material-symbols-outlined">warning</span> Excluir conta
             </h3>
             <p className="text-xs text-[#8B87A8]">Remove sua conta e todas as suas conversas.</p>
-            {user.hasPassword && (
-              <div>
-                <label className={labelClass}>Confirme com sua senha</label>
-                <input type="password" required maxLength={128} autoComplete="current-password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} className={inputClass} />
-              </div>
-            )}
             <FeedbackLine feedback={deleteFeedback} />
             <button disabled={busy} className="self-start px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/40 text-red-300 text-xs font-semibold cursor-pointer disabled:opacity-40">
               Excluir minha conta

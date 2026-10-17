@@ -2,7 +2,7 @@
 Dependências FastAPI de autenticação/autorização.
 
 - get_current_user: exige um cookie de sessão válido (401 se ausente/expirado).
-- require_user:     idem, e bloqueia quem precisa trocar a senha (403).
+- require_user:     idem (ponto único para regras extras de acesso de usuário).
 - require_admin:    idem, e exige papel de administrador (403).
 """
 
@@ -38,8 +38,6 @@ def get_current_user(request: Request) -> CurrentUser:
 
 
 def require_user(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
-    if user["must_change_password"]:
-        raise ForbiddenError("Troca de senha obrigatória antes de continuar.")
     return user
 
 
