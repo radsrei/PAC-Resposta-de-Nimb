@@ -9,7 +9,6 @@ Para subir o sistema localmente (backend FastAPI + tela React + conexão com a L
 ```
 Acessar o ambiente venv
 nimb
-
 ```
 
 ## Setup
@@ -58,12 +57,16 @@ Atualiza e remove as branchs já apagadas
 git fetch -p
 ```
 
-Remover as Branchs remotas
+Remover as Branchs remotas (Automático)
 ```bash
 git checkout develop
 git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
 ```
 
+```bash
+# git branch -D feat/conectar-sistema feat/login feat/remover_telas feat/tela-simples 
+git branch -D nome-da-branch
+```
 
 ### Setup para Bitwarden
 ```bash
@@ -82,6 +85,10 @@ export BW_SESSION="$(bw unlock --raw)"
 bw sync
 bw status | jq -r .status          # esperado: unlocked
 ```
+
+## Versão para Diagrama
+[Git Diagram](https://gitdiagram.com/radsrei/pac-resposta-de-nimb)
+
 
 ## Agenda
 
