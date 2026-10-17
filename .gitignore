@@ -19,5 +19,8 @@ backend/data/
 __pycache__/
 *.pyc
 
+__pycache__/
+*.py[cod]
+*$py.class
 # Frontend
 node_modules/

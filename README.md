@@ -9,7 +9,6 @@ Para subir o sistema localmente (backend FastAPI + tela React + conexão com a L
 ```
 Acessar o ambiente venv
 nimb
-
 ```
 
 ## Setup
@@ -22,9 +21,9 @@ pip install -U pip
 pip install -r requirements.txt
 ```
 
-### Git
+## Git
 Gerar uma nova Branch para envio de mudanças e PR
-#### Boas Pratias
+### Boas Pratias
 Gerar Branch com prefixo:
  - Feat/
  - Fix/
@@ -52,6 +51,44 @@ Subir o commit para o Git
 ```bash
 git push -u origin feat/minha-nova-funcionalidade
 ```
+
+Atualiza e remove as branchs já apagadas
+```bash
+git fetch -p
+```
+
+Remover as Branchs remotas (Automático)
+```bash
+git checkout develop
+git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
+```
+
+```bash
+# git branch -D feat/conectar-sistema feat/login feat/remover_telas feat/tela-simples 
+git branch -D nome-da-branch
+```
+
+### Setup para Bitwarden
+```bash
+#Bitwarden - Cofre
+winget install -e --id Bitwarden.CLI
+#Biblioteca para script
+winget install jq
+###
+```
+
+
+### Entrar no cofre BW
+```bash
+bw login                           # e-mail, senha mestra e código 2FA
+export BW_SESSION="$(bw unlock --raw)"
+bw sync
+bw status | jq -r .status          # esperado: unlocked
+```
+
+## Versão para Diagrama
+[Git Diagram](https://gitdiagram.com/radsrei/pac-resposta-de-nimb)
+
 
 ## Agenda
 
