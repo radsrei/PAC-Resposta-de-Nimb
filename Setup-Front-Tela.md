@@ -2,7 +2,18 @@
 
 Fluxo: **tela (React/Vite, porta 3000) → proxy `/api` → backend FastAPI (porta 8000) → LLM configurada pela tela**.
 
-> Nesta etapa ainda não há RAG: as perguntas vão direto para a LLM, sem consultar livros nem banco vetorial.
+> Nesta etapa a busca no banco vetorial ainda não está ligada ao chat: as perguntas vão direto para a LLM. A validação de livros e a construção do banco vetorial já funcionam (seção 4.1).
+
+## 0. Setup automático (opcional)
+
+O script da raiz faz os passos 1 e 2 e prepara o construtor do banco vetorial (seção 4.1):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # Windows
+bash scripts/setup.sh                                             # Linux / macOS
+```
+
+Opções e detalhes no [README](README.md#setup-automático). Para fazer à mão, siga as seções abaixo.
 
 ## 1. Backend
 
@@ -115,6 +126,30 @@ O modelo é editável. Os padrões são só sugestões.
 
 Também é possível criar a conexão sem passar pela tela, pelo `backend/.env` (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). Ela é criada quando a API sobe com o banco vazio.
 
+### 4.1 Livros e banco vetorial
+
+O banco vetorial de cada livro é construído à parte, a partir do PDF original, com `python -m vector_builder` (ver [backend/vector_builder/README.md](backend/vector_builder/README.md)). O resultado fica em `vector_store/`, fora do Git.
+
+Preparar e construir (com o `.venv` ativo):
+
+```powershell
+# Embeddings pelo Ollama (sem PyTorch)
+ollama pull bge-m3
+pip install -r backend/vector_builder/requirements.txt
+
+# ou pelo sentence-transformers (PyTorch, ~2 GB)
+pip install -r backend/vector_builder/requirements-local.txt
+
+cd backend
+python -m vector_builder build "C:\Livros\livro.pdf" --id meu-livro --title "Meu Livro" --dry-run    # revisa os trechos
+python -m vector_builder build "C:\Livros\livro.pdf" --id meu-livro --title "Meu Livro" --provider ollama
+python -m vector_builder list
+```
+
+O provedor padrão vem de `EMBEDDING_PROVIDER` no `backend/.env` (`ollama` ou `sentence-transformers`). Os embeddings não usam a LLM do chat: são um modelo próprio (`bge-m3`), mesmo quando rodam no mesmo Ollama.
+
+Na tela, o botão **Subir PDF** valida o livro do usuário: o arquivo é comparado com o catálogo de livros permitidos (frases em páginas definidas, número de páginas, tamanho, metadados e formato da página). Se for reconhecido, o banco daquele livro é liberado **para aquele usuário**. O PDF é lido em memória e descartado; fica registrado só o resultado (tabela `book_validation_log`).
+
 ## 5. Rotas da API
 
 Acesso: 🌐 público · 🔑 usuário logado · 🛡️ administrador.
@@ -139,7 +174,8 @@ Acesso: 🌐 público · 🔑 usuário logado · 🛡️ administrador.
 | GET / PATCH / DELETE | `/api/sessions/{id}` | 🔑 | conversa com mensagens / renomeia / apaga |
 | GET | `/api/sessions/{id}/messages` | 🔑 | mensagens da conversa |
 | POST | `/api/rag/query` | 🔑 | **pergunta → LLM → resposta** (`{prompt, chaosLevel, sessionId?, connectionId?}`) |
-| POST | `/api/rag/upload` | 🛡️ | stub de upload de livro (etapa de RAG) |
+| GET | `/api/rag/books` | 🔑 | livros do catálogo e quais o usuário já liberou |
+| POST | `/api/rag/upload` | 🔑 | valida o PDF de um livro e libera o banco vetorial dele (multipart, campo `file`) |
 | POST | `/api/perguntas` | 🔑 | contrato legado do protótipo estático |
 
 Erros voltam como `{"detail": "..."}`:
@@ -150,6 +186,7 @@ Erros voltam como `{"detail": "..."}`:
 | `403` | sem permissão, origem bloqueada, conta desativada ou cadastro de novas contas desativado |
 | `404` | recurso inexistente ou de outro usuário |
 | `409` | nenhuma LLM ativa |
+| `400` | PDF inválido, protegido por senha, acima do limite ou catálogo vazio |
 | `429` | muitas tentativas (cabeçalho `Retry-After`) |
 | `502` | falha no provedor de LLM |
 
@@ -158,16 +195,18 @@ Erros voltam como `{"detail": "..."}`:
 ```text
 backend/
 ├── main.py               ponto de entrada (python main.py)
-└── app/
-    ├── main.py           FastAPI, middlewares, handlers de erro, routers
-    ├── core/             config (.env), exceções, segurança (tokens),
-    │                     criptografia, rate limit, middleware HTTP, dependências de auth
-    ├── db/               SQLite (schema + migração)
-    ├── schemas/          contratos Pydantic (JSON em camelCase)
-    ├── repositories/     acesso a dados (consultas parametrizadas)
-    ├── services/         cliente multi-provedor de LLM, prompt do Nimb, validação Google
-    ├── controllers/      regras de negócio (auth, usuários, LLM, conversas, consulta)
-    └── routers/          rotas HTTP
+├── app/
+│   ├── main.py           FastAPI, middlewares, handlers de erro, routers
+│   ├── core/             config (.env), exceções, segurança (tokens),
+│   │                     criptografia, rate limit, middleware HTTP, dependências de auth
+│   ├── db/               SQLite (schema + migração)
+│   ├── schemas/          contratos Pydantic (JSON em camelCase)
+│   ├── repositories/     acesso a dados (consultas parametrizadas)
+│   ├── services/         cliente multi-provedor de LLM, prompt do Nimb, validação Google,
+│   │                     impressão digital de PDF, catálogo e validação de livros
+│   ├── controllers/      regras de negócio (auth, usuários, LLM, conversas, consulta, livros)
+│   └── routers/          rotas HTTP
+└── vector_builder/       construtor do banco vetorial e do catálogo (roda à parte)
 ```
 
 O ponto de extensão para o RAG está em `app/controllers/query_controller.py`: os trechos recuperados do banco vetorial entram no prompt antes da chamada à LLM.

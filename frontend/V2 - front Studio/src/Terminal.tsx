@@ -16,43 +16,10 @@ import {
   ScreenView,
   SessionMessage,
 } from './types';
-import { ragApiService } from './services/ragApi';
+import { ragApiService, toIndexedBook } from './services/ragApi';
 import { llmApiService } from './services/llmApi';
 import { sessionApiService } from './services/sessionApi';
 import { ApiError } from './services/http';
-
-const INITIAL_BOOKS: IndexedBook[] = [
-  {
-    id: 'b1',
-    title: 'Tormenta20 - Livro Básico',
-    fileName: 'Tormenta20 - Livro Básico.pdf',
-    size: '48.2 MB',
-    chunks: 4120,
-    progress: 100,
-    status: 'indexed',
-    badgeColor: 'green',
-  },
-  {
-    id: 'b2',
-    title: 'Grimório do Caos',
-    fileName: 'Grimório do Caos.pdf',
-    size: '14.8 MB',
-    chunks: 1840,
-    progress: 100,
-    status: 'indexed',
-    badgeColor: 'purple',
-  },
-  {
-    id: 'b3',
-    title: 'Manual dos Monstros',
-    fileName: 'Manual dos Monstros.pdf',
-    size: '36.1 MB',
-    chunks: 3200,
-    progress: 100,
-    status: 'indexed',
-    badgeColor: 'green',
-  },
-];
 
 const formatTime = (date: Date) =>
   date.toLocaleTimeString('pt-BR', {
@@ -139,7 +106,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
   const operator = toOperator(user);
   const isAdmin = user.role === 'admin';
-  const [books, setBooks] = useState<IndexedBook[]>(INITIAL_BOOKS);
+  const [books, setBooks] = useState<IndexedBook[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [welcomeMessage()]);
@@ -148,8 +115,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [backendOnline, setBackendOnline] = useState<boolean>(true);
   const [llmConnection, setLlmConnection] = useState<LlmConnection | null>(null);
 
-  // Total Chunks calculation
-  const totalChunks = books.reduce((acc, b) => acc + b.chunks, 25680);
+  // Total de trechos nos bancos vetoriais dos livros liberados
+  const totalChunks = books.reduce((acc, b) => acc + b.chunks, 0);
 
   const pushNimbError = (text: string) =>
     setMessages((prev) => [
@@ -193,10 +160,21 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
     }
   }, []);
 
+  // Livros liberados para o usuário (validados por upload do PDF)
+  const loadBooks = useCallback(async () => {
+    try {
+      const catalog = await ragApiService.listBooks();
+      setBooks(catalog.filter((b) => b.unlocked).map(toIndexedBook));
+    } catch (err) {
+      console.warn('Não foi possível carregar os livros:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadStatus();
     loadSessions();
-  }, [loadStatus, loadSessions]);
+    loadBooks();
+  }, [loadStatus, loadSessions, loadBooks]);
 
   // Handle Query Submission
   const handleSendMessage = async (textToSend?: string) => {
@@ -386,8 +364,9 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         books={books}
-        onAddBook={(newBook) => setBooks((prev) => [newBook, ...prev])}
-        onRemoveBook={(id) => setBooks((prev) => prev.filter((b) => b.id !== id))}
+        onBookUnlocked={(book) =>
+          setBooks((prev) => [toIndexedBook(book), ...prev.filter((b) => b.id !== book.id)])
+        }
       />
 
       {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}

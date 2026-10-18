@@ -1,0 +1,5 @@
+# Construtor do banco vetorial (roda à parte da API) — base, para os dois provedores
+pypdf                  # impressão digital do PDF (mesma leitura da API)
+pymupdf                # extração de texto por blocos e sumário do PDF
+chromadb               # banco vetorial, um por livro
+httpx                  # chamadas ao Ollama (provedor "ollama")

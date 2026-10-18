@@ -2,7 +2,38 @@
 
 ## Start do Projeto
 
-Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md).
+Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md). O banco vetorial dos livros é construído à parte: ver [backend/vector_builder/README.md](backend/vector_builder/README.md).
+
+### Requisitos
+
+| Ferramenta | Versão | Para quê | Instalação (Windows) |
+|---|---|---|---|
+| Python | 3.11+ | API e construtor do banco vetorial | `winget install -e --id Python.Python.3.11` |
+| Node.js | 20+ | tela (React/Vite) | `winget install -e --id OpenJS.NodeJS.LTS` |
+| Ollama | atual | embeddings (`bge-m3`) e, se quiser, a LLM do chat | `winget install -e --id Ollama.Ollama` |
+| Conta Google Cloud | — | Client ID do login com Google | ver Setup-Front-Tela.md, seção 3.1 |
+
+O Ollama é opcional se os embeddings forem gerados pelo `sentence-transformers` (instala o PyTorch, cerca de 2 GB).
+
+### Setup automático
+
+Na raiz do projeto, o script cria o `.venv`, instala backend, construtor e front, baixa o modelo no Ollama e cria o `backend/.env`:
+
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1                     # embeddings pelo Ollama (padrão)
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -InstalarOllama -ModeloChat llama3.1
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local   # sentence-transformers
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings nenhum  # só API e front
+```
+
+```bash
+# Linux / macOS
+bash scripts/setup.sh
+bash scripts/setup.sh --embeddings local
+```
+
+Depois do script, falta só preencher o `GOOGLE_CLIENT_ID` em `backend/.env`.
 
 ### Ambiente Python (.venv)
 
