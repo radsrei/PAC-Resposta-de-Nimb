@@ -4,22 +4,24 @@
 
 Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md).
 
-### Acessar o ambiente
+### Ambiente Python (.venv)
 
-```
-Acessar o ambiente venv
-nimb
-```
+O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora do Git).
 
-## Setup
-
-### VScode
-```
-python3.11 -m venv nimb
- .nimb\Scripts\activate
+Criar e instalar (primeira vez):
+```bash
+python3.11 -m venv .venv
+.venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -U pip
-pip install -r requirements.txt
+pip install -r requirements.txt   # tudo: API + RAG + Docling
 ```
+
+Acessar o ambiente:
+```bash
+.venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
+```
+
+Para subir só a API, `pip install -r backend/requirements.txt` basta (dependências mínimas).
 
 ## Git
 Gerar uma nova Branch para envio de mudanças e PR

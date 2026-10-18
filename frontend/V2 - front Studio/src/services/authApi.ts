@@ -1,8 +1,8 @@
-import { AuthConfig, AuthUser, PasswordResetResult } from '../types';
+import { AuthConfig, AuthUser } from '../types';
 import { http } from './http';
 
 /**
- * Autenticação (backend: /api/auth).
+ * Autenticação (backend: /api/auth). O único método de login é o Google.
  *
  * A sessão fica num cookie HttpOnly definido pelo backend: o front nunca lê
  * nem armazena o token (nada em localStorage), o que protege contra roubo
@@ -13,12 +13,6 @@ export const authApiService = {
 
   me: () => http.get<AuthUser>('/api/auth/me'),
 
-  register: (name: string, email: string, password: string) =>
-    http.post<AuthUser>('/api/auth/register', { name, email, password }),
-
-  login: (email: string, password: string, remember: boolean) =>
-    http.post<AuthUser>('/api/auth/login', { email, password, remember }),
-
   loginWithGoogle: (credential: string, remember: boolean) =>
     http.post<AuthUser>('/api/auth/google', { credential, remember }),
 
@@ -28,20 +22,7 @@ export const authApiService = {
 
   updateProfile: (name: string) => http.patch<AuthUser>('/api/auth/me', { name }),
 
-  changePassword: (currentPassword: string | null, newPassword: string) =>
-    http.post<AuthUser>('/api/auth/change-password', { currentPassword, newPassword }),
-
-  forgotPassword: (email: string) =>
-    http.post<{ message: string }>('/api/auth/forgot-password', { email }),
-
-  resetPassword: (token: string) =>
-    http.post<PasswordResetResult>('/api/auth/reset-password', { token }),
-
-  deleteAccount: (password: string | null) =>
-    http.request<{ message: string }>('/api/auth/me', {
-      method: 'DELETE',
-      body: JSON.stringify({ password }),
-    }),
+  deleteAccount: () => http.delete<{ message: string }>('/api/auth/me'),
 };
 
 /**
@@ -52,9 +33,6 @@ export const adminApiService = {
 
   updateUser: (email: string, data: { role?: 'user' | 'admin'; isActive?: boolean }) =>
     http.patch<AuthUser>(`/api/admin/users/${encodeURIComponent(email)}`, data),
-
-  resetPassword: (email: string) =>
-    http.post<PasswordResetResult>(`/api/admin/users/${encodeURIComponent(email)}/reset-password`),
 
   deleteUser: (email: string) =>
     http.delete<{ message: string }>(`/api/admin/users/${encodeURIComponent(email)}`),

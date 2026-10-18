@@ -6,10 +6,7 @@ from app.db.database import get_connection, now_iso
 
 # Colunas que podem ser alteradas por `update` (lista fixa: nomes de coluna
 # nunca vêm do usuário, então a montagem do SQL abaixo é segura)
-UPDATABLE = (
-    "name", "password_hash", "google_sub", "role", "is_active",
-    "must_change_password", "failed_attempts", "locked_until", "last_login_at",
-)
+UPDATABLE = ("name", "google_sub", "role", "is_active", "last_login_at")
 
 
 def _to_dict(row) -> dict[str, Any] | None:
@@ -17,7 +14,6 @@ def _to_dict(row) -> dict[str, Any] | None:
         return None
     data = dict(row)
     data["is_active"] = bool(data["is_active"])
-    data["must_change_password"] = bool(data["must_change_password"])
     return data
 
 
@@ -54,16 +50,15 @@ def count_active_admins() -> int:
 def create(
     email: str,
     name: str,
-    password_hash: str | None,
     role: str = "user",
     google_sub: str | None = None,
 ) -> dict[str, Any]:
     ts = now_iso()
     with get_connection() as conn:
         conn.execute(
-            "INSERT INTO users (email, name, password_hash, google_sub, role, created_at, updated_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (email, name, password_hash, google_sub, role, ts, ts),
+            "INSERT INTO users (email, name, google_sub, role, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (email, name, google_sub, role, ts, ts),
         )
     return get(email)
 

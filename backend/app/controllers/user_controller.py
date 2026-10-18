@@ -3,8 +3,7 @@
 import logging
 from typing import Any
 
-from app.controllers.auth_controller import apply_default_password, public_user
-from app.core.config import settings
+from app.controllers.auth_controller import public_user
 from app.core.exceptions import AppError, NotFoundError
 from app.core.security import normalize_email
 from app.repositories import auth_repository, user_repository
@@ -44,16 +43,6 @@ def update_user(admin: dict[str, Any], email: str, payload: AdminUserUpdate) -> 
         auth_repository.delete_user_sessions(target["email"])
     logger.info("Admin %s alterou %s: %s", admin["email"], target["email"], changes)
     return public_user(updated)
-
-
-def reset_user_password(admin: dict[str, Any], email: str) -> dict[str, str]:
-    target = _get_or_404(email)
-    apply_default_password(target["email"])
-    logger.info("Admin %s redefiniu a senha de %s", admin["email"], target["email"])
-    return {
-        "message": f"Senha de {target['email']} redefinida. O usuário deverá trocá-la no próximo login.",
-        "temporary_password": settings.default_reset_password,
-    }
 
 
 def delete_user(admin: dict[str, Any], email: str) -> None:

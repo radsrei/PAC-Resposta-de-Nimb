@@ -11,8 +11,8 @@ export const API_BASE = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, 
 /** Disparado quando a sessão expira (401): o App volta para a tela de login. */
 export const UNAUTHORIZED_EVENT = 'nimb:unauthorized';
 
-// 401 nestas rotas significa credencial errada, não sessão expirada
-const AUTH_ATTEMPT_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/google'];
+// 401 nesta rota significa credencial do Google recusada, não sessão expirada
+const AUTH_ATTEMPT_PATHS = ['/api/auth/google'];
 
 export class ApiError extends Error {
   status: number;
