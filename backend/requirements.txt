@@ -9,3 +9,4 @@ anthropic          # SDK oficial para o provedor Claude
 cryptography       # criptografia das API keys gravadas no banco
 google-auth        # validação do login com Google (ID token)
 requests           # transporte HTTP usado pelo google-auth
+pypdf              # leitura do PDF na validação de livros

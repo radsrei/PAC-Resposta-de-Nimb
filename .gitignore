@@ -16,6 +16,8 @@ Convert_file/indexing/saida/*
 
 # Backend
 backend/data/
+# Banco vetorial e catálogo de livros (gerados por backend/vector_builder)
+vector_store/
 
 # Cache do Python
 __pycache__/

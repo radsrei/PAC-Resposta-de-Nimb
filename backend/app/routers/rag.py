@@ -2,16 +2,22 @@
 Rotas consumidas pelo front React (`src/services/ragApi.ts`).
 
 POST /api/rag/query   -> envia a pergunta para a LLM ativa e devolve a resposta
-POST /api/rag/upload  -> (stub) indexação de livros — fora do escopo desta etapa
+GET  /api/rag/books   -> livros do catálogo e quais o usuário já liberou
+POST /api/rag/upload  -> valida o PDF de um livro e libera o banco vetorial dele
 """
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.controllers import query_controller
-from app.core.deps import CurrentUser, require_admin, require_user
-from app.schemas.rag import IndexedBookResponse, QueryRagPayload, QueryRagResponse
+from app.controllers import book_controller, query_controller
+from app.core.config import settings
+from app.core.deps import CurrentUser, require_user
+from app.core.exceptions import AppError
+from app.core.rate_limit import limit_book_upload
+from app.schemas.rag import BookOut, BookValidationOut, QueryRagPayload, QueryRagResponse
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
+
+_READ_CHUNK = 1024 * 1024
 
 
 @router.post("/query", response_model=QueryRagResponse)
@@ -23,7 +29,7 @@ def query_rag(payload: QueryRagPayload, user: CurrentUser = Depends(require_user
         session_id=payload.session_id,
         connection_id=payload.connection_id,
     )
-    # Campos de fonte ficam vazios até a etapa de RAG (livros/vector DB)
+    # Campos de fonte ficam vazios até a busca no banco vetorial ser ligada
     return QueryRagResponse(
         **result,
         book_title="",
@@ -34,27 +40,18 @@ def query_rag(payload: QueryRagPayload, user: CurrentUser = Depends(require_user
     )
 
 
-@router.post("/upload", response_model=IndexedBookResponse, dependencies=[Depends(require_admin)])
-async def upload_grimorio(
-    file: UploadFile = File(...),
-    chunkSize: int = Form(...),
-    model: str = Form(...),
-    entropy: float = Form(...),
-):
-    """
-    TODO (etapa de RAG): salvar o PDF, aplicar chunking (`chunkSize`), gerar
-    embeddings (`model`) e persistir no vector DB. Por ora apenas devolve um
-    retorno coerente com o contrato esperado pelo front.
-    """
-    contents = await file.read()
-    size_mb = len(contents) / (1024 * 1024)
-    return IndexedBookResponse(
-        id=f"book_{file.filename}",
-        title=file.filename.rsplit(".", 1)[0] if file.filename else "documento",
-        file_name=file.filename or "documento.pdf",
-        size=f"{size_mb:.1f} MB",
-        chunks=0,
-        progress=100,
-        status="indexed",
-        badge_color="purple",
-    )
+@router.get("/books", response_model=list[BookOut])
+def list_books(user: CurrentUser = Depends(require_user)):
+    return book_controller.list_books(user["email"])
+
+
+@router.post("/upload", response_model=BookValidationOut, dependencies=[Depends(limit_book_upload)])
+def upload_book(file: UploadFile = File(...), user: CurrentUser = Depends(require_user)):
+    # Lê em blocos para recusar arquivos grandes sem carregá-los inteiros
+    limit = settings.book_upload_max_mb * 1024 * 1024
+    data = bytearray()
+    while chunk := file.file.read(_READ_CHUNK):
+        data.extend(chunk)
+        if len(data) > limit:
+            raise AppError(f"Arquivo maior que o limite de {settings.book_upload_max_mb} MB.")
+    return book_controller.validate_upload(user["email"], file.filename, bytes(data))

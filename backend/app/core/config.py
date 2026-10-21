@@ -87,5 +87,24 @@ class Settings:
     # Limite de requisições por minuto, por IP, na rota de login
     auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))
 
+    # ------------------------------------------------------------------
+    # Livros e banco vetorial
+    # ------------------------------------------------------------------
+    # Pasta do banco vetorial, construído à parte por `python -m vector_builder`.
+    # Contém `catalog.json` (livros permitidos) e `books/<id>/` (Chroma).
+    vector_store_dir: Path = Path(
+        os.getenv("VECTOR_STORE_DIR", str(BACKEND_DIR.parent / "vector_store"))
+    )
+    # Provedor de embeddings padrão do construtor: sentence-transformers ou ollama.
+    # Modelo vazio = padrão do provedor (BAAI/bge-m3 ou bge-m3 no Ollama).
+    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers").strip().lower()
+    embedding_model: str | None = os.getenv("EMBEDDING_MODEL") or None
+    # Servidor local do Ollama (embeddings e, se configurado na tela, a LLM do chat)
+    ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    # Tamanho máximo do PDF enviado para validação
+    book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "150"))
+    # Validações de livro por minuto, por IP (ler PDF consome CPU)
+    book_upload_rate_per_minute: int = int(os.getenv("BOOK_UPLOAD_RATE_PER_MINUTE", "5"))
+
 
 settings = Settings()

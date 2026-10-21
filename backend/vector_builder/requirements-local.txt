@@ -1,0 +1,4 @@
+# Só para o provedor "sentence-transformers" (modelo rodando dentro do Python).
+# Instala o PyTorch (~2 GB). Quem usa o Ollama não precisa deste arquivo.
+-r requirements.txt
+sentence-transformers

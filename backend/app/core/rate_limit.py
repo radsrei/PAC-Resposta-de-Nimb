@@ -41,6 +41,7 @@ class RateLimiter:
 
 
 auth_limiter = RateLimiter(settings.auth_rate_limit_per_minute)
+book_upload_limiter = RateLimiter(settings.book_upload_rate_per_minute)
 
 
 def client_ip(request: Request) -> str:
@@ -51,3 +52,8 @@ def client_ip(request: Request) -> str:
 def limit_auth(request: Request) -> None:
     """Dependência FastAPI: aplica o limite por IP e por rota."""
     auth_limiter.check(f"{client_ip(request)}:{request.url.path}")
+
+
+def limit_book_upload(request: Request) -> None:
+    """Dependência FastAPI: limita as validações de livro por IP."""
+    book_upload_limiter.check(f"{client_ip(request)}:{request.url.path}")

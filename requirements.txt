@@ -27,8 +27,10 @@ requests
 docling>=2.0.0
 pandas>=2.0.0
 
-# Script XML
+# Script XML / construtor do banco vetorial (backend/vector_builder)
 pymupdf
+chromadb
+sentence-transformers
 
 #Revisar
 

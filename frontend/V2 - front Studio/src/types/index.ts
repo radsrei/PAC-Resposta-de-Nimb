@@ -41,6 +41,26 @@ export interface IndexedBook {
   badgeColor?: 'green' | 'purple' | 'amber';
 }
 
+/** Livro do catálogo (backend: GET /api/rag/books). */
+export interface CatalogBook {
+  id: string;
+  title: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  vectorReady: boolean;
+  chunks: number;
+  pageCount?: number | null;
+}
+
+/** Resultado da validação de um PDF (backend: POST /api/rag/upload). */
+export interface BookValidationResult {
+  accepted: boolean;
+  message: string;
+  score: number;
+  checks: { name: string; label: string; passed: boolean }[];
+  book: CatalogBook | null;
+}
+
 export interface HistoryItem {
   id: string;
   title: string;

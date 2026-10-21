@@ -7,6 +7,8 @@ Tabelas:
 - llm_connections:       conexões/credenciais de LLM (API key criptografada)
 - chat_sessions:         conversas de cada usuário ("Perguntas Anteriores")
 - chat_messages:         mensagens de cada conversa
+- book_access:           livros liberados para cada usuário (após validar o PDF)
+- book_validation_log:   histórico de tentativas de validação de livro
 
 Segurança: todas as consultas usam parâmetros (`?`). Nenhum valor vindo do
 usuário é concatenado em SQL, o que impede SQL injection.
@@ -76,6 +78,31 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_chat_messages_session
     ON chat_messages (session_id, created_at);
+
+CREATE TABLE IF NOT EXISTS book_access (
+    user_email  TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
+    book_id     TEXT NOT NULL,
+    granted_at  TEXT NOT NULL,
+    file_sha256 TEXT NOT NULL,
+    score       REAL NOT NULL,
+    PRIMARY KEY (user_email, book_id)
+);
+
+CREATE TABLE IF NOT EXISTS book_validation_log (
+    id          TEXT PRIMARY KEY,
+    user_email  TEXT REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
+    book_id     TEXT,
+    accepted    INTEGER NOT NULL,
+    score       REAL NOT NULL,
+    file_name   TEXT,
+    file_sha256 TEXT,
+    size_bytes  INTEGER,
+    page_count  INTEGER,
+    created_at  TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_book_validation_user
+    ON book_validation_log (user_email, created_at);
 """
 
 
