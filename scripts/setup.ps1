@@ -9,7 +9,7 @@
 
         powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
         powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local
-        powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings ollama -ModeloChat llama3.1
+        powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings ollama -InstalarOllama
         powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings nenhum -SemFrontend
 
 .PARAMETER Embeddings
@@ -21,10 +21,6 @@
 .PARAMETER ModeloEmbeddings
     Modelo de embeddings a baixar no Ollama (padrão: bge-m3).
 
-.PARAMETER ModeloChat
-    Opcional: LLM de chat a baixar no Ollama (ex.: llama3.1), para usar como
-    conexão LLM na tela.
-
 .PARAMETER InstalarOllama
     Instala o Ollama pelo winget se ele não estiver instalado.
 
@@ -35,7 +31,6 @@ param(
     [ValidateSet("ollama", "local", "nenhum")]
     [string]$Embeddings = "ollama",
     [string]$ModeloEmbeddings = "bge-m3",
-    [string]$ModeloChat = "",
     [switch]$InstalarOllama,
     [switch]$SemFrontend
 )
@@ -94,8 +89,8 @@ if ($Embeddings -ne "nenhum") {
     }
 }
 
-$needsOllama = ($Embeddings -eq "ollama") -or ($ModeloChat -ne "")
-if ($needsOllama) {
+# A LLM do chat é o DeepSeek (API externa): o Ollama só gera os embeddings
+if ($Embeddings -eq "ollama") {
     Step "Ollama"
     if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
         if ($InstalarOllama) {
@@ -117,14 +112,8 @@ if ($needsOllama) {
         if (-not $online) { Fail "o servidor do Ollama não respondeu em http://localhost:11434" }
     }
     Ok "servidor no ar"
-    if ($Embeddings -eq "ollama") {
-        Run ollama @("pull", $ModeloEmbeddings)
-        Ok "modelo de embeddings: $ModeloEmbeddings"
-    }
-    if ($ModeloChat -ne "") {
-        Run ollama @("pull", $ModeloChat)
-        Ok "LLM de chat: $ModeloChat"
-    }
+    Run ollama @("pull", $ModeloEmbeddings)
+    Ok "modelo de embeddings: $ModeloEmbeddings"
 }
 
 # ---------------------------------------------------------------------------

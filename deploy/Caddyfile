@@ -1,0 +1,36 @@
+# Front e API no mesmo endereço (o front chama /api/... por caminho relativo).
+#
+# SITE_ADDRESS (deploy/.env):
+#   :80                   sem domínio: HTTP; login Google só pelo túnel SSH (http://localhost:8080)
+#   nimb.seudominio.com   com domínio: HTTPS automático (Let's Encrypt), portas 80 e 443 abertas
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# Livros em PDF de até 150 MB (BOOK_UPLOAD_MAX_MB) + margem do multipart
+	request_body {
+		max_size 160MB
+	}
+
+	handle /api/* {
+		# Repassa o IP real do usuário (X-Forwarded-For) para o limite de requisições
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		# SPA: qualquer rota que não seja arquivo volta para o index.html
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

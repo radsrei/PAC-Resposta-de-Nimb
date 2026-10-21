@@ -2,7 +2,7 @@
 
 Objetivo final: o serviço rodando num servidor (ex.: AWS), com o usuário **entrando com o Google → enviando o PDF do livro → o livro validado → fazendo perguntas respondidas com base no livro**.
 
-Levantamento feito sobre o estado atual do repositório (branch `feat/tela_sistema`).
+Levantamento feito sobre o estado atual do repositório (branch `feat/tela_sistema`). Atualizado em 21/10/2026: DeepSeek definido e kit de deploy pronto.
 
 ---
 
@@ -14,8 +14,9 @@ Levantamento feito sobre o estado atual do repositório (branch `feat/tela_siste
 | Upload e validação do livro | ✅ pronto | testado com PDFs gerados; **falta testar com os livros reais** |
 | Banco vetorial por livro | ✅ pronto | `vector_builder`, Ollama ou sentence-transformers; nenhum livro real construído ainda |
 | Perguntas usando o livro (RAG) | ❌ **falta** | hoje a pergunta vai direto para a LLM, sem consultar o banco vetorial |
-| Front de produção | ⚠️ parcial | só roda com `npm run dev`; as últimas mudanças não foram compiladas (`tsc`/`build`) |
-| Implantação no servidor | ❌ **falta** | sem Dockerfile, proxy, HTTPS, serviço ou configuração de produção |
+| Front de produção | ✅ pronto | `tsc` e `vite build` passando; compilado dentro do Docker no deploy |
+| LLM | ✅ definida | só DeepSeek (demais provedores desativados no back e no front) |
+| Implantação no servidor | ⚠️ kit pronto | Docker + Caddy em `deploy/`, passo a passo em [deploy_aws.md](deploy_aws.md); falta executar na AWS |
 
 ```text
 Navegador ──HTTPS──► Proxy (nginx / ALB) ──┬── /       → front (arquivos do vite build)
@@ -33,6 +34,8 @@ Navegador ──HTTPS──► Proxy (nginx / ALB) ──┬── /       → f
 Precisam ser tomadas antes ou durante a implantação. Estão ordenadas da que mais trava o objetivo final para a que menos trava.
 
 ### D1. Onde e como hospedar — ALTA
+> ✅ **Decidido:** EC2 única + Docker Compose + Caddy (HTTPS automático). Kit em `deploy/`.
+
 | Opção | Prós | Contras |
 |---|---|---|
 | **EC2 única + Docker Compose** (recomendado para começar) | simples; SQLite e `vector_store/` no mesmo disco (EBS); barato | escala só vertical; você administra a máquina |
@@ -42,6 +45,8 @@ Precisam ser tomadas antes ou durante a implantação. Estão ordenadas da que m
 Tamanho mínimo da máquina, se os embeddings rodarem nela: **8 GB de RAM** (ex.: `t3.large`), porque o `bge-m3` ocupa cerca de 2,5 GB. Confira os valores na calculadora da AWS.
 
 ### D2. LLM que responde as perguntas — ALTA
+> ✅ **Decidido:** DeepSeek (`deepseek-chat`). Os demais provedores foram removidos.
+
 | Opção | Prós | Contras |
 |---|---|---|
 | **API externa** (OpenAI, Anthropic, Gemini, DeepSeek) (recomendado) | qualidade alta; servidor sem GPU | custo por uso; dados enviados ao provedor |
@@ -77,6 +82,8 @@ O que o chat faz quando o usuário não liberou nenhum livro:
 - ou responde só com a LLM, avisando que não há fonte. É o comportamento atual.
 
 ### D7. Domínio e HTTPS — MÉDIA
+> Pode ser adiado: o modo túnel SSH do [deploy_aws.md](deploy_aws.md) permite o login Google sem domínio, só para testes. Para abrir aos usuários, é preciso de domínio; o Caddy emite o HTTPS sozinho.
+
 - Domínio próprio (Route 53 ou outro registrador). O Google exige HTTPS na origem.
 - Certificado: ACM + ALB, ou nginx + Let's Encrypt (`certbot`) na própria EC2.
 
@@ -104,7 +111,7 @@ SQLite atende uma instância única. Migrar para PostgreSQL (RDS) só se houver 
 - Atualizar `/api/health`, que hoje retorna `"rag_engine": "desativado"`.
 - Depende de: D3, D6.
 
-**P0.2 Compilar e testar o front**
+**P0.2 Compilar e testar o front** — ✅ `tsc` e `vite build` passando; falta só o teste manual no navegador
 - As mudanças de login, upload e livros foram feitas sem Node.js na máquina: **nunca passaram pelo `tsc`**.
 ```bash
 cd "frontend/V2 - front Studio"
@@ -112,7 +119,7 @@ npm ci && npm run lint && npm run build      # gera dist/
 ```
 - Testar no navegador: login → Subir PDF → Livros Liberados → pergunta.
 
-**P0.3 Empacotar para o servidor**
+**P0.3 Empacotar para o servidor** — ✅ `backend/Dockerfile`, `deploy/web.Dockerfile` e `deploy/docker-compose.yml`. **Pendente:** fixar as versões das dependências
 - `backend/Dockerfile`: Python 3.11/3.12, `pip install -r requirements.txt`, rodando:
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips="*"
@@ -121,17 +128,17 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --fo
 - `docker-compose.yml` com `api`, `ollama` (se D3 = Ollama) e `nginx`, e volumes para `backend/data/` e `vector_store/`.
 - Fixar as versões das dependências (`pip freeze` → `requirements.lock`). Hoje nada tem versão fixa, e o servidor pode instalar versões diferentes das testadas.
 
-**P0.4 Proxy, HTTPS e mesmo domínio**
+**P0.4 Proxy, HTTPS e mesmo domínio** — ✅ Caddy (`deploy/Caddyfile`): front e `/api` no mesmo endereço, limite de 160 MB, HTTPS automático
 - O front chama `/api/...` por caminho relativo: front e API precisam estar **no mesmo domínio**.
 - nginx (ou ALB) servindo `dist/` em `/` e encaminhando `/api/` para o uvicorn.
 - `client_max_body_size 160m;` no nginx. **O padrão de 1 MB bloqueia o upload dos livros.**
 - `proxy_read_timeout 180s;` (e o *idle timeout* do ALB acima de 120 s): a LLM pode levar até `LLM_TIMEOUT=120`.
 
-**P0.5 Corrigir o IP real atrás do proxy**
+**P0.5 Corrigir o IP real atrás do proxy** — ✅ uvicorn com `--proxy-headers`; testado: IP forjado no `X-Forwarded-For` é descartado pelo Caddy
 - `core/rate_limit.py` usa `request.client.host`. Atrás do nginx/ALB, **todos os usuários aparecem com o mesmo IP**: o limite de 20 logins/min e 5 uploads/min passaria a valer para o sistema inteiro.
 - Resolve com `--proxy-headers --forwarded-allow-ips` no uvicorn (P0.3), aceitando o cabeçalho só do proxy.
 
-**P0.6 Configuração de produção** — `backend/.env` no servidor
+**P0.6 Configuração de produção** — `backend/.env` no servidor — ✅ valores por modo no [deploy_aws.md](deploy_aws.md), passo 4
 ```ini
 COOKIE_SECURE=true
 ENABLE_DOCS=false
@@ -150,7 +157,7 @@ OLLAMA_URL=http://ollama:11434
 - Conferir se os PDFs têm camada de texto. Se não tiverem, aplicar OCR antes.
 - Enviar `vector_store/` para o servidor (`scp`, `rsync` ou `aws s3 sync`). Ele está fora do Git.
 
-**P0.8 Persistência e backup**
+**P0.8 Persistência e backup** — ✅ volume `nimb_data` + `deploy/backup.sh`; falta agendar no servidor (cron + snapshot do EBS)
 - `backend/data/` (usuários, sessões, conversas, API keys criptografadas, `secret.key`) e `vector_store/` em volume persistente (EBS).
 - Snapshot automático do EBS (AWS Data Lifecycle Manager), ou cópia diária para o S3.
 - **Se a `secret.key` ou a `APP_SECRET_KEY` se perder, as API keys cadastradas deixam de abrir.**

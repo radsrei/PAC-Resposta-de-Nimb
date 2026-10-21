@@ -18,7 +18,6 @@ uvicorn[standard]
 pydantic
 python-multipart
 httpx
-anthropic
 cryptography
 google-auth
 requests

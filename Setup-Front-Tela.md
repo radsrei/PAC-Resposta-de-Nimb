@@ -34,7 +34,7 @@ python main.py                  # http://localhost:8000  (Swagger em /docs)
 
 - Configuração: copie `backend/.env.example` para `backend/.env`. O `GOOGLE_CLIENT_ID` é obrigatório para entrar no sistema.
 - O banco local (SQLite) é criado sozinho em `backend/data/nimb.db`, junto com a chave de criptografia `backend/data/secret.key`. A pasta `data/` fica fora do Git. Se a `secret.key` for apagada, as API keys das LLMs precisam ser cadastradas de novo.
-- No Windows, se o `pip install` falhar com um erro de caminho longo (`No such file or directory ... anthropic\types\beta\...`), mova o projeto para um caminho mais curto ou ative o suporte a caminhos longos do Windows.
+- No Windows, se o `pip install` falhar com um erro de caminho longo, mova o projeto para um caminho mais curto ou ative o suporte a caminhos longos do Windows.
 - Se a tela mostrar erros 404 em `/api/auth/...`, um backend antigo pode estar preso na porta 8000. Feche os terminais antigos ou encerre o processo: `Get-NetTCPConnection -LocalPort 8000` mostra o PID e `Stop-Process -Id <PID>` encerra.
 
 ## 2. Frontend (`frontend/V2 - front Studio`)
@@ -106,25 +106,25 @@ O front busca o Client ID em `/api/auth/config`, então ele não é configurado 
 
 **Para produção:** use HTTPS com `COOKIE_SECURE=true`, defina um `APP_SECRET_KEY` longo e aleatório, desative o Swagger com `ENABLE_DOCS=false` e ajuste `CORS_ORIGINS` para o domínio real. O limite por IP é guardado em memória, então vale por processo da API.
 
-## 4. Conectar uma LLM e perguntar
+## 4. Conectar o DeepSeek e perguntar
 
-1. Entre com uma conta de administrador.
-2. Clique no botão **Conectar LLM** no topo (ícone `hub`).
-3. Escolha o provedor, informe a API key e, se quiser, o modelo, e clique em **Conectar LLM**. Use **Testar** para validar a conexão.
-4. Faça uma pergunta no chat. A resposta aparece na tela com o modelo usado e o tempo de resposta, e a conversa é salva em **Perguntas Anteriores**. Cada usuário vê apenas as próprias conversas.
+O projeto usa só o **DeepSeek** como LLM. Os outros provedores foram desativados no back e no front.
 
-| Provedor | API key | Modelo padrão | Observação |
-|---|---|---|---|
-| OpenAI | sim | `gpt-4o-mini` | |
-| Anthropic (Claude) | sim | `claude-opus-5-5` | deixe a temperatura em branco |
-| Google Gemini | sim | `gemini-2.5-flash` | |
-| DeepSeek | sim | `deepseek-chat` | |
-| Ollama (local) | não | `llama3.1` | precisa do Ollama rodando (`ollama pull llama3.1`) |
-| Compatível com OpenAI | opcional | — | LM Studio, vLLM etc. Informe a Base URL |
+1. Pegue a API key em `platform.deepseek.com` (a conta precisa de saldo).
+2. Coloque no `backend/.env`. A conexão "DeepSeek (.env)" é criada na subida da API, se o banco ainda não tiver conexões:
+   ```ini
+   LLM_API_KEY=sk-...
+   LLM_MODEL=deepseek-chat          # ou deepseek-reasoner (raciocina antes, mais lento)
+   ```
+   Ou cadastre pela tela: entre como administrador → **Conectar LLM** → API key → **Conectar LLM** → **Testar**.
+3. Faça uma pergunta no chat. A resposta mostra o modelo e o tempo de resposta, e a conversa é salva em **Perguntas Anteriores**. Cada usuário vê só as próprias conversas.
 
-O modelo é editável. Os padrões são só sugestões.
+| Modelo | Uso |
+|---|---|
+| `deepseek-chat` | resposta direta (padrão) |
+| `deepseek-reasoner` | raciocina antes de responder; mais lento; ignora temperatura |
 
-Também é possível criar a conexão sem passar pela tela, pelo `backend/.env` (`LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`). Ela é criada quando a API sobe com o banco vazio.
+Somente administradores cadastram, editam e testam a conexão, porque ela guarda a API key, criptografada no banco.
 
 ### 4.1 Livros e banco vetorial
 
@@ -208,5 +208,7 @@ backend/
 │   └── routers/          rotas HTTP
 └── vector_builder/       construtor do banco vetorial e do catálogo (roda à parte)
 ```
+
+Para subir no servidor (AWS), siga o [deploy_aws.md](deploy_aws.md).
 
 O ponto de extensão para o RAG está em `app/controllers/query_controller.py`: os trechos recuperados do banco vetorial entram no prompt antes da chamada à LLM.

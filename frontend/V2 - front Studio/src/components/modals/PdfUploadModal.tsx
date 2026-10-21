@@ -2,6 +2,8 @@ import React, { useState, useRef } from 'react';
 import { BookValidationResult, CatalogBook, IndexedBook } from '../../types';
 import { ragApiService } from '../../services/ragApi';
 
+const MAX_UPLOAD_MB = 150;
+
 interface PdfUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,6 +38,12 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       setError('Selecione um arquivo no formato PDF (.pdf).');
+      return;
+    }
+    // Mesmo limite do backend (BOOK_UPLOAD_MAX_MB): acima dele o proxy corta a
+    // conexão e o navegador mostraria só um erro de rede
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(`Arquivo maior que o limite de ${MAX_UPLOAD_MB} MB.`);
       return;
     }
 

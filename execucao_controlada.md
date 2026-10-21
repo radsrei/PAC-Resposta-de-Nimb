@@ -7,14 +7,13 @@ Comandos no PowerShell, a partir da raiz do projeto. Linux/Mac nos comentários.
 ```bash
 winget install -e --id Python.Python.3.11       # Python 3.11+
 winget install -e --id OpenJS.NodeJS.LTS        # Node.js 20+ (tela)
-winget install -e --id Ollama.Ollama            # embeddings (bge-m3) e LLM local opcional
+winget install -e --id Ollama.Ollama            # embeddings (bge-m3) do banco vetorial
 ```
 
 ## 1. Setup automático
 Cria o `.venv`, instala backend, construtor e front, baixa o modelo no Ollama e gera o `backend/.env`.
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1                        # embeddings pelo Ollama
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -ModeloChat llama3.1   # + LLM de chat local
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local      # sentence-transformers (PyTorch ~2 GB)
 # Linux/Mac: bash scripts/setup.sh  |  bash scripts/setup.sh --embeddings local
 ```
@@ -36,6 +35,8 @@ cd "frontend/V2 - front Studio" && npm ci && cd ../..
 ## 3. Configuração (`backend/.env`)
 ```ini
 GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com   # obrigatório: único login do sistema
+LLM_API_KEY=sk-...                                 # chave do DeepSeek (cria a conexão sozinho)
+LLM_MODEL=deepseek-chat                            # ou deepseek-reasoner
 EMBEDDING_PROVIDER=ollama                          # ou sentence-transformers
 EMBEDDING_MODEL=bge-m3
 OLLAMA_URL=http://localhost:11434
@@ -59,11 +60,9 @@ q + ENTER                                            # Sair
 ### http://localhost:3000
 Entre com o Google. A primeira conta vira administradora.
 
-## 6. Conectar a LLM do chat
-Na tela: **Conectar LLM** → provedor → API key (ou Ollama local) → **Testar** → **Conectar LLM**.
-```bash
-ollama pull llama3.1      # se for usar o Ollama também no chat
-```
+## 6. Conectar o DeepSeek
+Com `LLM_API_KEY` no `.env`, a conexão "DeepSeek (.env)" já nasce ativa.
+Pela tela: **Conectar LLM** → API key → modelo (`deepseek-chat` ou `deepseek-reasoner`) → **Conectar LLM** → **Testar**.
 
 ## 7. Construir o banco vetorial de um livro
 Dentro de `backend/`, com o `.venv` ativo. Feito uma vez por livro, pelo administrador.
@@ -103,4 +102,4 @@ Caminho longo no Windows (`pip` falhando), PowerShell como administrador:
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
 ```
 
-Detalhes: [Setup-Front-Tela.md](Setup-Front-Tela.md) · [backend/vector_builder/README.md](backend/vector_builder/README.md)
+Servidor (AWS): [deploy_aws.md](deploy_aws.md) · Detalhes: [Setup-Front-Tela.md](Setup-Front-Tela.md) · [backend/vector_builder/README.md](backend/vector_builder/README.md)

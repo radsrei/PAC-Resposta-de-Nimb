@@ -5,22 +5,19 @@
 #
 #   bash scripts/setup.sh                       # embeddings pelo Ollama (padrão)
 #   bash scripts/setup.sh --embeddings local    # sentence-transformers (PyTorch, ~2 GB)
-#   bash scripts/setup.sh --embeddings ollama --modelo-chat llama3.1
 #   bash scripts/setup.sh --embeddings nenhum --sem-frontend
 set -euo pipefail
 
 EMBEDDINGS="ollama"
 MODELO_EMBEDDINGS="bge-m3"
-MODELO_CHAT=""
 SEM_FRONTEND=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --embeddings) EMBEDDINGS="$2"; shift 2 ;;
     --modelo-embeddings) MODELO_EMBEDDINGS="$2"; shift 2 ;;
-    --modelo-chat) MODELO_CHAT="$2"; shift 2 ;;
     --sem-frontend) SEM_FRONTEND=1; shift ;;
-    -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     *) echo "Opção desconhecida: $1"; exit 1 ;;
   esac
 done
@@ -58,7 +55,8 @@ elif [[ "$EMBEDDINGS" == "ollama" ]]; then
   ok "dependências do construtor instaladas"
 fi
 
-if [[ "$EMBEDDINGS" == "ollama" || -n "$MODELO_CHAT" ]]; then
+# A LLM do chat é o DeepSeek (API externa): o Ollama só gera os embeddings
+if [[ "$EMBEDDINGS" == "ollama" ]]; then
   step "Ollama"
   command -v ollama >/dev/null || fail "Ollama não instalado. Linux: curl -fsSL https://ollama.com/install.sh | sh  |  macOS: brew install ollama"
   if ! curl -fs http://localhost:11434/api/tags >/dev/null; then
@@ -68,8 +66,7 @@ if [[ "$EMBEDDINGS" == "ollama" || -n "$MODELO_CHAT" ]]; then
     curl -fs http://localhost:11434/api/tags >/dev/null || fail "o servidor do Ollama não respondeu em http://localhost:11434"
   fi
   ok "servidor no ar"
-  [[ "$EMBEDDINGS" == "ollama" ]] && { ollama pull "$MODELO_EMBEDDINGS"; ok "modelo de embeddings: $MODELO_EMBEDDINGS"; }
-  [[ -n "$MODELO_CHAT" ]] && { ollama pull "$MODELO_CHAT"; ok "LLM de chat: $MODELO_CHAT"; }
+  ollama pull "$MODELO_EMBEDDINGS"; ok "modelo de embeddings: $MODELO_EMBEDDINGS"
 fi
 
 step "Configuração (backend/.env)"

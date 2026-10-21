@@ -51,9 +51,9 @@ class Settings:
     # Quantidade de mensagens anteriores da sessão enviadas como contexto
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
 
-    # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API,
-    # uma conexão é criada a partir destas variáveis.
-    default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or None
+    # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API e
+    # LLM_API_KEY estiver definida, uma conexão DeepSeek é criada com estes valores.
+    default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or "deepseek"
     default_llm_model: str | None = os.getenv("LLM_MODEL") or None
     default_llm_api_key: str | None = os.getenv("LLM_API_KEY") or None
     default_llm_base_url: str | None = os.getenv("LLM_BASE_URL") or None
