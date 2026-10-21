@@ -39,6 +39,10 @@ Depois do script, falta só preencher o `GOOGLE_CLIENT_ID` em `backend/.env`.
 
 O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora do Git).
 
+### Ambiente Python (.venv)
+
+O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora do Git).
+
 Criar e instalar (primeira vez):
 ```bash
 python3.11 -m venv .venv
