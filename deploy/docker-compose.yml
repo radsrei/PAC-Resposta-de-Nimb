@@ -2,6 +2,7 @@
 #   docker compose up -d --build        sobe (ou atualiza) tudo
 #   docker compose logs -f              acompanha os logs
 #   docker compose down                 para (os dados ficam nos volumes)
+# Serviços opcionais (COMPOSE_PROFILES no deploy/.env): cloudflare, rag
 name: nimb
 
 services:
@@ -38,6 +39,19 @@ services:
       - caddy_config:/config
     depends_on:
       - api
+    restart: unless-stopped
+
+  # Cloudflare Tunnel (respostas-nimb.com.br): conexão de saída até o Cloudflare,
+  # sem portas abertas na EC2. Ativado por COMPOSE_PROFILES=cloudflare e
+  # TUNNEL_TOKEN no deploy/.env. Ver cloudflare_dominio.md.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["cloudflare"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - web
     restart: unless-stopped
 
   # Próxima etapa (busca no banco vetorial): embeddings da pergunta pelo Ollama.

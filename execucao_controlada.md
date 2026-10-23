@@ -102,4 +102,4 @@ Caminho longo no Windows (`pip` falhando), PowerShell como administrador:
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
 ```
 
-Servidor (AWS): [deploy_aws.md](deploy_aws.md) · Detalhes: [Setup-Front-Tela.md](Setup-Front-Tela.md) · [backend/vector_builder/README.md](backend/vector_builder/README.md)
+Servidor (AWS): [deploy_aws.md](deploy_aws.md) · Domínio: [cloudflare_dominio.md](cloudflare_dominio.md) · Detalhes: [Setup-Front-Tela.md](Setup-Front-Tela.md) · [backend/vector_builder/README.md](backend/vector_builder/README.md)

@@ -2,7 +2,9 @@ import React, { useState, useRef } from 'react';
 import { BookValidationResult, CatalogBook, IndexedBook } from '../../types';
 import { ragApiService } from '../../services/ragApi';
 
-const MAX_UPLOAD_MB = 150;
+// Igual a BOOK_UPLOAD_MAX_MB do backend. O plano grátis do Cloudflare recusa
+// requisições acima de 100 MB.
+const MAX_UPLOAD_MB = 95;
 
 interface PdfUploadModalProps {
   isOpen: boolean;
@@ -159,7 +161,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               Arraste tomos, manuais ou suplementos em PDF
             </p>
             <span className="font-mono text-xs text-[#8B87A8]">
-              Tamanho máximo: 150 MB • O arquivo é analisado e descartado, não fica guardado
+              Tamanho máximo: {MAX_UPLOAD_MB} MB • O arquivo é analisado e descartado, não fica guardado
             </span>
           </div>
 

@@ -46,8 +46,9 @@ class Settings:
         )
     )
 
-    # Tempo máximo (segundos) de espera pela resposta da LLM
-    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "120"))
+    # Tempo máximo (segundos) de espera pela resposta da LLM. Abaixo dos ~100 s
+    # em que o Cloudflare encerra a requisição (erro 524).
+    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "90"))
     # Quantidade de mensagens anteriores da sessão enviadas como contexto
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
 
@@ -101,8 +102,10 @@ class Settings:
     embedding_model: str | None = os.getenv("EMBEDDING_MODEL") or None
     # Servidor local do Ollama (embeddings e, se configurado na tela, a LLM do chat)
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    # Tamanho máximo do PDF enviado para validação
-    book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "150"))
+    # Tamanho máximo do PDF enviado para validação. O plano grátis do Cloudflare
+    # recusa requisições acima de 100 MB; 95 MB deixa margem para o multipart.
+    # Mantenha igual a MAX_UPLOAD_MB do front (PdfUploadModal.tsx).
+    book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "95"))
     # Validações de livro por minuto, por IP (ler PDF consome CPU)
     book_upload_rate_per_minute: int = int(os.getenv("BOOK_UPLOAD_RATE_PER_MINUTE", "5"))
 

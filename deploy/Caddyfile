@@ -1,19 +1,36 @@
 # Front e API no mesmo endereço (o front chama /api/... por caminho relativo).
 #
 # SITE_ADDRESS (deploy/.env):
-#   :80                   sem domínio: HTTP; login Google só pelo túnel SSH (http://localhost:8080)
-#   nimb.seudominio.com   com domínio: HTTPS automático (Let's Encrypt), portas 80 e 443 abertas
+#   :80                       HTTP. Usado no túnel SSH (modo A) e atrás do Cloudflare Tunnel
+#                             (respostas-nimb.com.br: o HTTPS fica no Cloudflare)
+#   respostas-nimb.com.br     HTTPS automático pelo próprio Caddy (sem Cloudflare)
+{
+	servers {
+		# IP real do usuário: só confia em quem está na rede privada (o container
+		# cloudflared, ou o túnel SSH). Desses, lê o CF-Connecting-IP, que o
+		# Cloudflare sempre sobrescreve. O X-Forwarded-For NÃO é usado: o
+		# Cloudflare mantém o valor enviado pelo cliente, que pode ser forjado.
+		# Requisições diretas da internet (IP público) ignoram esses cabeçalhos.
+		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
 
-	# Livros em PDF de até 150 MB (BOOK_UPLOAD_MAX_MB) + margem do multipart
+	# Livros em PDF de até 95 MiB (BOOK_UPLOAD_MAX_MB = 99,6 milhões de bytes) +
+	# margem do multipart. Aqui "MB" é decimal: 100MB = 100.000.000 bytes.
+	# Não passar de 100 MB: é o limite do plano grátis do Cloudflare.
 	request_body {
-		max_size 160MB
+		max_size 100MB
 	}
 
 	handle /api/* {
-		# Repassa o IP real do usuário (X-Forwarded-For) para o limite de requisições
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			# A API (uvicorn --proxy-headers) recebe só o IP real resolvido acima
+			header_up X-Forwarded-For {client_ip}
+		}
 	}
 
 	handle {

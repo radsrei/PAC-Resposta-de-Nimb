@@ -21,10 +21,10 @@ O login do Google **exige HTTPS e não aceita IP** como origem; só o `localhost
 | Modo | Domínio | Quem acessa | Para quê |
 |---|---|---|---|
 | **A. Túnel SSH** | não precisa | só quem tem a chave SSH (você) | subir, testar e validar tudo agora |
-| **B. Domínio** | precisa | qualquer pessoa | sistema aberto para os usuários |
+| **Cloudflare** (escolhido, D10) | `respostas-nimb.com.br` | qualquer pessoa | sistema aberto, sem portas abertas na EC2 |
+| B. Domínio direto | `respostas-nimb.com.br` | qualquer pessoa | alternativa sem Cloudflare (Caddy emite o HTTPS) |
 
-Dá para começar no **modo A** e trocar para o **B** depois, mudando só três valores de configuração (passo 9).
-Domínio grátis de estudante: [GitHub Student Developer Pack](https://education.github.com/pack) (`.me`, `.tech` e outros, grátis no 1º ano).
+Comece no **modo A**. Quando o Registro.br liberar o domínio, siga o [cloudflare_dominio.md](cloudflare_dominio.md) (passo 9).
 
 ## 0. Antes de começar (sua máquina)
 ```bash
@@ -47,7 +47,7 @@ python -m vector_builder list
 | Tipo | `t3.small` (2 GB). Para o Ollama na etapa do RAG: 4 GB+ (`t3.medium`). Prefira os marcados *Free tier eligible* |
 | Key pair | criar `nimb` (.pem) e guardar |
 | Disco | 20 GB gp3 |
-| Security group | SSH 22 **só Meu IP**. Modo B: também HTTP 80 e HTTPS 443 de qualquer lugar |
+| Security group | SSH 22 **só Meu IP**. Modos A e Cloudflare: nada mais. Só o modo B abre HTTP 80 e HTTPS 443 |
 
 Depois: *EC2 → Elastic IPs → Allocate → Associate* à instância. O IP fixo é usado no SSH e no DNS.
 
@@ -74,9 +74,9 @@ cp deploy/.env.example deploy/.env
 python3 -c "import secrets; print(secrets.token_urlsafe(48))"     # valor do APP_SECRET_KEY
 nano backend/.env
 ```
-| Variável (`backend/.env`) | Modo A (túnel) | Modo B (domínio) |
+| Variável (`backend/.env`) | Modo A (túnel) | Cloudflare ou modo B |
 |---|---|---|
-| `CORS_ORIGINS` | `http://localhost:8080` | `https://nimb.seudominio.com` |
+| `CORS_ORIGINS` | `http://localhost:8080` | `https://respostas-nimb.com.br` |
 | `COOKIE_SECURE` | `false` | `true` |
 | `ENABLE_DOCS` | `false` | `false` |
 | `APP_SECRET_KEY` | valor gerado acima | o mesmo |
@@ -85,12 +85,12 @@ nano backend/.env
 | `LLM_API_KEY` | chave do DeepSeek | a mesma |
 | `LLM_MODEL` | `deepseek-chat` | `deepseek-chat` |
 
-`deploy/.env`: modo A `SITE_ADDRESS=:80` · modo B `SITE_ADDRESS=nimb.seudominio.com`
+`deploy/.env`: modo A `SITE_ADDRESS=:80` · Cloudflare: ver [cloudflare_dominio.md](cloudflare_dominio.md) · modo B `SITE_ADDRESS=respostas-nimb.com.br`
 
 Guarde o `APP_SECRET_KEY` no cofre (Bitwarden). Sem ele, a chave do DeepSeek salva no banco não abre mais.
 
 ## 5. Google Cloud (Credenciais → seu ID do cliente OAuth)
-- **Origens JavaScript autorizadas:** modo A `http://localhost:8080` · modo B `https://nimb.seudominio.com`
+- **Origens JavaScript autorizadas:** modo A `http://localhost:8080` · Cloudflare/modo B `https://respostas-nimb.com.br`
 - **Tela de consentimento:** em *Teste*, só os usuários de teste entram. Para abrir a todos: *Publicar app* (modo B).
 
 ## 6. Subir
@@ -108,8 +108,8 @@ ssh -i nimb.pem -L 8080:localhost:80 ubuntu@<IP-ELASTICO>       # deixe aberto
 ```
 ### http://localhost:8080
 
-Modo B:
-### https://nimb.seudominio.com
+Cloudflare ou modo B:
+### https://respostas-nimb.com.br
 
 ## 8. Teste de aceite
 1. Entrar com o Google. O e-mail de `ADMIN_EMAILS` vira administrador.
@@ -117,15 +117,18 @@ Modo B:
 3. **Subir PDF** → livro do catálogo → "Livro reconhecido. Acesso liberado."
 4. Fazer uma pergunta no chat.
 
-## 9. Trocar do modo A para o B (quando tiver o domínio)
+## 9. Colocar no domínio (quando o Registro.br liberar)
+Caminho escolhido (Cloudflare Tunnel): **[cloudflare_dominio.md](cloudflare_dominio.md)**.
+
+Alternativa sem Cloudflare (modo B):
 ```bash
-# DNS do domínio: registro A  nimb → <IP-ELASTICO>
+# DNS no Registro.br: registro A  respostas-nimb.com.br → <IP-ELASTICO>
 # Security group: liberar 80 e 443
-nano deploy/.env        # SITE_ADDRESS=nimb.seudominio.com
-nano backend/.env       # CORS_ORIGINS=https://nimb.seudominio.com  e  COOKIE_SECURE=true
+nano deploy/.env        # SITE_ADDRESS=respostas-nimb.com.br
+nano backend/.env       # CORS_ORIGINS=https://respostas-nimb.com.br  e  COOKIE_SECURE=true
 cd deploy && docker compose up -d     # o Caddy emite o certificado HTTPS sozinho
 ```
-No Google Cloud: adicionar a origem `https://...` e publicar o app.
+No Google Cloud: adicionar a origem `https://respostas-nimb.com.br` e publicar o app.
 
 ## 10. Rotina
 ```bash
@@ -145,6 +148,7 @@ scp -i nimb.pem -r vector_store ubuntu@<IP-ELASTICO>:~/PAC-Resposta-de-Nimb/    
 | Login entra e volta para a tela de login | `COOKIE_SECURE=true` sem HTTPS (modo A precisa de `false`) |
 | "Conta do DeepSeek sem saldo" | recarregar créditos no DeepSeek |
 | Upload termina com "Nenhum livro permitido" | `vector_store/catalog.json` não foi enviado ao servidor (passo 3) |
+| "Arquivo maior que o limite de 95 MB" | limite do Cloudflare grátis (D10): comprimir o PDF |
 | HTTPS não emite certificado | DNS ainda não aponta para o IP, ou portas 80/443 fechadas |
 | Logs | `docker compose logs api` · `docker compose logs web` |
 

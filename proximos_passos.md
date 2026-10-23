@@ -2,7 +2,7 @@
 
 Objetivo final: o serviço rodando num servidor (ex.: AWS), com o usuário **entrando com o Google → enviando o PDF do livro → o livro validado → fazendo perguntas respondidas com base no livro**.
 
-Levantamento feito sobre o estado atual do repositório (branch `feat/tela_sistema`). Atualizado em 21/10/2026: DeepSeek definido e kit de deploy pronto.
+Levantamento feito sobre o estado atual do repositório (branch `feat/tela_sistema`). Atualizado em 22/10/2026: DeepSeek definido, kit de deploy pronto e Cloudflare + `respostas-nimb.com.br` (D10).
 
 ---
 
@@ -82,7 +82,7 @@ O que o chat faz quando o usuário não liberou nenhum livro:
 - ou responde só com a LLM, avisando que não há fonte. É o comportamento atual.
 
 ### D7. Domínio e HTTPS — MÉDIA
-> Pode ser adiado: o modo túnel SSH do [deploy_aws.md](deploy_aws.md) permite o login Google sem domínio, só para testes. Para abrir aos usuários, é preciso de domínio; o Caddy emite o HTTPS sozinho.
+> ✅ **Decidido:** `respostas-nimb.com.br` (Registro.br, em processamento), com HTTPS pelo Cloudflare (D10). Até o domínio ficar ativo, o modo túnel SSH do [deploy_aws.md](deploy_aws.md) permite testar o login Google sem domínio.
 
 - Domínio próprio (Route 53 ou outro registrador). O Google exige HTTPS na origem.
 - Certificado: ACM + ALB, ou nginx + Let's Encrypt (`certbot`) na própria EC2.
@@ -94,6 +94,41 @@ O que o chat faz quando o usuário não liberou nenhum livro:
 
 ### D9. Banco de dados — BAIXA (por enquanto)
 SQLite atende uma instância única. Migrar para PostgreSQL (RDS) só se houver mais de uma instância (D1).
+
+### D10. Cloudflare na frente da AWS — ALTA
+> ✅ **Decidido em 22/10/2026:** Cloudflare (DNS + Tunnel) como complemento da EC2, no domínio **`respostas-nimb.com.br`** (Registro.br). Passo a passo em [cloudflare_dominio.md](cloudflare_dominio.md).
+
+**Contexto.** Para abrir o sistema aos usuários é preciso um domínio com HTTPS (login Google). O Cloudflare grátis oferece DNS, proxy com proteção contra DDoS, firewall, HTTPS na borda e o Tunnel, que liga a EC2 ao Cloudflare por uma conexão de saída, sem portas abertas no servidor.
+
+**Decisão.**
+- O domínio fica registrado no **Registro.br**, com os servidores DNS apontados para o Cloudflare (o Cloudflare não registra `.br`).
+- O tráfego entra pelo **Cloudflare Tunnel** (container `cloudflared`, perfil `cloudflare` no compose). O Caddy segue em HTTP dentro do servidor, e o HTTPS fica no Cloudflare.
+- A EC2 fecha as portas 80 e 443 no security group. A porta 22 continua só para o IP do administrador.
+- A API, o banco e o RAG continuam na EC2. O Cloudflare não substitui nenhuma parte do backend.
+
+**Consequências (aplicadas no código):**
+
+| # | Limite do Cloudflare grátis | Ajuste feito | Onde |
+|---|---|---|---|
+| 1 | Requisições de no máximo 100 MB (erro 413) | upload de livros reduzido de 150 para **95 MB**; o Caddy barra acima de 100 MB; o front avisa antes de enviar | `BOOK_UPLOAD_MAX_MB=95`, `MAX_UPLOAD_MB` em `PdfUploadModal.tsx`, `request_body` no `Caddyfile` |
+| 2 | Resposta em até ~100 s (erro 524) | tempo máximo da LLM reduzido de 120 para **90 s** | `LLM_TIMEOUT=90` (`config.py`, `.env.example`) |
+| 3 | O IP que chega ao servidor é do Cloudflare; o `X-Forwarded-For` pode ser forjado pelo cliente | o Caddy lê o IP real do `CF-Connecting-IP`, mas só de proxies da rede privada (o `cloudflared`); requisições diretas ignoram o cabeçalho | `servers { trusted_proxies / client_ip_headers }` + `header_up X-Forwarded-For {client_ip}` no `Caddyfile` |
+
+**Alternativas descartadas.**
+
+| Alternativa | Motivo |
+|---|---|
+| API no Cloudflare (Workers/D1/Vectorize) | memória e tempo de CPU insuficientes para ler PDFs com o pypdf; reescrita total do backend |
+| Front no Cloudflare Pages | ganho pequeno (~300 KB); front e API em origens diferentes complicam o cookie e o CORS |
+| Quick Tunnel (`trycloudflare.com`) | o endereço muda a cada execução, e a origem do Google teria de ser recadastrada sempre |
+| Vectorize como banco vetorial | a cota grátis comporta cerca de 4.900 trechos (1 a 2 livros) |
+| Proxy do Cloudflare apontando para portas abertas na EC2 | funciona, mas expõe o servidor; o Tunnel dispensa portas abertas |
+
+**Em aberto.**
+- Livros acima de 95 MB: comprimir o PDF, upload em partes (mudança de código) ou plano Business (200 MB).
+- `deepseek-reasoner` com respostas longas pode passar de 90 s. A saída definitiva é enviar a resposta aos poucos (streaming).
+- Cloudflare Access (até 50 usuários grátis) para restringir quem entra (D5), se o sistema não for público.
+- Workers AI (`@cf/baai/bge-m3`) para os embeddings da pergunta (D3), a reavaliar no P0.1.
 
 ---
 
@@ -128,13 +163,13 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --fo
 - `docker-compose.yml` com `api`, `ollama` (se D3 = Ollama) e `nginx`, e volumes para `backend/data/` e `vector_store/`.
 - Fixar as versões das dependências (`pip freeze` → `requirements.lock`). Hoje nada tem versão fixa, e o servidor pode instalar versões diferentes das testadas.
 
-**P0.4 Proxy, HTTPS e mesmo domínio** — ✅ Caddy (`deploy/Caddyfile`): front e `/api` no mesmo endereço, limite de 160 MB, HTTPS automático
+**P0.4 Proxy, HTTPS e mesmo domínio** — ✅ Caddy (`deploy/Caddyfile`): front e `/api` no mesmo endereço, limite de 100 MB (D10), HTTPS pelo Cloudflare ou pelo próprio Caddy
 - O front chama `/api/...` por caminho relativo: front e API precisam estar **no mesmo domínio**.
 - nginx (ou ALB) servindo `dist/` em `/` e encaminhando `/api/` para o uvicorn.
 - `client_max_body_size 160m;` no nginx. **O padrão de 1 MB bloqueia o upload dos livros.**
-- `proxy_read_timeout 180s;` (e o *idle timeout* do ALB acima de 120 s): a LLM pode levar até `LLM_TIMEOUT=120`.
+- Tempo de resposta: `LLM_TIMEOUT=90`, abaixo dos ~100 s do Cloudflare (D10).
 
-**P0.5 Corrigir o IP real atrás do proxy** — ✅ uvicorn com `--proxy-headers`; testado: IP forjado no `X-Forwarded-For` é descartado pelo Caddy
+**P0.5 Corrigir o IP real atrás do proxy** — ✅ uvicorn com `--proxy-headers` + Caddy lendo o `CF-Connecting-IP` só da rede privada (D10); testado: IP forjado no `X-Forwarded-For` é descartado
 - `core/rate_limit.py` usa `request.client.host`. Atrás do nginx/ALB, **todos os usuários aparecem com o mesmo IP**: o limite de 20 logins/min e 5 uploads/min passaria a valer para o sistema inteiro.
 - Resolve com `--proxy-headers --forwarded-allow-ips` no uvicorn (P0.3), aceitando o cabeçalho só do proxy.
 
@@ -142,14 +177,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --fo
 ```ini
 COOKIE_SECURE=true
 ENABLE_DOCS=false
-CORS_ORIGINS=https://seu-dominio.com.br
+CORS_ORIGINS=https://respostas-nimb.com.br
 APP_SECRET_KEY=<valor longo e aleatório, guardado no cofre>
 GOOGLE_CLIENT_ID=<client id>
 EMBEDDING_PROVIDER=ollama
 OLLAMA_URL=http://ollama:11434
 ```
 - Sem o domínio em `CORS_ORIGINS`, o middleware bloqueia **todo POST** (login inclusive) com "Origem não permitida".
-- No Google Cloud: adicionar `https://seu-dominio.com.br` nas origens JavaScript autorizadas e publicar a tela de consentimento (D5).
+- No Google Cloud: adicionar `https://respostas-nimb.com.br` nas origens JavaScript autorizadas e publicar a tela de consentimento (D5).
 
 **P0.7 Livros reais: construir e calibrar**
 - Rodar `build --dry-run` em cada livro e revisar o `chunks.jsonl` (qualidade dos trechos, colunas, tabelas).
@@ -216,9 +251,9 @@ Depois de online
 
 ## 5. Checklist de aceite (sistema online)
 
-- [ ] `https://seu-dominio` abre a tela de login com certificado válido
+- [ ] `https://respostas-nimb.com.br` abre a tela de login com certificado válido
 - [ ] Login com Google funciona com uma conta fora da lista de teste
-- [ ] Upload de um livro real (até 150 MB) é aceito; um PDF diferente é recusado
+- [ ] Upload de um livro real (até 95 MB) é aceito; um PDF diferente é recusado
 - [ ] O livro aparece em **Livros Liberados** só para quem enviou
 - [ ] A pergunta volta com resposta, nome do livro e página da fonte
 - [ ] Reiniciar o servidor não perde usuários, conversas, livros liberados nem a conexão LLM
