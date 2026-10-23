@@ -2,7 +2,7 @@
 Gravação do banco vetorial de um livro (Chroma), separado por livro:
 
     vector_store/books/<book_id>/
-    ├── chroma-<data>/   coleção "chunks", distância cosseno (uma pasta por construção)
+    ├── chroma-<data>/   coleção "chunks", distância cosseno, metadados de entrada e página (uma pasta por construção)
     ├── chunks.jsonl     trechos indexados (para revisar a qualidade)
     └── manifest.json    aponta para a versão ativa (`chroma_dir`); a presença dele = banco pronto
 
@@ -17,6 +17,7 @@ import gc
 import json
 import os
 import shutil
+from collections import Counter
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,10 +58,14 @@ def _write_chroma(path: Path, book_id: str, chunks: list[Chunk], vectors: list[l
             metadatas=[{
                 "book_id": book_id,
                 "chunk_index": c.index,
+                "title": c.title,
+                "path": c.path,
+                "chapter": c.chapter,
+                "kind": c.kind,
                 "page_start": c.page_start,
                 "page_end": c.page_end,
-                "chapter": c.chapter,
-                "section": c.section,
+                "printed_start": c.printed_start,
+                "printed_end": c.printed_end,
             } for c in batch],
         )
     # Libera os arquivos do SQLite do Chroma (no Windows a pasta não pode ser
@@ -82,6 +87,7 @@ def write_book_store(
     params: dict[str, Any],
     source_sha256: str,
     page_count: int,
+    profile: dict[str, Any],
 ) -> Path:
     root = book_catalog.book_dir(book["id"])
     root.mkdir(parents=True, exist_ok=True)
@@ -102,6 +108,8 @@ def write_book_store(
         "collection": COLLECTION,
         "distance": "cosine",
         "chunking": params,
+        "profile": profile,
+        "kinds": dict(Counter(c.kind for c in chunks)),
         "embedding": asdict(embedding),
     }
     # A troca de versão acontece aqui: até este ponto, quem lê usa a anterior

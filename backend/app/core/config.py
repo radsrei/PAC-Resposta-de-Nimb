@@ -98,7 +98,7 @@ class Settings:
     )
     # Provedor de embeddings padrão do construtor: sentence-transformers ou ollama.
     # Modelo vazio = padrão do provedor (BAAI/bge-m3 ou bge-m3 no Ollama).
-    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers").strip().lower()
+    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "ollama").strip().lower()
     embedding_model: str | None = os.getenv("EMBEDDING_MODEL") or None
     # Servidor local do Ollama (embeddings e, se configurado na tela, a LLM do chat)
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")

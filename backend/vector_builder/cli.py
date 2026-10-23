@@ -53,9 +53,38 @@ def cmd_register(args) -> int:
     return 0
 
 
+def _load_profile(args):
+    import pymupdf
+    from vector_builder.profile import auto_profile, find_profile, load_profile
+
+    path = find_profile(args.id, args.profile)
+    if path:
+        return load_profile(path)
+    print("AVISO: livro sem perfil em vector_builder/profiles/; usando o perfil automático.")
+    with pymupdf.open(args.pdf) as doc:
+        return auto_profile(doc)
+
+
+def _report(extraction, chunks) -> None:
+    from collections import Counter
+    from vector_builder.extract import EMAIL
+
+    sizes = sorted(len(c.text) for c in chunks) or [0]
+    print(f"{len(chunks)} trechos | mediana {sizes[len(sizes) // 2]} | maior {sizes[-1]} caracteres | "
+          f"{len(extraction.skipped)} páginas ignoradas")
+    print("Por tipo: " + ", ".join(f"{k} {v}" for k, v in Counter(c.kind for c in chunks).most_common()))
+    if len(extraction.empty) > extraction.page_count * 0.3:
+        print(f"AVISO: {len(extraction.empty)} páginas sem texto. O PDF precisa de OCR antes de indexar.")
+    if not any(extraction.printed.values()):
+        print("AVISO: número impresso das páginas não encontrado; as fontes citarão a página do arquivo.")
+    leaked = [c.index for c in chunks if EMAIL.search(c.text)]
+    if leaked:
+        raise SystemExit(f"Trechos com e-mail (marca d'água?): {leaked[:10]}. Ajuste o perfil antes de indexar.")
+
+
 def cmd_build(args) -> int:
-    from vector_builder.chunking import chunk_pages, embedding_text
-    from vector_builder.extract import extract_pages
+    from vector_builder.chunking import chunk_book, embedding_text
+    from vector_builder.extract import extract
     from vector_builder.store import write_book_store, write_chunks_jsonl
 
     book = _register(args) if not args.skip_register else book_catalog.get_book(args.id)
@@ -63,15 +92,11 @@ def cmd_build(args) -> int:
         raise SystemExit(f"Livro '{args.id}' não está no catálogo. Rode sem --skip-register.")
 
     started = time.monotonic()
-    print("Extraindo texto (PyMuPDF)...")
-    pages = extract_pages(args.pdf)
-    empty = sum(1 for p in pages if not p.text.strip())
-    if empty > len(pages) * 0.3:
-        print(f"AVISO: {empty} de {len(pages)} páginas sem texto. O PDF precisa de OCR antes de indexar.")
-
-    chunks = chunk_pages(pages, args.chunk_size, args.overlap)
-    sizes = sorted(len(c.text) for c in chunks) or [0]
-    print(f"{len(chunks)} trechos (tamanho mediano {sizes[len(sizes) // 2]} caracteres).")
+    profile = _load_profile(args)
+    print(f"Extraindo texto com o perfil '{profile.name}'...")
+    extraction = extract(args.pdf, profile)
+    chunks = chunk_book(extraction, profile, args.chunk_size, args.overlap, args.min_chars)
+    _report(extraction, chunks)
 
     if args.dry_run:
         out = settings.vector_store_dir / "preview" / f"{book['id']}.chunks.jsonl"
@@ -88,9 +113,11 @@ def cmd_build(args) -> int:
 
     path = write_book_store(
         book, chunks, vectors, embedder.info,
-        params={"chunk_size": args.chunk_size, "overlap": args.overlap, "context_header": True},
+        params={"chunk_size": args.chunk_size, "overlap": args.overlap, "min_chars": args.min_chars,
+                "strategy": "entry", "context_header": True},
         source_sha256=fingerprint_pdf(args.pdf.read_bytes()).sha256,
-        page_count=len(pages),
+        page_count=extraction.page_count,
+        profile=profile.describe(),
     )
     print(f"Banco vetorial pronto em {path} ({time.monotonic() - started:.0f}s).")
     return 0
@@ -153,8 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("build", help="cadastra o livro e constrói o banco vetorial dele")
     add_register_args(p)
     p.add_argument("--skip-register", action="store_true", help="não atualiza a entrada do catálogo")
-    p.add_argument("--chunk-size", type=int, default=1200, help="tamanho máximo do trecho em caracteres")
-    p.add_argument("--overlap", type=int, default=200, help="sobreposição entre trechos em caracteres")
+    p.add_argument("--profile", type=Path, default=None,
+                   help="perfil tipográfico (padrão: vector_builder/profiles/<id>.json, ou automático)")
+    p.add_argument("--chunk-size", type=int, default=2400, help="tamanho máximo do trecho em caracteres")
+    p.add_argument("--overlap", type=int, default=300,
+                   help="parágrafo final repetido no trecho seguinte, se couber neste tamanho")
+    p.add_argument("--min-chars", type=int, default=120, help="entradas menores são unidas à anterior")
     p.add_argument("--provider", choices=PROVIDERS, default=None,
                    help=f"quem gera os embeddings (padrão: EMBEDDING_PROVIDER do .env, "
                         f"ou {settings.embedding_provider})")

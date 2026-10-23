@@ -1,0 +1,38 @@
+{
+  "name": "Tormenta20 - Livro Básico (Jambô, PDF InDesign 2024)",
+  "margin": 0.08,
+  "body": {"font": "^IowanOldStyle-(Roman|Italic|Bold|BoldItalic|Black)$", "size": [9.25, 9.75]},
+  "rules": [
+    {"role": "drop",        "font": "^Helvetica"},
+    {"role": "drop",        "font": "^IowanOldStyle-Bold$",   "size": [9.75, 10.25], "zone": "bottom"},
+    {"role": "page_number", "font": "^Tormenta20-Regular$",   "size": [10.75, 11.25], "zone": "bottom"},
+    {"role": "decor",       "font": "^Tormenta20",            "size": [28, 999]},
+    {"role": "drop",        "font": "^Tormenta20",            "size": [17.5, 18.5]},
+    {"role": "drop",        "font": "^Tormenta20-Regular-SC"},
+    {"role": "heading",     "font": "^Tormenta20-Regular$",   "size": [25.5, 27.5], "zone": "body", "level": 1, "kind": "secao"},
+    {"role": "heading",     "font": "^Tormenta20-Regular$",   "size": [20.5, 23.5], "zone": "body", "level": 2, "kind": "secao"},
+    {"role": "heading",     "font": "^Tormenta20-Regular$",   "size": [15.25, 16.5], "zone": "body", "level": 3, "kind": "entrada"},
+    {"role": "heading",     "font": "^SourceSansPro-Bold$",   "size": [12.5, 13.5], "zone": "body", "level": 3, "kind": "quadro", "detour": "page"},
+    {"role": "heading",     "font": "^IowanOldStyle-Bold$",   "size": [10.75, 12.5], "zone": "body", "level": 3, "kind": "tabela", "detour": "body"}
+  ],
+  "skip_sections": [
+    "Sobrecapa", "Sobre os Autores", "Capa", "Mapa de Arton", "Folha de Rosto", "Créditos",
+    "Sumário", "Playtesters", "Índice Remissivo", "Ficha de Personagem", "4ª Capa"
+  ],
+  "title_suffix": "^ND\\s",
+  "kinds": [
+    {"kind": "ameaca",      "title": "\\bND\\s"},
+    {"kind": "magia",       "text": "^(Arcana|Divina|Universal) \\d"},
+    {"kind": "raca",        "chapter": "^Capítulo 1", "title": "^(Humano|Anão|Dahllan|Elfo|Goblin|Lefou|Minotauro|Qareen|Golem|Hynne|Kliren|Medusa|Osteon|Sereia/Tritão|Sílfide|Suraggel|Trog)$"},
+    {"kind": "classe",      "chapter": "^Capítulo 1", "title": "^(Arcanista|Bárbaro|Bardo|Bucaneiro|Caçador|Cavaleiro|Clérigo|Druida|Guerreiro|Inventor|Ladino|Lutador|Nobre|Paladino)"},
+    {"kind": "personagem",  "chapter": "^Capítulo 1"},
+    {"kind": "pericia_poder", "chapter": "^Capítulo 2"},
+    {"kind": "equipamento", "chapter": "^Capítulo 3"},
+    {"kind": "magia",       "chapter": "^Capítulo 4"},
+    {"kind": "regra",       "chapter": "^(Capítulo 5|Apêndice)"},
+    {"kind": "mestre",      "chapter": "^Capítulo 6"},
+    {"kind": "ameaca",      "chapter": "^Capítulo 7"},
+    {"kind": "recompensa",  "chapter": "^Capítulo 8"},
+    {"kind": "cenario",     "chapter": "^Capítulo 9"}
+  ]
+}

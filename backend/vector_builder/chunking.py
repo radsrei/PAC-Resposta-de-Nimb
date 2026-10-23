@@ -1,115 +1,143 @@
-"""
-Divisão do livro em trechos (chunks) para o banco vetorial.
-
-- Respeita parágrafos e frases: só corta no meio de uma frase se ela sozinha
-  passar do tamanho máximo.
-- Um trecho nunca mistura capítulos ou seções diferentes.
-- Pode atravessar páginas da mesma seção; guarda a página inicial e a final.
-- Sobreposição (overlap) com o fim do trecho anterior, para não perder o
-  contexto de uma explicação que começa num trecho e termina no outro.
-"""
+"""Trechos por entrada do livro (magia, ameaça, raça, poder...): um título, seu caminho e seu texto."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from vector_builder.extract import Page
+from vector_builder.extract import Element, Extraction
+from vector_builder.profile import Profile
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
-
-
-@dataclass
-class Unit:
-    text: str
-    page: int
-    chapter: str
-    section: str
+DETOUR_KINDS = ("quadro", "tabela")
 
 
 @dataclass
 class Chunk:
     index: int
+    title: str
+    path: str
+    chapter: str
+    kind: str
     text: str
     page_start: int
     page_end: int
+    printed_start: str
+    printed_end: str
+
+
+@dataclass
+class _Entry:
+    path: list[str]
     chapter: str
-    section: str
+    heading_kind: str
+    paragraphs: list[Element]
+
+    @property
+    def title(self) -> str:
+        return self.path[-1] if self.path else self.chapter
+
+    @property
+    def size(self) -> int:
+        return sum(len(p.text) for p in self.paragraphs)
 
 
-def _split_long(text: str, limit: int) -> list[str]:
-    """Quebra um parágrafo grande em frases e, se preciso, em palavras."""
+def _entries(elements: list[Element]) -> list[_Entry]:
+    entries: list[_Entry] = []
+    stack: dict[int, str] = {}
+    chapter, detour, detour_page = None, "", 0
+
+    def open_entry(path: list[str], kind: str) -> _Entry:
+        entries.append(_Entry(path, chapter, kind, []))
+        return entries[-1]
+
+    current = None
+    for el in elements:
+        if el.chapter != chapter:
+            chapter, stack, detour, current = el.chapter, {}, "", None
+        path = [stack[k] for k in sorted(stack)]
+        if el.kind == "heading":
+            detour, detour_page = el.detour, el.page_start
+            if not el.detour:
+                stack = {k: v for k, v in stack.items() if k < el.level} | {el.level: el.text}
+                path = [stack[k] for k in sorted(stack)]
+            current = open_entry(path + [el.text] if el.detour else path, el.heading_kind)
+            continue
+        if detour and (el.page_start != detour_page or (detour == "body" and el.body)):
+            detour, current = "", open_entry(path, "")
+        if current is None:
+            current = open_entry(path, "")
+        current.paragraphs.append(el)
+    return [e for e in entries if e.paragraphs]
+
+
+def _merge_small(entries: list[_Entry], min_chars: int) -> list[_Entry]:
+    merged: list[_Entry] = []
+    for entry in entries:
+        previous = merged[-1] if merged else None
+        if entry.size < min_chars and previous and previous.chapter == entry.chapter:
+            first = entry.paragraphs[0]
+            label = replace(first, text=f"{entry.title}: {first.text}") if entry.title != previous.title else first
+            previous.paragraphs.extend([label, *entry.paragraphs[1:]])
+        else:
+            merged.append(entry)
+    return merged
+
+
+def _split_long(el: Element, limit: int) -> list[Element]:
     parts, current = [], ""
-    for sentence in _SENTENCE_SPLIT.split(text):
-        while len(sentence) > limit:  # frase gigante (tabela, lista sem pontuação)
+    for sentence in _SENTENCE_SPLIT.split(el.text):
+        while len(sentence) > limit:
             cut = sentence.rfind(" ", 0, limit)
             cut = cut if cut > 0 else limit
-            if current:
-                parts.append(current)
-                current = ""
+            parts.extend([current] if current else [])
             parts.append(sentence[:cut].strip())
-            sentence = sentence[cut:].strip()
+            current, sentence = "", sentence[cut:].strip()
         if current and len(current) + 1 + len(sentence) > limit:
             parts.append(current)
             current = sentence
         else:
             current = f"{current} {sentence}".strip()
-    if current:
-        parts.append(current)
-    return parts
+    parts.extend([current] if current else [])
+    return [replace(el, text=p) for p in parts]
 
 
-def _units(pages: list[Page], chunk_size: int) -> list[Unit]:
-    units = []
-    for page in pages:
-        for paragraph in page.text.split("\n\n"):
-            paragraph = paragraph.strip()
-            if not paragraph:
-                continue
-            pieces = [paragraph] if len(paragraph) <= chunk_size else _split_long(paragraph, chunk_size)
-            units.extend(Unit(p, page.number, page.chapter, page.section) for p in pieces)
-    return units
+def _pack(paragraphs: list[Element], max_chars: int, overlap: int) -> list[list[Element]]:
+    pieces = [p for el in paragraphs for p in (_split_long(el, max_chars) if len(el.text) > max_chars else [el])]
+    groups: list[list[Element]] = [[]]
+    for piece in pieces:
+        group = groups[-1]
+        if group and sum(len(p.text) + 2 for p in group) + len(piece.text) > max_chars:
+            tail = group[-1:] if len(group) > 1 and len(group[-1].text) <= overlap else []
+            groups.append([*tail, piece])
+        else:
+            group.append(piece)
+    return groups
 
 
-def chunk_pages(pages: list[Page], chunk_size: int = 1200, overlap: int = 200, min_chars: int = 80) -> list[Chunk]:
+def chunk_book(extraction: Extraction, profile: Profile, max_chars: int = 2400,
+               overlap: int = 300, min_chars: int = 120) -> list[Chunk]:
     chunks: list[Chunk] = []
-    current: list[Unit] = []
-
-    def length(units: list[Unit]) -> int:
-        return sum(len(u.text) for u in units) + max(len(units) - 1, 0) * 2
-
-    def flush(keep_overlap: bool) -> list[Unit]:
-        if not current:
-            return []
-        text = "\n\n".join(u.text for u in current)
-        if len(text) >= min_chars or not chunks:
-            chunks.append(Chunk(len(chunks), text, current[0].page, current[-1].page,
-                                current[0].chapter, current[0].section))
-        if not keep_overlap:
-            return []
-        tail: list[Unit] = []
-        for unit in reversed(current):
-            if length([unit, *tail]) > overlap:
-                break
-            tail.insert(0, unit)
-        # Se o último parágrafo sozinho já passa do overlap, não há sobreposição
-        return tail if len(tail) < len(current) else []
-
-    for unit in _units(pages, chunk_size):
-        same_section = current and (unit.chapter, unit.section) == (current[0].chapter, current[0].section)
-        if current and not same_section:
-            flush(keep_overlap=False)
-            current = []
-        elif current and length([*current, unit]) > chunk_size:
-            current = flush(keep_overlap=True)
-        current.append(unit)
-    flush(keep_overlap=False)
+    printed = extraction.printed
+    for entry in _merge_small(_entries(extraction.elements), min_chars):
+        full_text = "\n\n".join(p.text for p in entry.paragraphs)
+        kind = (entry.heading_kind if entry.heading_kind in DETOUR_KINDS
+                else profile.kind_of(entry.title, full_text, entry.chapter))
+        for group in _pack(entry.paragraphs, max_chars, overlap):
+            start, end = group[0].page_start, max(p.page_end for p in group)
+            chunks.append(Chunk(
+                index=len(chunks),
+                title=entry.title,
+                path=" > ".join(entry.path),
+                chapter=entry.chapter,
+                kind=kind,
+                text="\n\n".join(p.text for p in group),
+                page_start=start,
+                page_end=end,
+                printed_start=printed.get(start, ""),
+                printed_end=printed.get(end, ""),
+            ))
     return chunks
 
 
 def embedding_text(book_title: str, chunk: Chunk) -> str:
-    """
-    Texto usado para gerar o embedding: o trecho com um cabeçalho de contexto
-    (livro > capítulo > seção). Ajuda a busca a achar o trecho certo quando o
-    parágrafo, sozinho, não diz de que assunto está falando.
-    """
-    header = " > ".join(part for part in (book_title, chunk.chapter, chunk.section) if part)
+    header = " > ".join(part for part in (book_title, chunk.chapter, chunk.path) if part)
     return f"{header}\n\n{chunk.text}"

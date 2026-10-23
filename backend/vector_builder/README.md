@@ -127,8 +127,10 @@ python -m vector_builder list
 | `--ollama-url` | `OLLAMA_URL` (`http://localhost:11434`) | servidor do Ollama |
 | `--device` | automático | só sentence-transformers: `cpu` ou `cuda` |
 | `--batch-size` | 16 | trechos por lote enviados ao modelo |
-| `--chunk-size` | 1200 | tamanho máximo do trecho, em caracteres |
-| `--overlap` | 200 | sobreposição entre trechos vizinhos |
+| `--profile` | `profiles/<id>.json` | perfil tipográfico do livro; sem ele, o perfil é deduzido das fontes |
+| `--chunk-size` | 2400 | tamanho máximo do trecho, em caracteres (entradas maiores são divididas) |
+| `--overlap` | 300 | o último parágrafo, se tiver até este tamanho, se repete no trecho seguinte da mesma entrada |
+| `--min-chars` | 120 | entradas menores são unidas à anterior |
 | `--probes` | 8 | quantidade de frases de controle automáticas |
 | `--probe PAGINA:TEXTO` | — | frase escolhida à mão (repita a opção); substitui as automáticas |
 | `--skip-register` | — | reconstrói o banco sem mexer na entrada do catálogo |
@@ -170,20 +172,21 @@ O usuário vê só o resultado de cada verificação. Os valores esperados (fras
 
 ## 5. Parte 2: o banco vetorial
 
-Escolhas feitas para melhorar a qualidade em relação aos pipelines anteriores (`RAG_*`):
+Explicação completa e pontos a revisar: [manuais To Do/banco_vetorial_livros.md](../../manuais%20To%20Do/banco_vetorial_livros.md).
 
-- **Extração por blocos (PyMuPDF)**, na ordem do conteúdo do PDF, o que respeita as colunas dos livros de RPG.
-- **Cabeçalhos e rodapés repetidos removidos** (título do livro, número da página).
-- **Hifenização e quebras de linha** dentro do parágrafo corrigidas.
-- **Capítulo e seção** de cada trecho tirados do sumário (bookmarks) do PDF.
-- **Trechos que respeitam parágrafos e frases**, sem misturar seções, com sobreposição entre vizinhos.
-- **Cabeçalho de contexto no embedding** (`livro > capítulo > seção`), para a busca achar trechos que sozinhos não dizem do que falam.
+- **Perfil tipográfico por livro** (`profiles/<id>.json`): diz qual fonte é título, rodapé, número da página, marca d'água ou capitular.
+- **Extração por linha e fonte (PyMuPDF)**, na ordem do conteúdo do PDF, que respeita as colunas. Tabelas viram linhas `a | b | c`.
+- **Marca d'água, rodapé e páginas sem conteúdo** (capa, sumário, índice, ficha) removidos. A construção é interrompida se sobrar um e-mail no texto.
+- **Um trecho por entrada do livro** (magia, ameaça, raça, poder, quadro, tabela), com o caminho de títulos (`Arcanista > Habilidades de Classe > Familiares Arcanos`).
+- **Página impressa** guardada junto com a página do arquivo, para citar a fonte como no livro.
+- **Tipo da entrada** (`magia`, `ameaca`, `raca`, `classe`...) para filtrar a busca.
+- **Cabeçalho de contexto no embedding** (`livro > capítulo > caminho`), para a busca achar trechos que sozinhos não dizem do que falam.
 - **Embeddings locais multilíngues** (`bge-m3`, pelo Ollama ou pelo sentence-transformers), normalizados, com distância cosseno.
 - **Um banco por livro, versionado**: cada construção grava uma pasta `chroma-<data>` nova e só no fim troca o `manifest.json`. Uma construção interrompida não deixa banco pela metade, e dá para reconstruir com a API lendo a versão anterior.
 
 Cada `books/<id>/` tem:
 
-- `chroma-<data>/`: a coleção `chunks` da versão ativa (indicada em `manifest.json` → `chroma_dir`). Metadados de cada trecho: `book_id`, `chunk_index`, `page_start`, `page_end`, `chapter`, `section`.
+- `chroma-<data>/`: a coleção `chunks` da versão ativa (indicada em `manifest.json` → `chroma_dir`). Metadados de cada trecho: `book_id`, `chunk_index`, `title`, `path`, `chapter`, `kind`, `page_start`, `page_end`, `printed_start`, `printed_end`.
 - `chunks.jsonl`: os trechos em texto, para revisar a qualidade.
 - `manifest.json`: a versão ativa, o provedor, o modelo, a dimensão e os prefixos de embeddings, os parâmetros e os totais. A consulta precisa usar o **mesmo provedor e modelo** registrados aqui.
 

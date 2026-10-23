@@ -12,4 +12,4 @@ Uso (dentro de `backend/`, com o `.venv` ativo):
 Detalhes em `vector_builder/README.md`.
 """
 
-BUILDER_VERSION = "1.0"
+BUILDER_VERSION = "2.0"
