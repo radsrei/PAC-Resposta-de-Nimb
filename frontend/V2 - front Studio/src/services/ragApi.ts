@@ -17,6 +17,16 @@ export interface QueryRagPayload {
   connectionId?: string | null;
 }
 
+export interface RagSource {
+  bookId: string;
+  bookTitle: string;
+  title: string;
+  path: string;
+  kind: string;
+  page: string;
+  similarity: number;
+}
+
 export interface QueryRagResponse {
   answer: string;
   bookTitle: string;
@@ -29,6 +39,7 @@ export interface QueryRagResponse {
     diceRoll: string;
     description: string;
   } | null;
+  sources?: RagSource[];
   // Dados da execução na LLM (backend real)
   sessionId?: string;
   messageId?: string;

@@ -14,7 +14,7 @@ PDF do livro
    ├─► register ──────────────► catalog.json            (impressão digital: validação do upload)
    │
    └─► perfil tipográfico ─► extração ─► entradas ─► trechos ─► embeddings (Ollama bge-m3) ─► Chroma
-       profiles/<id>.json     extract.py   chunking.py            embeddings.py                store.py
+       profiles/<id>.json     extract.py   chunking.py      app/services/embeddings.py         store.py
 ```
 
 | Etapa | Arquivo | O que faz |
@@ -22,7 +22,7 @@ PDF do livro
 | Perfil | `vector_builder/profile.py` + `profiles/t20-basico.json` | Diz o papel de cada fonte: título (e nível), número da página, rodapé, marca d'água, capitular. Sem perfil, deduz um automático pelas fontes. |
 | Extração | `vector_builder/extract.py` | Lê o PDF linha a linha com a fonte de cada pedaço, remove margens, monta títulos, parágrafos e linhas de tabela. |
 | Trechos | `vector_builder/chunking.py` | Agrupa o texto por **entrada** (cada magia, ameaça, raça, poder, quadro, tabela) e divide as entradas grandes. |
-| Embeddings | `vector_builder/embeddings.py` | `bge-m3` pelo Ollama (padrão) ou sentence-transformers. Sem mudanças nesta versão. |
+| Embeddings | `app/services/embeddings.py` | `bge-m3` pelo Ollama (padrão) ou sentence-transformers. Compartilhado pelo construtor e pela API (consulta). |
 | Gravação | `vector_builder/store.py` | Grava a coleção Chroma, o `chunks.jsonl` e o `manifest.json`. |
 
 ---
@@ -203,14 +203,31 @@ Ambiente verificado em 23/10/2026: `.venv` com Python 3.14.5, `pymupdf` e `chrom
 - [ ] **Escolher as frases de controle à mão** (`--probe PAGINA:TEXTO`). Três das automáticas são frágeis: `"Capítulo Um Golpe Pessoal…"` (cabeçalho colado), `"peculiari dades"` (palavra partida) e `"2D Na rolagem…"`.
 - [ ] **Calibrar com a cópia de outro comprador.** O SHA-256 nunca coincide, porque a marca d'água muda por comprador. Rodar `check` e ajustar `min_score` e `probe_page_window`.
 
-### Consulta (próxima etapa, P0.1)
+### Consulta (P0.1, ligada em 24/10/2026)
 
-- [ ] **E1:** na consulta, usar `settings.ollama_url` e não o `base_url` gravado no `manifest.json` (`localhost`), que não funciona dentro do Docker.
-- [ ] **E2:** trocar o `SystemExit` dos embedders por exceção da API (`AppError`) ao mover a parte de consulta para `app/services/`.
+- [x] **E1** (24/10/2026): a consulta usa `settings.ollama_url`; o `manifest.json` não grava mais o endereço do Ollama (o `base_url` de manifests antigos é ignorado). `query_embedder()` em `app/services/embeddings.py`.
+- [x] **E2** (24/10/2026): `embeddings.py` movido para `app/services/`; `SystemExit` trocado por `EmbeddingError` (HTTP 503), incluindo falha de rede e tempo esgotado no meio da consulta (30 s).
 - [ ] **Busca híbrida:** somar uma busca por palavras (SQLite FTS5 sobre o `chunks.jsonl`) à busca vetorial e combinar com RRF. Nomes próprios (Glop, Arcanista) são o ponto fraco da busca só por vetores.
 - [ ] **Citação:** exibir os dois últimos níveis do `path` + `printed_start` ("Anão > Habilidades de Raça, p. 20"). O `title` sozinho às vezes é genérico (`Habilidades de Raça`, `Habilidades de Classe`). Usar `kind` para filtrar quando a pergunta indicar o tipo.
 - [ ] **Tabelas na busca:** dar às tabelas um texto de embedding com a legenda e o assunto (ex.: "Tabela 3-1: Dinheiro Inicial — dinheiro inicial por nível do personagem"), além da busca híbrida.
-- [ ] Adicionar `chromadb` ao `backend/requirements.txt` e ao Docker. Montar `vector_store/` (já está no compose, só leitura).
+- [x] **Busca ligada ao chat** (24/10/2026), em `app/services/retrieval.py`:
+  - busca só nos livros de `book_access` (o `bookIds` do front só restringe);
+  - junta a pergunta anterior da sessão à busca, para resolver continuações;
+  - descarta trechos abaixo de `RAG_MIN_SIMILARITY` (0,40) e envia até `RAG_TOP_K` (5) trechos ao prompt;
+  - o prompt manda responder só com os trechos e citar (Livro, p. N);
+  - a resposta e o histórico trazem `bookTitle`, `page` impressa, `similarity`, `quote` e `sources`.
+- [x] `chromadb` no `backend/requirements.txt`. No compose, o volume do `vector_store` ficou sem `:ro` (testado: o Chroma não abre pasta somente leitura), com `chown 10001` no deploy.
+- [x] **Teste com o DeepSeek real** (24/10/2026): 10/10 casos.
+  - As respostas citam as páginas e não inventam regras.
+  - As perguntas fora do Tormenta20 (receita, capital da França, piada, D&D 5e e mudança de assunto no meio da conversa) recebem 422.
+  - Usuário sem livro recebe 428.
+- [x] **Escopo e livro obrigatório (D6):** veja `proximos_passos.md`. Mensagens em `app/services/prompts.py` (`BOOK_REQUIRED`, `OUT_OF_SCOPE`).
+- [x] **Primeira pergunta lenta:**
+  - A 1ª pergunta tinha ~10 s fixos: verificar o modelo (2,3 s), o Ollama carregá-lo (6,2 s) e abrir o Chroma (1,3 s).
+  - Agora a API aquece em segundo plano ao subir (`retrieval.warm_up`) e o Ollama mantém o modelo na memória (`OLLAMA_KEEP_ALIVE=-1`).
+  - Resultado: 1ª pergunta em 3–5 s.
+- [ ] **Calibrar `RAG_MIN_SIMILARITY`:** com 0,40, a pergunta fora do livro (receita de bolo) não trouxe trechos. Nas perguntas reais, os trechos certos ficaram entre 0,50 e 0,63 e os pouco relacionados entre 0,47 e 0,57. Ajustar com o conjunto de avaliação.
+- [ ] **Imagem Docker com `chromadb`:** não foi construída nesta máquina. Conferir o tamanho e a instalação no Python 3.12.
 
 ### Avaliação
 

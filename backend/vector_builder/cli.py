@@ -104,7 +104,7 @@ def cmd_build(args) -> int:
         print(f"Simulação: trechos gravados em {out} (nenhum embedding gerado).")
         return 0
 
-    from vector_builder.embeddings import create_embedder
+    from app.services.embeddings import create_embedder
 
     embedder = create_embedder(args.provider, args.model, batch_size=args.batch_size,
                                device=args.device, ollama_url=args.ollama_url)
@@ -159,7 +159,7 @@ def cmd_list(_args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    from vector_builder.embeddings import DEFAULT_MODELS, PROVIDERS
+    from app.services.embeddings import DEFAULT_MODELS, PROVIDERS
 
     parser = argparse.ArgumentParser(prog="python -m vector_builder", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)

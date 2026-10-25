@@ -13,7 +13,7 @@ Levantamento feito sobre o estado atual do repositório (branch `feat/tela_siste
 | Login com Google | ✅ pronto | testado localmente; falta configurar o domínio de produção |
 | Upload e validação do livro | ✅ pronto | testado com PDFs gerados; **falta testar com os livros reais** |
 | Banco vetorial por livro | ✅ pronto | `vector_builder`, Ollama ou sentence-transformers; nenhum livro real construído ainda |
-| Perguntas usando o livro (RAG) | ❌ **falta** | hoje a pergunta vai direto para a LLM, sem consultar o banco vetorial |
+| Perguntas usando o livro (RAG) | ✅ pronto | busca nos livros liberados + fonte com página impressa; testado com LLM simulada, falta teste com o DeepSeek real |
 | Front de produção | ✅ pronto | `tsc` e `vite build` passando; compilado dentro do Docker no deploy |
 | LLM | ✅ definida | só DeepSeek (demais provedores desativados no back e no front) |
 | Implantação no servidor | ⚠️ kit pronto | Docker + Caddy em `deploy/`, passo a passo em [deploy_aws.md](deploy_aws.md); falta executar na AWS |
@@ -77,9 +77,12 @@ Hoje qualquer conta Google cria conta no primeiro login (`REGISTRATION_ENABLED=t
 A tela de consentimento OAuth do Google também precisa sair do modo **Teste** para **Em produção**. No modo Teste, só os e-mails de teste conseguem entrar.
 
 ### D6. Pergunta sem livro liberado — MÉDIA
-O que o chat faz quando o usuário não liberou nenhum livro:
-- bloqueia e pede o upload;
-- ou responde só com a LLM, avisando que não há fonte. É o comportamento atual.
+> ✅ **Decidido em 24/10/2026:** sem livro, não há pergunta; e só se responde sobre o sistema Tormenta20.
+
+- **Sem livro liberado (com banco pronto):** a API responde HTTP 428 ("Adicione um livro antes de perguntar…"). O front trava o campo de pergunta e as sugestões, mostra o aviso com o botão **Subir PDF** e abre o upload se o 428 chegar.
+- **Fora do Tormenta20** (outro assunto ou outro sistema de RPG, como D&D): a API responde HTTP 422 com a mensagem de escopo, sem gravar nada na conversa.
+  - Se a busca não acha nenhum trecho, o bloqueio acontece **antes da LLM**, sem custo.
+  - Se acha algum trecho, o prompt manda a LLM recusar, e a API converte a recusa no mesmo 422.
 
 ### D7. Domínio e HTTPS — MÉDIA
 > ✅ **Decidido:** `respostas-nimb.com.br` (Registro.br, em processamento), com HTTPS pelo Cloudflare (D10). Até o domínio ficar ativo, o modo túnel SSH do [deploy_aws.md](deploy_aws.md) permite testar o login Google sem domínio.
@@ -136,14 +139,14 @@ SQLite atende uma instância única. Migrar para PostgreSQL (RDS) só se houver 
 
 ### P0 — Bloqueiam o objetivo final (sem isso o sistema não funciona online)
 
-**P0.1 Ligar o RAG às perguntas** — `backend/app/controllers/query_controller.py`
+**P0.1 Ligar o RAG às perguntas** — ✅ feito em 24/10/2026 (`query_controller.py` + `services/retrieval.py`). Pendente: teste com o DeepSeek real e calibrar `RAG_MIN_SIMILARITY`
 - Pegar os livros liberados do usuário em `book_access`. **Não confiar** no `bookIds` enviado pelo front.
-- Vetorizar a pergunta com `create_embedder_from_info(manifest["embedding"]).embed_query(...)`.
+- Vetorizar a pergunta com `query_embedder(manifest["embedding"]).embed_query(...)` (`app/services/embeddings.py`).
 - Buscar os trechos mais próximos em `book_catalog.chroma_path(id)` de cada livro e montar o contexto no prompt (`services/prompts.py`).
-- Devolver `bookTitle`, `page`, `similarity` e `quote` reais. Hoje voltam vazios em `routers/rag.py`.
-- Mover `embeddings.py` (ou a parte de consulta) para `app/services/`, porque a API não deve depender do pacote do construtor.
-- Adicionar `chromadb` em `backend/requirements.txt`.
-- Atualizar `/api/health`, que hoje retorna `"rag_engine": "desativado"`.
+- ✅ Devolve `bookTitle`, `page` (impressa), `similarity`, `quote` e a lista `sources`; as fontes ficam gravadas no histórico.
+- ✅ `embeddings.py` movido para `app/services/` (E1/E2 corrigidos em 24/10/2026).
+- ✅ `chromadb` em `backend/requirements.txt`; volume do `vector_store` sem `:ro` (o Chroma não abre somente leitura).
+- ✅ `/api/health` informa `rag_engine` e `books_ready`.
 - Depende de: D3, D6.
 
 **P0.2 Compilar e testar o front** — ✅ `tsc` e `vite build` passando; falta só o teste manual no navegador

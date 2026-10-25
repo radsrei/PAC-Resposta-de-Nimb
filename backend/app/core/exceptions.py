@@ -50,3 +50,27 @@ class LLMError(AppError):
     """Falha ao se comunicar com o provedor de LLM."""
 
     status_code = 502
+
+
+class EmbeddingError(AppError):
+    """Falha ao gerar embeddings (Ollama fora do ar, modelo ausente, provedor não instalado)."""
+
+    status_code = 503
+
+
+class BookRequiredError(AppError):
+    """Pergunta sem nenhum livro liberado: o usuário precisa enviar o PDF antes."""
+
+    status_code = 428
+
+
+class OutOfScopeError(AppError):
+    """Pergunta sem relação com os livros liberados (fora do sistema Tormenta20)."""
+
+    status_code = 422
+
+
+class RetrievalError(AppError):
+    """Falha ao consultar o banco vetorial de um livro."""
+
+    status_code = 503

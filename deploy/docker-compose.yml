@@ -16,7 +16,7 @@ services:
       VECTOR_STORE_DIR: /app/vector_store
     volumes:
       - nimb_data:/app/data                    # SQLite + secret.key (backup: deploy/backup.sh)
-      - ../vector_store:/app/vector_store:ro   # catálogo e bancos dos livros (enviados por scp)
+      - ../vector_store:/app/vector_store      # catálogo e bancos dos livros (scp + chown 10001); o Chroma não abre somente leitura
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
@@ -54,7 +54,7 @@ services:
       - web
     restart: unless-stopped
 
-  # Próxima etapa (busca no banco vetorial): embeddings da pergunta pelo Ollama.
+  # Embeddings da pergunta (busca nos livros) pelo Ollama.
   # Sobe só com: docker compose --profile rag up -d
   # Depois: docker compose exec ollama ollama pull bge-m3
   # e no backend/.env: OLLAMA_URL=http://ollama:11434  (exige instância com 4 GB+ de RAM)

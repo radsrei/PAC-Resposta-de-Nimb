@@ -12,9 +12,19 @@ class RollTable(CamelModel):
 class QueryRagPayload(CamelModel):
     prompt: str = Field(..., min_length=1, max_length=4000)
     chaos_level: int = Field(default=50, ge=0, le=100)
-    book_ids: list[str] | None = None  # reservado para a busca no banco vetorial
+    book_ids: list[str] | None = None  # só restringe a busca aos livros já liberados
     session_id: str | None = None
     connection_id: str | None = None
+
+
+class SourceOut(CamelModel):
+    book_id: str
+    book_title: str
+    title: str
+    path: str
+    kind: str
+    page: str
+    similarity: float
 
 
 class QueryRagResponse(CamelModel):
@@ -25,6 +35,7 @@ class QueryRagResponse(CamelModel):
     chaos_applied: int
     quote: str | None = None
     roll_table: RollTable | None = None
+    sources: list[SourceOut] = []
     # Dados da execução na LLM
     session_id: str
     message_id: str

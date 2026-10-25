@@ -34,7 +34,7 @@ bash scripts/setup.sh
 bash scripts/setup.sh --embeddings local
 ```
 
-Depois do script, falta preencher o `GOOGLE_CLIENT_ID` e o `LLM_API_KEY` (chave do DeepSeek) em `backend/.env`.
+Depois do script, falta preencher o `GOOGLE_CLIENT_ID` e o `LLM_DEEPSEEK_API` (chave do DeepSeek) em `backend/.env`.
 
 Para subir no servidor (AWS): [deploy_aws.md](deploy_aws.md).
 

@@ -113,7 +113,7 @@ O projeto usa só o **DeepSeek** como LLM. Os outros provedores foram desativado
 1. Pegue a API key em `platform.deepseek.com` (a conta precisa de saldo).
 2. Coloque no `backend/.env`. A conexão "DeepSeek (.env)" é criada na subida da API, se o banco ainda não tiver conexões:
    ```ini
-   LLM_API_KEY=sk-...
+   LLM_DEEPSEEK_API=sk-...
    LLM_MODEL=deepseek-chat          # ou deepseek-reasoner (raciocina antes, mais lento)
    ```
    Ou cadastre pela tela: entre como administrador → **Conectar LLM** → API key → **Conectar LLM** → **Testar**.

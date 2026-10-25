@@ -35,7 +35,7 @@ cd "frontend/V2 - front Studio" && npm ci && cd ../..
 ## 3. Configuração (`backend/.env`)
 ```ini
 GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com   # obrigatório: único login do sistema
-LLM_API_KEY=sk-...                                 # chave do DeepSeek (cria a conexão sozinho)
+LLM_DEEPSEEK_API=sk-...                                 # chave do DeepSeek (cria a conexão sozinho)
 LLM_MODEL=deepseek-chat                            # ou deepseek-reasoner
 EMBEDDING_PROVIDER=ollama                          # ou sentence-transformers
 EMBEDDING_MODEL=bge-m3
@@ -61,7 +61,7 @@ q + ENTER                                            # Sair
 Entre com o Google. A primeira conta vira administradora.
 
 ## 6. Conectar o DeepSeek
-Com `LLM_API_KEY` no `.env`, a conexão "DeepSeek (.env)" já nasce ativa.
+Com `LLM_DEEPSEEK_API` no `.env`, a conexão "DeepSeek (.env)" já nasce ativa.
 Pela tela: **Conectar LLM** → API key → modelo (`deepseek-chat` ou `deepseek-reasoner`) → **Conectar LLM** → **Testar**.
 
 ## 7. Construir o banco vetorial de um livro

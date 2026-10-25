@@ -53,10 +53,10 @@ class Settings:
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
 
     # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API e
-    # LLM_API_KEY estiver definida, uma conexão DeepSeek é criada com estes valores.
+    # LLM_DEEPSEEK_API estiver definida, uma conexão DeepSeek é criada com estes valores.
     default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or "deepseek"
     default_llm_model: str | None = os.getenv("LLM_MODEL") or None
-    default_llm_api_key: str | None = os.getenv("LLM_API_KEY") or None
+    default_llm_api_key: str | None = os.getenv("LLM_DEEPSEEK_API") or None
     default_llm_base_url: str | None = os.getenv("LLM_BASE_URL") or None
 
     # ------------------------------------------------------------------
@@ -102,12 +102,18 @@ class Settings:
     embedding_model: str | None = os.getenv("EMBEDDING_MODEL") or None
     # Servidor local do Ollama (embeddings e, se configurado na tela, a LLM do chat)
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    # Tempo que o Ollama mantém o modelo de embeddings na memória ("-1" = sempre, "30m", "24h").
+    # Carregar o bge-m3 de novo leva ~6 s na pergunta seguinte.
+    ollama_keep_alive: str = os.getenv("OLLAMA_KEEP_ALIVE", "-1")
     # Tamanho máximo do PDF enviado para validação. O plano grátis do Cloudflare
     # recusa requisições acima de 100 MB; 95 MB deixa margem para o multipart.
     # Mantenha igual a MAX_UPLOAD_MB do front (PdfUploadModal.tsx).
     book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "95"))
     # Validações de livro por minuto, por IP (ler PDF consome CPU)
     book_upload_rate_per_minute: int = int(os.getenv("BOOK_UPLOAD_RATE_PER_MINUTE", "5"))
+    # Busca nos livros: trechos enviados à LLM e similaridade mínima (0 a 1) para um trecho contar
+    rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
+    rag_min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.40"))
 
 
 settings = Settings()

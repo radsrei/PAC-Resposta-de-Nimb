@@ -26,7 +26,7 @@ from typing import Any
 from app.services import book_catalog
 from vector_builder import BUILDER_VERSION
 from vector_builder.chunking import Chunk
-from vector_builder.embeddings import EmbeddingInfo
+from app.services.embeddings import EmbeddingInfo
 
 COLLECTION = "chunks"
 _BATCH = 1000

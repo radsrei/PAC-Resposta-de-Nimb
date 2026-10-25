@@ -67,8 +67,9 @@ const toChatMessage = (msg: SessionMessage): ChatMessage => {
     ragMetadata:
       msg.role === 'assistant'
         ? {
-            bookTitle: '',
-            similarity: '-',
+            bookTitle: meta.bookTitle ?? '',
+            page: meta.page ?? null,
+            similarity: meta.similarity ?? '-',
             chaosApplied: meta.chaosApplied ?? 0,
             provider: meta.provider,
             model: meta.model,
@@ -117,6 +118,9 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
 
   // Total de trechos nos bancos vetoriais dos livros liberados
   const totalChunks = books.reduce((acc, b) => acc + b.chunks, 0);
+  // Perguntas só com ao menos um livro liberado e com banco vetorial pronto
+  const readyBooks = books.filter((b) => b.status === 'indexed');
+  const canAsk = readyBooks.length > 0;
 
   const pushNimbError = (text: string) =>
     setMessages((prev) => [
@@ -138,6 +142,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       if (apiErr.status !== 502 || apiErr.message.startsWith('Backend')) setBackendOnline(false);
     }
     if (apiErr?.status === 409) setIsLlmModalOpen(true);
+    if (apiErr?.status === 428) setIsUploadModalOpen(true);
     return apiErr?.message || 'Erro inesperado ao consultar o backend.';
   };
 
@@ -180,6 +185,10 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputValue).trim();
     if (!query || isLoading) return;
+    if (!canAsk) {
+      setIsUploadModalOpen(true);
+      return;
+    }
 
     const userMsg: ChatMessage = {
       id: 'msg_' + Date.now(),
@@ -196,7 +205,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       const response = await ragApiService.queryRag({
         prompt: query,
         chaosLevel,
-        bookIds: books.map((b) => b.id),
+        bookIds: readyBooks.map((b) => b.id),
         sessionId: activeSessionId,
       });
 
@@ -346,6 +355,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
             llmLabel={llmConnection ? `${llmConnection.name} (${llmConnection.model})` : null}
             indexedBooksCount={books.length}
             totalChunks={totalChunks}
+            canAsk={canAsk}
           />
         </div>
       ) : (

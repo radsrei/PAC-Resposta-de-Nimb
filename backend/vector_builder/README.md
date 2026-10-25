@@ -197,6 +197,6 @@ Se o PDF não tiver camada de texto (digitalizado sem OCR), o construtor avisa. 
 Ligar a busca ao chat em `app/controllers/query_controller.py`:
 
 1. pegar os livros liberados do usuário (`book_access`);
-2. gerar o embedding da pergunta com o provedor e o modelo do `manifest.json`: `create_embedder_from_info(manifest["embedding"]).embed_query(pergunta)`, em `vector_builder/embeddings.py` (já aplica o `query_prefix`);
+2. gerar o embedding da pergunta com o provedor e o modelo do `manifest.json`: `query_embedder(manifest["embedding"]).embed_query(pergunta)`, em `app/services/embeddings.py` (já aplica o `query_prefix`, usa o `OLLAMA_URL` da API e fica em cache entre perguntas);
 3. buscar os trechos mais próximos na versão ativa de cada livro (`book_catalog.chroma_path(id)`);
 4. incluir os trechos no prompt e devolver livro, página e trecho na resposta.

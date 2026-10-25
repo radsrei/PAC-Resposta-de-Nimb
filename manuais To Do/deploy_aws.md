@@ -61,10 +61,18 @@ exit                                 # entre de novo para usar o docker sem sudo
 ```
 Repositório privado: use `gh auth login` ou uma *deploy key* no GitHub.
 
-## 3. Enviar o catálogo dos livros (sua máquina)
+## 3. Enviar o catálogo e os bancos dos livros (sua máquina)
 ```bash
 scp -i nimb.pem -r vector_store ubuntu@<IP-ELASTICO>:~/PAC-Resposta-de-Nimb/
+ssh -i nimb.pem ubuntu@<IP-ELASTICO> "sudo chown -R 10001:10001 ~/PAC-Resposta-de-Nimb/vector_store"
 ```
+O Chroma (banco vetorial) usa SQLite e não abre uma pasta somente leitura: o `chown` dá a pasta ao usuário da API no container (uid 10001).
+
+Embeddings da pergunta: suba o Ollama do compose e baixe o modelo uma vez (instância com 4 GB+ de RAM):
+```bash
+cd ~/PAC-Resposta-de-Nimb/deploy && docker compose --profile rag up -d ollama && docker compose exec ollama ollama pull bge-m3
+```
+e no `backend/.env`: `OLLAMA_URL=http://ollama:11434`. Se o Ollama não estiver de pé, a pergunta responde 503 com a mensagem do problema.
 
 ## 4. Configurar (servidor)
 ```bash
@@ -82,7 +90,7 @@ nano backend/.env
 | `APP_SECRET_KEY` | valor gerado acima | o mesmo |
 | `GOOGLE_CLIENT_ID` | seu Client ID | o mesmo |
 | `ADMIN_EMAILS` | seu e-mail Google | o mesmo |
-| `LLM_API_KEY` | chave do DeepSeek | a mesma |
+| `LLM_DEEPSEEK_API` | chave do DeepSeek | a mesma |
 | `LLM_MODEL` | `deepseek-chat` | `deepseek-chat` |
 
 `deploy/.env`: modo A `SITE_ADDRESS=:80` · Cloudflare: ver [cloudflare_dominio.md](cloudflare_dominio.md) · modo B `SITE_ADDRESS=respostas-nimb.com.br`
@@ -136,6 +144,7 @@ cd ~/PAC-Resposta-de-Nimb && git pull && cd deploy && docker compose up -d --bui
 bash deploy/backup.sh                                                                # backup do banco + secret.key
 crontab -e        # 0 3 * * * bash $HOME/PAC-Resposta-de-Nimb/deploy/backup.sh        (todo dia às 3h)
 scp -i nimb.pem -r vector_store ubuntu@<IP-ELASTICO>:~/PAC-Resposta-de-Nimb/        # livro novo (sua máquina)
+sudo chown -R 10001:10001 ~/PAC-Resposta-de-Nimb/vector_store                        # depois de cada envio (servidor)
 ```
 - **Snapshot do disco:** *EC2 → Lifecycle Manager → política diária de snapshot do volume*.
 - **Economizar créditos:** pare a instância quando não estiver usando (*Instance state → Stop*). O IP elástico continua cobrando um valor pequeno.
