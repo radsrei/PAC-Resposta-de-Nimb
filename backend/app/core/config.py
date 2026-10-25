@@ -113,7 +113,14 @@ class Settings:
     book_upload_rate_per_minute: int = int(os.getenv("BOOK_UPLOAD_RATE_PER_MINUTE", "5"))
     # Busca nos livros: trechos enviados à LLM e similaridade mínima (0 a 1) para um trecho contar
     rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
-    rag_min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.40"))
+    # Calibrado com `python -m vector_builder evaluate` (24/10/2026): 0.45 mantém 100% das perguntas
+    # do livro e barra metade das fora do tema antes da LLM; o resto a LLM recusa.
+    rag_min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.45"))
+    # Busca híbrida (vetores + palavras/BM25, combinados por RRF), candidatos de cada busca e
+    # peso das palavras no RRF (0.5 deu o melhor 1º lugar; 1.0 piora a ordem)
+    rag_hybrid: bool = _bool("RAG_HYBRID", True)
+    rag_candidates: int = int(os.getenv("RAG_CANDIDATES", "20"))
+    rag_lexical_weight: float = float(os.getenv("RAG_LEXICAL_WEIGHT", "0.5"))
 
 
 settings = Settings()

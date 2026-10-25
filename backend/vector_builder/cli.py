@@ -158,6 +158,15 @@ def cmd_list(_args) -> int:
     return 0
 
 
+def cmd_evaluate(args) -> int:
+    from vector_builder.evaluate import EVAL_DIR, run
+
+    dataset = args.dataset or EVAL_DIR / f"{args.id}.json"
+    if not dataset.is_file():
+        raise SystemExit(f"Conjunto de avaliação não encontrado: {dataset}")
+    return run(dataset, args.k)
+
+
 def build_parser() -> argparse.ArgumentParser:
     from app.services.embeddings import DEFAULT_MODELS, PROVIDERS
 
@@ -205,6 +214,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("list", help="lista o catálogo e o estado dos bancos")
     p.set_defaults(func=cmd_list)
+
+    p = sub.add_parser("evaluate", help="mede a busca (recall, MRR) e calibra a similaridade mínima")
+    p.add_argument("--id", default="t20-basico", help="livro (usa vector_builder/eval/<id>.json)")
+    p.add_argument("--dataset", type=Path, default=None, help="outro arquivo de perguntas")
+    p.add_argument("--k", type=int, default=5, help="trechos considerados (padrão 5)")
+    p.set_defaults(func=cmd_evaluate)
     return parser
 
 

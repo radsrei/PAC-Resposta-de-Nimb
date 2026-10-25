@@ -118,6 +118,10 @@ python -m vector_builder check "C:\Downloads\copia.pdf"
 
 # Ver o catálogo e o estado dos bancos (provedor e modelo de cada um)
 python -m vector_builder list
+
+# Medir a busca (recall@k, MRR, vetorial x híbrida) e calibrar RAG_MIN_SIMILARITY
+# com as perguntas de vector_builder/eval/<id>.json
+python -m vector_builder evaluate --id t20-basico
 ```
 
 | Opção (`build`) | Padrão | Uso |
