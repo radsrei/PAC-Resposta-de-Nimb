@@ -17,10 +17,7 @@ frontend/**/.env
 frontend/**/.env.local
 
 # Pastas que não fazem parte do serviço
-Convert_file
-deepseek
 docs
-estrutura-Exemplo
 PAC-7+8
 RFC_arquivos
 backend/RAG_*

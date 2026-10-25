@@ -1,5 +1,7 @@
 # Deploy AWS — Respostas de Nimb
 
+> ⚠️ **Desatualizado em 24/10/2026.** Use o [deploy_ec2_compilado.md](deploy_ec2_compilado.md), que corrige a instância (`t3.medium`), o Ollama obrigatório (`COMPOSE_PROFILES=rag`), o `FIRST_USER_IS_ADMIN=false` e a ordem dos passos. Problemas em [problemas_e_falhas.md](problemas_e_falhas.md).
+
 Sequência para colocar o sistema numa EC2 da AWS: login com Google → upload do livro → perguntas respondidas pelo DeepSeek.
 Comandos do servidor no terminal SSH (Ubuntu); comandos da sua máquina no PowerShell.
 

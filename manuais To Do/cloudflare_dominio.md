@@ -1,5 +1,7 @@
 # Domínio e Cloudflare — respostas-nimb.com.br
 
+> ⚠️ **Atualização de 24/10/2026:** os passos 1 e 2 já foram feitos (domínio delegado ao Cloudflare). No passo 5, use **`COMPOSE_PROFILES=cloudflare,rag`**: sem o `rag`, o Ollama não sobe e toda pergunta falha. Sequência completa em [deploy_ec2_compilado.md](deploy_ec2_compilado.md).
+
 Sequência para colocar o sistema da EC2 no domínio **`respostas-nimb.com.br`** usando o Cloudflare (DNS + Tunnel), conforme a decisão **D10** do [proximos_passos.md](proximos_passos.md).
 Pré-requisito: o sistema já rodando na EC2 pelo [deploy_aws.md](deploy_aws.md) (modo A, túnel SSH).
 

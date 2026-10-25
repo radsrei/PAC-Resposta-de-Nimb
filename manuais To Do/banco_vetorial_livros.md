@@ -191,7 +191,7 @@ Ambiente verificado em 23/10/2026: `.venv` com Python 3.14.5, `pymupdf` e `chrom
 ### Qualidade dos trechos
 
 - [ ] **Revisar o `chunks.jsonl` por amostragem**, 10 trechos de cada tipo, procurando texto fora de ordem, título errado ou quadro misturado com o texto principal.
-- [ ] **Tabelas com cabeçalho em fonte de corpo ou estreito:** o cabeçalho às vezes não se separa em células (`Nível Dinheiro Inicial (T$)`). Avaliar o Docling (`Convert_file/`) só nas ~60 páginas de tabela, ou ajustar à mão as tabelas mais consultadas (armas, armaduras, itens, tesouro).
+- [ ] **Tabelas com cabeçalho em fonte de corpo ou estreito:** o cabeçalho às vezes não se separa em células (`Nível Dinheiro Inicial (T$)`). Avaliar o Docling (ver `backend/RAG_Claude/Conversao_Docling/`) só nas ~60 páginas de tabela, ou ajustar à mão as tabelas mais consultadas (armas, armaduras, itens, tesouro).
 - [ ] **Tabela seguida de entrada pequena:** a `Tabela 3-1` absorveu o texto curto "Usando & Carregando" (regra das entradas pequenas). Avaliar não unir entradas pequenas a tabelas.
 - [ ] **Quadro que passa de página** termina na troca de página. Conferir se algum quadro grande foi cortado.
 - [ ] **Fichas de monstro** saem com as linhas do bloco de estatísticas num parágrafo só (`Monstro Pequeno Iniciativa +0, …`). Funciona para a busca. Avaliar quebrar por campo (`Defesa`, `Pontos de Vida`…) para a exibição.

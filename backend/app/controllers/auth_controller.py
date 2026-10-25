@@ -95,6 +95,9 @@ def login_google(credential: str, remember: bool, ip: str, user_agent: str | Non
             # Conta antiga (criada com e-mail e senha): o Google confirmou a
             # posse do e-mail, então ela é vinculada a esta conta Google
             user = user_repository.update(user["email"], {"google_sub": identity.sub})
+        if user["role"] != "admin" and user["email"] in settings.admin_emails:
+            user = user_repository.update(user["email"], {"role": "admin"})
+            logger.info("Conta promovida a administradora (ADMIN_EMAILS): %s", user["email"])
     return _start_session(user, remember, ip, user_agent)
 
 

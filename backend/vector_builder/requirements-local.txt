@@ -1,4 +1,5 @@
 # Só para o provedor "sentence-transformers" (modelo rodando dentro do Python).
 # Instala o PyTorch (~2 GB). Quem usa o Ollama não precisa deste arquivo.
+# Versão fixada em 25/10/2026, mas ainda não testada no projeto (o provedor padrão é o Ollama).
 -r requirements.txt
-sentence-transformers
+sentence-transformers==6.1.0

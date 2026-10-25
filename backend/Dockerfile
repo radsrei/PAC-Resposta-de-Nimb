@@ -1,6 +1,7 @@
 # API do Respostas de Nimb (FastAPI + uvicorn).
 # Build a partir da raiz do projeto: docker compose -f deploy/docker-compose.yml build
-FROM python:3.12-slim
+# Python 3.14.5: a mesma versão em que o projeto foi testado
+FROM python:3.14.5-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -9,8 +10,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY backend/requirements.txt .
-RUN pip install -r requirements.txt
+# Versões diretas no requirements.txt e todas as indiretas travadas no requirements.lock
+COPY backend/requirements.txt backend/requirements.lock ./
+RUN pip install -r requirements.txt -c requirements.lock
 
 COPY backend/app ./app
 

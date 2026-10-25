@@ -31,9 +31,9 @@ warn() { printf '    \033[33mAVISO: %s\033[0m\n' "$1"; }
 fail() { printf '    \033[31mERRO: %s\033[0m\n' "$1"; exit 1; }
 
 step "Python"
-PY="$(command -v python3.11 || command -v python3 || true)"
-[[ -n "$PY" ]] || fail "Python 3.11+ não encontrado."
-"$PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' || fail "é preciso Python 3.11 ou mais novo."
+PY="$(command -v python3.14 || command -v python3 || true)"
+[[ -n "$PY" ]] || fail "Python 3.12+ não encontrado (testado: 3.14)."
+"$PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' || fail "é preciso Python 3.12 ou mais novo (testado: 3.14)."
 ok "$("$PY" --version)"
 
 step "Ambiente virtual (.venv)"

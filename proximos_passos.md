@@ -157,14 +157,14 @@ npm ci && npm run lint && npm run build      # gera dist/
 ```
 - Testar no navegador: login → Subir PDF → Livros Liberados → pergunta.
 
-**P0.3 Empacotar para o servidor** — ✅ `backend/Dockerfile`, `deploy/web.Dockerfile` e `deploy/docker-compose.yml`. **Pendente:** fixar as versões das dependências
+**P0.3 Empacotar para o servidor** — ✅ `backend/Dockerfile`, `deploy/web.Dockerfile` e `deploy/docker-compose.yml`. ✅ versões fixadas em 25/10/2026 (Python 3.14.5, `requirements.lock`, tags das imagens)
 - `backend/Dockerfile`: Python 3.11/3.12, `pip install -r requirements.txt`, rodando:
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips="*"
 ```
 - **Não usar `python main.py` em produção.** Ele sobe com `reload=True` (`backend/main.py`).
 - `docker-compose.yml` com `api`, `ollama` (se D3 = Ollama) e `nginx`, e volumes para `backend/data/` e `vector_store/`.
-- Fixar as versões das dependências (`pip freeze` → `requirements.lock`). Hoje nada tem versão fixa, e o servidor pode instalar versões diferentes das testadas.
+- ✅ Versões fixadas: `backend/requirements.txt` (`==`) + `backend/requirements.lock` (96 pacotes, Linux + Python 3.14) + imagens com tag exata.
 
 **P0.4 Proxy, HTTPS e mesmo domínio** — ✅ Caddy (`deploy/Caddyfile`): front e `/api` no mesmo endereço, limite de 100 MB (D10), HTTPS pelo Cloudflare ou pelo próprio Caddy
 - O front chama `/api/...` por caminho relativo: front e API precisam estar **no mesmo domínio**.
@@ -219,7 +219,7 @@ OLLAMA_URL=http://ollama:11434
 |---|---|---|
 | P2.1 | Textos fixos na tela: selo "RAG v2.4", "NEURAL CHAOS RETRIEVAL ENGINE", sugestões fixas do chat | `Header.tsx`, `SuggestionChips.tsx` |
 | P2.2 | Botão **Subir PDF** escondido no celular (`hidden sm:flex`); no celular só abre pela barra lateral | `Header.tsx` |
-| P2.3 | Limpeza do repositório: pipelines antigos `backend/RAG_*`, `Convert_file/` (splitter duplicado em `backend/RAG_Claude/Conversao_Docling/`), `deepseek/`, `estrutura-Exemplo/`, `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` |
+| P2.3 | Limpeza do repositório: pipelines antigos `backend/RAG_*`, `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` (`Convert_file/`, `deepseek/` e `estrutura-Exemplo/` já removidas em 25/10/2026) |
 | P2.4 | Rota legada `/api/perguntas` e a docstring desatualizada de `backend/main.py` (cita `frontend/nimb-os-react` e `frontend/Claude`, que não existem mais) | `routers/perguntas.py`, `backend/main.py` |
 | P2.5 | `requirements.txt` da raiz instala tudo (Docling, LangChain), mas o servidor só precisa de `backend/requirements.txt` | raiz |
 | P2.6 | Docs antigas: `resp.md` (cita o venv `nimb` e o "upload como stub"), tutoriais do Docling usando `env` | `resp.md`, `*/TUTORIAL_GIT_E_DOCLING.md` |

@@ -78,12 +78,13 @@ class Settings:
     # Contas são criadas no primeiro login com Google. Com false, só entram
     # usuários que já existem no banco.
     registration_enabled: bool = _bool("REGISTRATION_ENABLED", True)
-    # E-mails que viram administradores ao criar conta
+    # E-mails administradores: viram admin ao criar a conta e a cada login
     admin_emails: list[str] = field(
         default_factory=lambda: [e.lower() for e in _csv(os.getenv("ADMIN_EMAILS", ""))]
     )
-    # A primeira conta criada no sistema vira administradora
-    first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", True)
+    # A primeira conta criada vira administradora. Desligado por padrão: num
+    # domínio público, quem entrar primeiro ganharia o papel de admin
+    first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", False)
 
     # Limite de requisições por minuto, por IP, na rota de login
     auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))

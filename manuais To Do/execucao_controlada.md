@@ -5,8 +5,8 @@ Comandos no PowerShell, a partir da raiz do projeto. Linux/Mac nos comentários.
 
 ## 0. Requisitos
 ```bash
-winget install -e --id Python.Python.3.11       # Python 3.11+
-winget install -e --id OpenJS.NodeJS.LTS        # Node.js 20+ (tela)
+winget install -e --id Python.Python.3.14       # Python 3.14 (testado; mínimo 3.12)
+winget install -e --id OpenJS.NodeJS.LTS        # Node.js 24 (tela; testado 24.20.0)
 winget install -e --id Ollama.Ollama            # embeddings (bge-m3) do banco vetorial
 ```
 

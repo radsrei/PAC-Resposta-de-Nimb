@@ -45,7 +45,7 @@ services:
   # sem portas abertas na EC2. Ativado por COMPOSE_PROFILES=cloudflare e
   # TUNNEL_TOKEN no deploy/.env. Ver cloudflare_dominio.md.
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2026.10.0
     profiles: ["cloudflare"]
     command: tunnel --no-autoupdate run
     environment:
@@ -59,7 +59,7 @@ services:
   # Depois: docker compose exec ollama ollama pull bge-m3
   # e no backend/.env: OLLAMA_URL=http://ollama:11434  (exige instância com 4 GB+ de RAM)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.10
     profiles: ["rag"]
     volumes:
       - ollama_models:/root/.ollama

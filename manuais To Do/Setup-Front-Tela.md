@@ -39,7 +39,7 @@ python main.py                  # http://localhost:8000  (Swagger em /docs)
 
 ## 2. Frontend (`frontend/V2 - front Studio`)
 
-Pré-requisito: Node.js 20+.
+Pré-requisito: Node.js 24 (testado 24.20.0).
 
 ```bash
 cd "frontend/V2 - front Studio"

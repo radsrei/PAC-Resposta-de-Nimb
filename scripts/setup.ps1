@@ -51,9 +51,9 @@ function Run($exe, [string[]]$arguments) {
 # ---------------------------------------------------------------------------
 Step "Python"
 $python = Get-Command python -ErrorAction SilentlyContinue
-if (-not $python) { Fail "Python não encontrado. Instale o Python 3.11+: winget install -e --id Python.Python.3.11" }
+if (-not $python) { Fail "Python não encontrado. Instale o Python 3.14 (versão testada): winget install -e --id Python.Python.3.14" }
 $version = & python -c "import sys; print('%d.%d' % sys.version_info[:2])"
-if ([version]$version -lt [version]"3.11") { Fail "Python $version encontrado; é preciso 3.11 ou mais novo." }
+if ([version]$version -lt [version]"3.12") { Fail "Python $version encontrado; é preciso 3.12 ou mais novo (testado: 3.14)." }
 Ok "Python $version"
 
 $longPaths = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -ErrorAction SilentlyContinue).LongPathsEnabled
