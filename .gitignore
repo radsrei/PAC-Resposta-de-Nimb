@@ -3,21 +3,19 @@
 env/**
 langchain
 *.ipynb_checkpoints
-nimb/*
+.venv/
+nimb/
 .vscode/settings.json
 Livros/*
 
-convert_file/.venv
-Convert_file/*.pdf
-Convert_file/*.xml
-Convert_file/saida.md
-Convert_file/saida_estruturada.md
-Convert_file/indexing/saida/*
-
 # Backend
 backend/data/
-__pycache__/
-*.pyc
+# Banco vetorial e catálogo de livros (gerados por backend/vector_builder)
+vector_store/
 
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
 # Frontend
 node_modules/

@@ -12,8 +12,28 @@ class AppError(Exception):
         self.message = message
 
 
+class UnauthorizedError(AppError):
+    status_code = 401
+
+
+class ForbiddenError(AppError):
+    status_code = 403
+
+
 class NotFoundError(AppError):
     status_code = 404
+
+
+class ConflictError(AppError):
+    status_code = 409
+
+
+class TooManyRequestsError(AppError):
+    status_code = 429
+
+    def __init__(self, message: str, retry_after: int = 60):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class NoActiveConnectionError(AppError):
@@ -30,3 +50,27 @@ class LLMError(AppError):
     """Falha ao se comunicar com o provedor de LLM."""
 
     status_code = 502
+
+
+class EmbeddingError(AppError):
+    """Falha ao gerar embeddings (Ollama fora do ar, modelo ausente, provedor não instalado)."""
+
+    status_code = 503
+
+
+class BookRequiredError(AppError):
+    """Pergunta sem nenhum livro liberado: o usuário precisa enviar o PDF antes."""
+
+    status_code = 428
+
+
+class OutOfScopeError(AppError):
+    """Pergunta sem relação com os livros liberados (fora do sistema Tormenta20)."""
+
+    status_code = 422
+
+
+class RetrievalError(AppError):
+    """Falha ao consultar o banco vetorial de um livro."""
+
+    status_code = 503

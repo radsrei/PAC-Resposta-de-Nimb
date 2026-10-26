@@ -2,29 +2,68 @@
 
 ## Start do Projeto
 
-Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md).
+Para subir o sistema localmente (backend FastAPI + tela React + conexão com a LLM), siga o [Setup-Front-Tela.md](Setup-Front-Tela.md). O banco vetorial dos livros é construído à parte: ver [backend/vector_builder/README.md](backend/vector_builder/README.md).
 
-### Acessar o ambiente
+### Requisitos
 
+| Ferramenta | Versão | Para quê | Instalação (Windows) |
+|---|---|---|---|
+| Python | 3.14 (testado; mínimo 3.12) | API e construtor do banco vetorial | `winget install -e --id Python.Python.3.14` |
+| Node.js | 24 (testado 24.20.0) | tela (React/Vite) | `winget install -e --id OpenJS.NodeJS.LTS` |
+| Ollama | 0.40.10 (testado) | embeddings (`bge-m3`) do banco vetorial | `winget install -e --id Ollama.Ollama` |
+| Conta DeepSeek | — | LLM que responde as perguntas (API key) | `platform.deepseek.com` |
+| Conta Google Cloud | — | Client ID do login com Google | ver Setup-Front-Tela.md, seção 3.1 |
+
+O Ollama é opcional se os embeddings forem gerados pelo `sentence-transformers` (instala o PyTorch, cerca de 2 GB).
+
+### Setup automático
+
+Na raiz do projeto, o script cria o `.venv`, instala backend, construtor e front, baixa o modelo no Ollama e cria o `backend/.env`:
+
+```powershell
+# Windows
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1                     # embeddings pelo Ollama (padrão)
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -InstalarOllama
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local   # sentence-transformers
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings nenhum  # só API e front
 ```
-Acessar o ambiente venv
-nimb
 
+```bash
+# Linux / macOS
+bash scripts/setup.sh
+bash scripts/setup.sh --embeddings local
 ```
 
-## Setup
+Depois do script, falta preencher o `GOOGLE_CLIENT_ID` e o `LLM_DEEPSEEK_API` (chave do DeepSeek) em `backend/.env`.
 
-### VScode
-```
-python3.11 -m venv nimb
- .nimb\Scripts\activate
+Para subir no servidor (AWS): [deploy_aws.md](deploy_aws.md).
+
+### Ambiente Python (.venv)
+
+O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora do Git).
+
+### Ambiente Python (.venv)
+
+O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora do Git).
+
+Criar e instalar (primeira vez):
+```bash
+python -m venv .venv               # Python 3.14
+.venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -U pip
-pip install -r requirements.txt
+pip install -r requirements.txt   # tudo: API + RAG + Docling
 ```
 
-### Git
+Acessar o ambiente:
+```bash
+.venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
+```
+
+Para subir só a API, `pip install -r backend/requirements.txt` basta (dependências mínimas).
+
+## Git
 Gerar uma nova Branch para envio de mudanças e PR
-#### Boas Pratias
+### Boas Pratias
 Gerar Branch com prefixo:
  - Feat/
  - Fix/
@@ -52,6 +91,44 @@ Subir o commit para o Git
 ```bash
 git push -u origin feat/minha-nova-funcionalidade
 ```
+
+Atualiza e remove as branchs já apagadas
+```bash
+git fetch -p
+```
+
+Remover as Branchs remotas (Automático)
+```bash
+git checkout develop
+git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
+```
+
+```bash
+# git branch -D feat/conectar-sistema feat/login feat/remover_telas feat/tela-simples 
+git branch -D nome-da-branch
+```
+
+### Setup para Bitwarden
+```bash
+#Bitwarden - Cofre
+winget install -e --id Bitwarden.CLI
+#Biblioteca para script
+winget install jq
+###
+```
+
+
+### Entrar no cofre BW
+```bash
+bw login                           # e-mail, senha mestra e código 2FA
+export BW_SESSION="$(bw unlock --raw)"
+bw sync
+bw status | jq -r .status          # esperado: unlocked
+```
+
+## Versão para Diagrama
+[Git Diagram](https://gitdiagram.com/radsrei/pac-resposta-de-nimb)
+
 
 ## Agenda
 

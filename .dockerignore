@@ -1,0 +1,25 @@
+# Contexto de build das imagens (deploy/docker-compose.yml usa a raiz do projeto)
+.git
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+env
+nimb
+
+# Segredos e dados nunca entram na imagem (vão por env_file e volumes)
+backend/.env
+backend/data
+vector_store
+deploy/.env
+frontend/**/.env
+frontend/**/.env.local
+
+# Pastas que não fazem parte do serviço
+docs
+PAC-7+8
+RFC_arquivos
+backend/RAG_*
+backend/*.ipynb
+backend/*.json

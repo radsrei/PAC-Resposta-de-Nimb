@@ -1,5 +1,5 @@
-import { IndexedBook } from '../types';
-import { API_BASE, http } from './http';
+import { BookValidationResult, CatalogBook, IndexedBook } from '../types';
+import { http } from './http';
 
 /**
  * RAG API Service Layer
@@ -17,6 +17,16 @@ export interface QueryRagPayload {
   connectionId?: string | null;
 }
 
+export interface RagSource {
+  bookId: string;
+  bookTitle: string;
+  title: string;
+  path: string;
+  kind: string;
+  page: string;
+  similarity: number;
+}
+
 export interface QueryRagResponse {
   answer: string;
   bookTitle: string;
@@ -29,6 +39,7 @@ export interface QueryRagResponse {
     diceRoll: string;
     description: string;
   } | null;
+  sources?: RagSource[];
   // Dados da execução na LLM (backend real)
   sessionId?: string;
   messageId?: string;
@@ -118,46 +129,44 @@ export const ragApiService = {
     };
   },
 
+  /** Livros do catálogo, com os que o usuário já liberou. */
+  async listBooks(): Promise<CatalogBook[]> {
+    if (USE_MOCK) return [];
+    return http.get<CatalogBook[]>('/api/rag/books');
+  },
+
   /**
-   * Upload and index a PDF grimório into the RAG vector database
+   * Envia o PDF para validação. Se ele corresponder a um livro permitido, o
+   * backend libera o banco vetorial desse livro para o usuário. O arquivo é
+   * descartado depois da análise.
    */
-  async uploadGrimorio(
-    file: File,
-    config: { chunkSize: number; model: string; entropy: number }
-  ): Promise<IndexedBook> {
-    if (!USE_MOCK) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('chunkSize', config.chunkSize.toString());
-        formData.append('model', config.model);
-        formData.append('entropy', config.entropy.toString());
-
-        const res = await fetch(`${API_BASE}/api/rag/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch (err) {
-        console.warn('Backend upload unavailable, using client indexing simulation:', err);
-      }
+  async validateBook(file: File): Promise<BookValidationResult> {
+    if (USE_MOCK) {
+      await new Promise((r) => setTimeout(r, 800));
+      return {
+        accepted: false,
+        message: 'Modo simulado: a validação de livros precisa do backend.',
+        score: 0,
+        checks: [],
+        book: null,
+      };
     }
-
-    // Local simulation
-    const estimatedChunks = Math.max(800, Math.floor(file.size / (config.chunkSize * 2)));
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-
-    return {
-      id: 'book_' + Date.now(),
-      title: file.name.replace(/\.[^/.]+$/, ''),
-      fileName: file.name,
-      size: `${sizeMb} MB`,
-      chunks: estimatedChunks,
-      progress: 100,
-      status: 'indexed',
-      badgeColor: 'purple',
-    };
+    const formData = new FormData();
+    formData.append('file', file);
+    return http.post<BookValidationResult>('/api/rag/upload', formData);
   },
 };
+
+/** Livro liberado -> formato usado pela barra lateral e pelo modal. */
+export function toIndexedBook(book: CatalogBook): IndexedBook {
+  return {
+    id: book.id,
+    title: book.title,
+    fileName: book.title,
+    size: book.pageCount ? `${book.pageCount} páginas` : '',
+    chunks: book.chunks,
+    progress: book.vectorReady ? 100 : 0,
+    status: book.vectorReady ? 'indexed' : 'queued',
+    badgeColor: book.vectorReady ? 'green' : 'amber',
+  };
+}

@@ -8,6 +8,12 @@
 
 export const API_BASE = (import.meta.env.VITE_BACKEND_URL || '').replace(/\/$/, '');
 
+/** Disparado quando a sessão expira (401): o App volta para a tela de login. */
+export const UNAUTHORIZED_EVENT = 'nimb:unauthorized';
+
+// 401 nesta rota significa credencial do Google recusada, não sessão expirada
+const AUTH_ATTEMPT_PATHS = ['/api/auth/google'];
+
 export class ApiError extends Error {
   status: number;
 
@@ -43,7 +49,9 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    // credentials: envia o cookie de sessão (HttpOnly) também quando
+    // VITE_BACKEND_URL aponta para outra porta
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
   } catch {
     throw new ApiError(
       'Não foi possível conectar ao backend. Verifique se a API está rodando em http://localhost:8000.',
@@ -62,6 +70,9 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   }
 
   if (!res.ok) {
+    if (res.status === 401 && !AUTH_ATTEMPT_PATHS.includes(path)) {
+      window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
+    }
     // Proxy do Vite sem backend no ar responde 500/502/504 sem JSON
     const fallback =
       res.status >= 500 && !body
@@ -73,6 +84,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
 }
 
 export const http = {
+  request,
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, data?: unknown) =>
     request<T>(path, {

@@ -18,14 +18,18 @@ uvicorn[standard]
 pydantic
 python-multipart
 httpx
-anthropic
+cryptography
+google-auth
+requests
 
 # Script Docling
 docling>=2.0.0
 pandas>=2.0.0
 
-# Script XML
+# Script XML / construtor do banco vetorial (backend/vector_builder)
 pymupdf
+chromadb
+sentence-transformers
 
 #Revisar
 

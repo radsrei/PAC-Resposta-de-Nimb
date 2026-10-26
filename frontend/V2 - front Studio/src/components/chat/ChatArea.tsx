@@ -16,6 +16,7 @@ interface ChatAreaProps {
   llmLabel: string | null;
   indexedBooksCount: number;
   totalChunks: number;
+  canAsk: boolean;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -30,6 +31,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   llmLabel,
   indexedBooksCount,
   totalChunks,
+  canAsk,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +89,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                   Modo Ativo
                 </span>
                 <span className="text-[#d8b9ff] font-semibold">
-                  LLM direta (RAG em breve)
+                  {canAsk ? 'RAG nos livros liberados' : 'Aguardando livro'}
                 </span>
               </div>
             </div>
@@ -131,9 +133,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* Input Zone & Quick Suggestions */}
       <footer className="p-3 md:p-5 border-t border-[rgba(162,89,255,0.25)] bg-[#0D0D14]/90 backdrop-blur-xl flex flex-col gap-2.5 max-w-4xl w-full mx-auto relative z-20">
+        {!canAsk && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-xs text-amber-200">
+            <span className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">menu_book</span>
+              Adicione o livro do Tormenta20 para liberar as perguntas.
+            </span>
+            <button
+              type="button"
+              onClick={onOpenUploadModal}
+              className="px-3 py-1 rounded-lg bg-[#39D98A] text-black font-semibold font-mono text-[11px] hover:brightness-110 cursor-pointer self-start sm:self-auto"
+            >
+              Subir PDF
+            </button>
+          </div>
+        )}
         <SuggestionChips
           onSelectSuggestion={onSelectSuggestion}
-          disabled={isLoading}
+          disabled={isLoading || !canAsk}
         />
         <ChatInput
           value={inputValue}
@@ -141,6 +158,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           onSend={onSendMessage}
           onOpenUploadModal={onOpenUploadModal}
           isLoading={isLoading}
+          locked={!canAsk}
           indexedBooksCount={indexedBooksCount}
         />
       </footer>

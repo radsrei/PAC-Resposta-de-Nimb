@@ -1,0 +1,72 @@
+# Respostas de Nimb no servidor. Na pasta deploy/:
+#   docker compose up -d --build        sobe (ou atualiza) tudo
+#   docker compose logs -f              acompanha os logs
+#   docker compose down                 para (os dados ficam nos volumes)
+# Serviços opcionais (COMPOSE_PROFILES no deploy/.env): cloudflare, rag
+name: nimb
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file: ../backend/.env
+    environment:
+      DATABASE_PATH: /app/data/nimb.db
+      VECTOR_STORE_DIR: /app/vector_store
+    volumes:
+      - nimb_data:/app/data                    # SQLite + secret.key (backup: deploy/backup.sh)
+      - ../vector_store:/app/vector_store      # catálogo e bancos dos livros (scp + chown 10001); o Chroma não abre somente leitura
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web.Dockerfile
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data        # certificados HTTPS
+      - caddy_config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Cloudflare Tunnel (respostas-nimb.com.br): conexão de saída até o Cloudflare,
+  # sem portas abertas na EC2. Ativado por COMPOSE_PROFILES=cloudflare e
+  # TUNNEL_TOKEN no deploy/.env. Ver cloudflare_dominio.md.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    profiles: ["cloudflare"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  # Embeddings da pergunta (busca nos livros) pelo Ollama.
+  # Sobe só com: docker compose --profile rag up -d
+  # Depois: docker compose exec ollama ollama pull bge-m3
+  # e no backend/.env: OLLAMA_URL=http://ollama:11434  (exige instância com 4 GB+ de RAM)
+  ollama:
+    image: ollama/ollama:0.40.10
+    profiles: ["rag"]
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  nimb_data:
+  caddy_data:
+  caddy_config:
+  ollama_models:

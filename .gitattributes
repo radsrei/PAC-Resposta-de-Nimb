@@ -1,0 +1,7 @@
+# Arquivos executados no servidor Linux: sempre LF, mesmo editados no Windows
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+Caddyfile       text eol=lf
+*.yml           text eol=lf
+deploy/.env.example text eol=lf

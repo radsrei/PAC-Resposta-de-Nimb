@@ -1,8 +1,15 @@
-# Dependências mínimas para subir a API (front + LLM, sem RAG)
-fastapi
-uvicorn[standard]
-pydantic>=2
-python-dotenv
-python-multipart   # upload de arquivos (multipart/form-data)
-httpx              # chamadas HTTP para OpenAI / Gemini / DeepSeek / Ollama
-anthropic          # SDK oficial para o provedor Claude
+# Dependências da API (front + LLM + login + busca nos livros).
+# Versões testadas em 25/10/2026 (Python 3.14.5). As dependências indiretas ficam
+# travadas no requirements.lock, usado pelo Dockerfile:
+#   pip install -r requirements.txt -c requirements.lock
+fastapi==0.143.3
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+python-dotenv==1.2.4
+python-multipart==0.0.32   # upload de arquivos (multipart/form-data)
+httpx==0.28.1              # chamadas HTTP para o DeepSeek (e o Ollama dos embeddings)
+cryptography==50.0.2       # criptografia das API keys gravadas no banco
+google-auth==2.62.0        # validação do login com Google (ID token)
+requests==2.34.2           # transporte HTTP usado pelo google-auth
+pypdf==6.21.2              # leitura do PDF na validação de livros
+chromadb==1.5.9            # leitura do banco vetorial; a mesma versão do construtor (formato do banco)

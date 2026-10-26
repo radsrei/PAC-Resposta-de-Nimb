@@ -155,7 +155,7 @@ sem alterações de código.
 
 Os `TODO`s marcados no arquivo indicam onde plugar o pipeline RAG real
 (retrieval no vector DB + chamada ao LLM), reaproveitando o que já existe em
-`Convert_file/` e `backend/RAG_Claude|RAG_GPT|RAG_Gemini/`.
+`backend/RAG_Claude|RAG_GPT|RAG_Gemini/`.
 
 CORS liberado para:
 - `http://localhost:5500` / `http://127.0.0.1:5500` (protótipo estático)

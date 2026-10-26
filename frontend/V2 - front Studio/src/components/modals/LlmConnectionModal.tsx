@@ -9,15 +9,24 @@ import {
 import { llmApiService } from '../../services/llmApi';
 
 interface LlmConnectionModalProps {
+  /** Só administradores gerenciam conexões (elas guardam API keys). */
+  isAdmin: boolean;
   isOpen: boolean;
   onClose: () => void;
   /** Chamado sempre que a lista muda, com a conexão ativa atual (ou null). */
   onChanged: (active: LlmConnection | null) => void;
 }
 
+/** Modelos do DeepSeek sugeridos no campo "Modelo" (o campo continua livre). */
+const DEEPSEEK_MODELS = [
+  { id: 'deepseek-chat', label: 'resposta direta (padrão)' },
+  { id: 'deepseek-reasoner', label: 'raciocina antes de responder; mais lento' },
+];
+
+const PROVIDER_ID: LlmProviderId = 'deepseek';
+
 interface FormState {
   name: string;
-  provider: LlmProviderId;
   model: string;
   baseUrl: string;
   apiKey: string;
@@ -27,7 +36,6 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   name: '',
-  provider: 'openai',
   model: '',
   baseUrl: '',
   apiKey: '',
@@ -41,6 +49,7 @@ const inputClass =
 const labelClass = 'font-mono text-[10px] uppercase tracking-wider text-[#8B87A8] mb-1 block';
 
 export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
+  isAdmin,
   isOpen,
   onClose,
   onChanged,
@@ -54,6 +63,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
   const [testResults, setTestResults] = useState<Record<string, LlmTestResult>>({});
   const [error, setError] = useState<string | null>(null);
 
+  const [activeInfo, setActiveInfo] = useState<LlmConnection | null>(null);
+
   const refresh = async () => {
     const list = await llmApiService.listConnections();
     setConnections(list);
@@ -64,15 +75,57 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
+    if (!isAdmin) {
+      llmApiService
+        .getActive()
+        .then((active) => {
+          setActiveInfo(active);
+          onChanged(active);
+        })
+        .catch((err) => setError(err.message));
+      return;
+    }
     Promise.all([llmApiService.listProviders(), refresh()])
       .then(([provs]) => setProviders(provs))
       .catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   if (!isOpen) return null;
 
-  const provider = providers.find((p) => p.id === form.provider);
+  if (!isAdmin) {
+    return (
+      <div
+        className="fixed inset-0 bg-[#0A0A10]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn"
+        onClick={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div className="w-full max-w-md bg-[#1B1B22] border border-[rgba(162,89,255,0.3)] rounded-2xl p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-[#F0EEF8] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#d8b9ff]">hub</span> Conexão LLM
+            </h2>
+            <button onClick={onClose} className="text-[#8B87A8] hover:text-[#F0EEF8] cursor-pointer" title="Fechar">
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          {error && <p className="text-xs font-mono text-red-300">{error}</p>}
+          {activeInfo ? (
+            <p className="text-sm text-[#F0EEF8]">
+              LLM ativa: <strong>{activeInfo.name}</strong>
+              <span className="block font-mono text-xs text-[#8B87A8]">{activeInfo.model}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-amber-300">Nenhuma LLM conectada no momento.</p>
+          )}
+          <p className="text-xs text-[#8B87A8]">
+            Somente administradores podem cadastrar ou alterar conexões com LLMs.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const provider = providers.find((p) => p.id === PROVIDER_ID);
   const editing = connections.find((c) => c.id === editingId) || null;
 
   const setField = (field: keyof FormState, value: string) =>
@@ -88,7 +141,6 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
     setError(null);
     setForm({
       name: conn.name,
-      provider: conn.provider,
       model: conn.model,
       baseUrl: conn.baseUrl || '',
       apiKey: '',
@@ -103,8 +155,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
     setIsSaving(true);
 
     const payload: LlmConnectionInput = {
-      name: form.name.trim() || provider?.label || form.provider,
-      provider: form.provider,
+      name: form.name.trim() || provider?.label || 'DeepSeek',
+      provider: PROVIDER_ID,
       model: form.model.trim() || null,
       baseUrl: form.baseUrl.trim() || null,
       temperature: form.temperature === '' ? null : Number(form.temperature),
@@ -178,7 +230,7 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
                 Conexão LLM // Núcleo de Linguagem
               </h2>
               <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
-                CONFIGURE A API DO MODELO QUE RESPONDE ÀS CONSULTAS
+                DEEPSEEK // CONFIGURE A API KEY DO MODELO QUE RESPONDE ÀS CONSULTAS
               </span>
             </div>
           </div>
@@ -310,19 +362,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
               {editing ? `Editando: ${editing.name}` : 'Nova conexão'}
             </span>
 
-            <div>
-              <label className={labelClass}>Provedor</label>
-              <select
-                value={form.provider}
-                onChange={(e) => setField('provider', e.target.value)}
-                className={inputClass}
-              >
-                {providers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+            <div className="font-mono text-[10px] text-[#8B87A8]">
+              Provedor: <span className="text-[#d8b9ff]">DeepSeek</span> • chave em platform.deepseek.com
             </div>
 
             <div>
@@ -338,11 +379,19 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
             <div>
               <label className={labelClass}>Modelo</label>
               <input
+                list="deepseek-models"
                 value={form.model}
                 onChange={(e) => setField('model', e.target.value)}
-                placeholder={provider?.defaultModel || 'nome-do-modelo'}
+                placeholder={provider?.defaultModel || 'deepseek-chat'}
                 className={inputClass}
               />
+              <datalist id="deepseek-models">
+                {DEEPSEEK_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -401,9 +450,9 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
                 />
               </div>
             </div>
-            {form.provider === 'anthropic' && (
+            {form.model.trim() === 'deepseek-reasoner' && (
               <p className="font-mono text-[10px] text-[#8B87A8]">
-                Os modelos Claude 5.x não aceitam temperatura — deixe em branco.
+                O deepseek-reasoner ignora a temperatura — deixe em branco.
               </p>
             )}
 

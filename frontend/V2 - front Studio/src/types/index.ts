@@ -41,6 +41,26 @@ export interface IndexedBook {
   badgeColor?: 'green' | 'purple' | 'amber';
 }
 
+/** Livro do catálogo (backend: GET /api/rag/books). */
+export interface CatalogBook {
+  id: string;
+  title: string;
+  unlocked: boolean;
+  unlockedAt: string | null;
+  vectorReady: boolean;
+  chunks: number;
+  pageCount?: number | null;
+}
+
+/** Resultado da validação de um PDF (backend: POST /api/rag/upload). */
+export interface BookValidationResult {
+  accepted: boolean;
+  message: string;
+  score: number;
+  checks: { name: string; label: string; passed: boolean }[];
+  book: CatalogBook | null;
+}
+
 export interface HistoryItem {
   id: string;
   title: string;
@@ -59,18 +79,30 @@ export interface OperatorProfile {
   avatarUrl?: string;
 }
 
-export type ScreenView = 'terminal' | 'login';
+export type ScreenView = 'terminal' | 'account';
+
+// ---------------------------------------------------------------------------
+// Autenticação (backend: /api/auth e /api/admin)
+// ---------------------------------------------------------------------------
+export interface AuthUser {
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
+  isActive: boolean;
+  googleLinked: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AuthConfig {
+  googleClientId: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // Conexões LLM (backend: /api/llm)
 // ---------------------------------------------------------------------------
-export type LlmProviderId =
-  | 'openai'
-  | 'anthropic'
-  | 'gemini'
-  | 'deepseek'
-  | 'ollama'
-  | 'openai_compatible';
+/** Único provedor de LLM do projeto. */
+export type LlmProviderId = 'deepseek';
 
 export interface LlmProvider {
   id: LlmProviderId;
@@ -83,7 +115,8 @@ export interface LlmProvider {
 export interface LlmConnection {
   id: string;
   name: string;
-  provider: LlmProviderId;
+  /** string: conexões antigas de provedores desativados ainda podem aparecer. */
+  provider: string;
   model: string;
   baseUrl: string | null;
   temperature: number | null;

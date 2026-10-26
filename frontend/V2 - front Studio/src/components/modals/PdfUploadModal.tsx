@@ -1,28 +1,34 @@
 import React, { useState, useRef } from 'react';
-import { IndexedBook } from '../../types';
+import { BookValidationResult, CatalogBook, IndexedBook } from '../../types';
 import { ragApiService } from '../../services/ragApi';
+
+// Igual a BOOK_UPLOAD_MAX_MB do backend. O plano grátis do Cloudflare recusa
+// requisições acima de 100 MB.
+const MAX_UPLOAD_MB = 95;
 
 interface PdfUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   books: IndexedBook[];
-  onAddBook: (book: IndexedBook) => void;
-  onRemoveBook: (id: string) => void;
+  onBookUnlocked: (book: CatalogBook) => void;
 }
 
+/**
+ * Upload de livro: o PDF é comparado com o catálogo de livros permitidos
+ * (tamanho, páginas, metadados e frases de controle). Se for reconhecido, o
+ * banco vetorial do livro é liberado para o usuário. O arquivo é descartado.
+ */
 export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
   isOpen,
   onClose,
   books,
-  onAddBook,
-  onRemoveBook,
+  onBookUnlocked,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [chunkSize, setChunkSize] = useState<number>(1024);
-  const [model, setModel] = useState('Nimb-Vector-Embedding-v3');
-  const [entropy, setEntropy] = useState<number>(0.75);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState<string | null>(null);
+  const [result, setResult] = useState<BookValidationResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -30,30 +36,32 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      alert('Por favor, selecione um arquivo no formato PDF (.pdf).');
+      setError('Selecione um arquivo no formato PDF (.pdf).');
+      return;
+    }
+    // Mesmo limite do backend (BOOK_UPLOAD_MAX_MB): acima dele o proxy corta a
+    // conexão e o navegador mostraria só um erro de rede
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(`Arquivo maior que o limite de ${MAX_UPLOAD_MB} MB.`);
       return;
     }
 
     setIsProcessing(true);
-    setUploadFeedback(`Vetorizando "${file.name}"...`);
-
+    setResult(null);
+    setError(null);
+    setUploadFeedback(`Validando "${file.name}"...`);
     try {
-      const newBook = await ragApiService.uploadGrimorio(file, {
-        chunkSize,
-        model,
-        entropy,
-      });
-      onAddBook(newBook);
-      setUploadFeedback(`Grimório "${file.name}" indexado com sucesso no cluster RAG!`);
-      setTimeout(() => {
-        setIsProcessing(false);
-        setUploadFeedback(null);
-      }, 1500);
-    } catch {
+      const validation = await ragApiService.validateBook(file);
+      setResult(validation);
+      if (validation.accepted && validation.book) onBookUnlocked(validation.book);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
       setIsProcessing(false);
-      setUploadFeedback('Erro ao vetorizar arquivo.');
+      setUploadFeedback(null);
     }
   };
 
@@ -97,10 +105,10 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               </div>
               <div className="flex flex-col">
                 <h2 className="text-lg md:text-xl font-bold text-[#F0EEF8] tracking-tight uppercase">
-                  CARREGAR GRIMÓRIO // INGESTÃO RAG VETORIAL
+                  CARREGAR GRIMÓRIO // VALIDAÇÃO DE LIVRO
                 </h2>
                 <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
-                  MÓDULO DE PIPELINE SEMÂNTICO V2.4 // TORMENTA20 & D20 REPOSITORIES
+                  ENVIE O PDF DO SEU LIVRO PARA LIBERAR O BANCO VETORIAL DELE
                 </span>
               </div>
             </div>
@@ -153,7 +161,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               Arraste tomos, manuais ou suplementos em PDF
             </p>
             <span className="font-mono text-xs text-[#8B87A8]">
-              Tamanho máximo suportado: 150MB por grimório • Text layer nativo ou OCR acelerado
+              Tamanho máximo: {MAX_UPLOAD_MB} MB • O arquivo é analisado e descartado, não fica guardado
             </span>
           </div>
 
@@ -183,7 +191,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
 
         {/* Feedback message if any */}
         {uploadFeedback && (
-          <div className="px-4 py-2 rounded-xl bg-[#39D98A]/15 border border-[#39D98A]/40 font-mono text-xs text-[#39D98A] flex items-center gap-2 animate-fadeIn">
+          <div className="px-4 py-2 rounded-xl bg-[#A259FF]/15 border border-[#A259FF]/40 font-mono text-xs text-[#d8b9ff] flex items-center gap-2 animate-fadeIn">
             <span className="material-symbols-outlined text-[16px] animate-spin">
               autorenew
             </span>
@@ -191,17 +199,72 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
           </div>
         )}
 
-        {/* Queue / Current Repository Section */}
+        {error && (
+          <div role="alert" className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/40 text-red-300 text-xs flex items-start gap-2">
+            <span className="material-symbols-outlined text-[16px]">error</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Resultado da validação */}
+        {result && (
+          <div
+            className={`p-4 rounded-xl border flex flex-col gap-3 animate-fadeIn ${
+              result.accepted
+                ? 'bg-[#39D98A]/10 border-[#39D98A]/40'
+                : 'bg-red-500/10 border-red-500/40'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span
+                className={`flex items-center gap-2 text-sm font-bold ${
+                  result.accepted ? 'text-[#39D98A]' : 'text-red-300'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {result.accepted ? 'verified' : 'block'}
+                </span>
+                {result.message}
+              </span>
+              <span className="font-mono text-[11px] text-[#cec2d7] tabular-nums">
+                pontuação {Math.round(result.score * 100)}%
+              </span>
+            </div>
+            {result.checks.length > 0 && (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px]">
+                {result.checks.map((check) => (
+                  <li key={check.name} className="flex items-center gap-1.5 text-[#cec2d7]">
+                    <span
+                      className={`material-symbols-outlined text-[14px] ${
+                        check.passed ? 'text-[#39D98A]' : 'text-red-300'
+                      }`}
+                    >
+                      {check.passed ? 'check_circle' : 'cancel'}
+                    </span>
+                    {check.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {result.accepted && result.book && !result.book.vectorReady && (
+              <p className="font-mono text-[11px] text-amber-300">
+                O banco vetorial deste livro ainda está em construção. As consultas usarão o livro assim que ele ficar pronto.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Livros liberados para o usuário */}
         <div className="flex flex-col gap-3 relative z-10">
           <div className="flex items-center justify-between">
             <span className="font-mono text-xs uppercase text-[#8B87A8] tracking-wider flex items-center gap-2 font-semibold">
               <span className="material-symbols-outlined text-base text-[#39D98A]">
                 memory
               </span>
-              FILA DE INDEXAÇÃO // REPOSITÓRIO ATUAL
+              LIVROS LIBERADOS // SEU ACERVO
             </span>
             <span className="font-mono text-xs text-[#d8b9ff]">
-              {books.length} TOMOS CARREGADOS
+              {books.length} {books.length === 1 ? 'LIVRO' : 'LIVROS'}
             </span>
           </div>
 
@@ -224,7 +287,9 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
                         <span>{b.size}</span>
                         <span>•</span>
                         <span className="text-[#39D98A] font-bold tabular-nums">
-                          {b.chunks.toLocaleString()} Chunks Vetorizados
+                          {b.status === 'indexed'
+                            ? `${b.chunks.toLocaleString()} trechos no banco vetorial`
+                            : 'banco vetorial em construção'}
                         </span>
                       </div>
                     </div>
@@ -235,17 +300,8 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
                       <span className="material-symbols-outlined text-[13px]">
                         check_circle
                       </span>
-                      {b.progress}%
+                      {b.status === 'indexed' ? 'liberado' : 'aguardando banco'}
                     </span>
-
-                    <button
-                      type="button"
-                      onClick={() => onRemoveBook(b.id)}
-                      className="text-[#8B87A8] hover:text-red-400 transition-colors cursor-pointer"
-                      title="Remover Tomo"
-                    >
-                      <span className="material-symbols-outlined text-lg">delete</span>
-                    </button>
                   </div>
                 </div>
 
@@ -260,107 +316,13 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
           </div>
         </div>
 
-        {/* Chunking & Entropy Parameters */}
-        <div className="bg-[#181827] p-5 rounded-2xl border border-[#34344E] flex flex-col gap-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs uppercase text-[#8B87A8] tracking-wider flex items-center gap-2 font-semibold">
-              <span className="material-symbols-outlined text-base text-[#d8b9ff]">
-                tune
-              </span>
-              PARÂMETROS DE CHUNKING & ENTROPIA RAG
-            </span>
-            <span className="font-mono text-[10px] text-[#8B87A8] uppercase">
-              // INGESTION_CONFIG_V3
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Chunk size */}
-            <div className="flex flex-col gap-2">
-              <label className="font-mono text-[11px] uppercase text-[#cec2d7]">
-                TAMANHO DO CHUNK (TOKENS)
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setChunkSize(512)}
-                  className={`flex-1 py-2 rounded-lg font-mono text-xs transition-colors cursor-pointer ${
-                    chunkSize === 512
-                      ? 'bg-[#2A2931] border border-[#39D98A] text-[#39D98A] font-bold shadow-sm'
-                      : 'bg-[#222236] text-[#F0EEF8] hover:bg-[#2A2931]'
-                  }`}
-                >
-                  512 tk
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChunkSize(1024)}
-                  className={`flex-1 py-2 rounded-lg font-mono text-xs transition-colors cursor-pointer ${
-                    chunkSize === 1024
-                      ? 'bg-[#2A2931] border border-[#39D98A] text-[#39D98A] font-bold shadow-sm'
-                      : 'bg-[#222236] text-[#F0EEF8] hover:bg-[#2A2931]'
-                  }`}
-                >
-                  1024 tk
-                </button>
-              </div>
-            </div>
-
-            {/* Embedding model */}
-            <div className="flex flex-col gap-2">
-              <label className="font-mono text-[11px] uppercase text-[#cec2d7]">
-                MODELO DE EMBEDDINGS
-              </label>
-              <div className="relative">
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  className="w-full py-2 px-3 rounded-lg bg-[#222236] text-[#F0EEF8] font-mono text-xs appearance-none cursor-pointer focus:outline-none focus:border-[#39D98A] border border-[#34344E]"
-                >
-                  <option value="Nimb-Vector-Embedding-v3">Nimb-Vector-Embedding-v3</option>
-                  <option value="Arton-Neural-Ada-002">Arton-Neural-Ada-002</option>
-                  <option value="Cohere-Multilingual-v3">Cohere-Multilingual-v3</option>
-                </select>
-                <span className="material-symbols-outlined absolute right-2.5 top-2.5 text-[#8B87A8] pointer-events-none text-base">
-                  expand_more
-                </span>
-              </div>
-            </div>
-
-            {/* Chaos Level / Entropy */}
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <label className="font-mono text-[11px] uppercase text-[#cec2d7]">
-                  NÍVEL DE ENTROPIA / CAOS
-                </label>
-                <span className="font-mono text-xs text-[#ffb95d] font-bold">
-                  {entropy.toFixed(2)} ({entropy > 0.6 ? 'NIMB' : 'ORDEM'})
-                </span>
-              </div>
-              <div className="flex items-center gap-3 pt-1">
-                <span className="font-mono text-[10px] text-[#8B87A8]">ORDEM</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={entropy}
-                  onChange={(e) => setEntropy(parseFloat(e.target.value))}
-                  className="chaos-slider w-full accent-[#39D98A] h-1.5 bg-[#222236] rounded-lg cursor-pointer"
-                />
-                <span className="font-mono text-[10px] text-[#ffb95d]">CAOS</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Modal Actions Footer */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-[#34344E]/40">
           <div className="flex items-center gap-2 text-[#8B87A8] font-mono text-[11px]">
             <span className="material-symbols-outlined text-base text-[#39D98A]">
               security
             </span>
-            <span>PARIDADE SEMÂNTICA VERIFICADA • SHA-256 AUTOMÁTICO</span>
+            <span>VALIDAÇÃO POR IMPRESSÃO DIGITAL • ARQUIVO DESCARTADO APÓS A ANÁLISE</span>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -382,7 +344,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#A259FF] to-[#39D98A] text-[#0D0D14] font-bold text-xs uppercase tracking-wider hover:scale-[1.02] shadow-[0_0_15px_rgba(57,217,138,0.3)] hover:shadow-[0_0_20px_rgba(57,217,138,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-lg">bolt</span>
-              <span>Subir Novo Livro (.PDF)</span>
+              <span>Validar livro (.PDF)</span>
             </button>
           </div>
         </div>
