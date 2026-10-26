@@ -2,6 +2,10 @@ import React, { useState, useRef } from 'react';
 import { BookValidationResult, CatalogBook, IndexedBook } from '../../types';
 import { ragApiService } from '../../services/ragApi';
 
+// Igual a BOOK_UPLOAD_MAX_MB do backend. O plano grátis do Cloudflare recusa
+// requisições acima de 100 MB.
+const MAX_UPLOAD_MB = 95;
+
 interface PdfUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,6 +40,12 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       setError('Selecione um arquivo no formato PDF (.pdf).');
+      return;
+    }
+    // Mesmo limite do backend (BOOK_UPLOAD_MAX_MB): acima dele o proxy corta a
+    // conexão e o navegador mostraria só um erro de rede
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      setError(`Arquivo maior que o limite de ${MAX_UPLOAD_MB} MB.`);
       return;
     }
 
@@ -151,7 +161,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               Arraste tomos, manuais ou suplementos em PDF
             </p>
             <span className="font-mono text-xs text-[#8B87A8]">
-              Tamanho máximo: 150 MB • O arquivo é analisado e descartado, não fica guardado
+              Tamanho máximo: {MAX_UPLOAD_MB} MB • O arquivo é analisado e descartado, não fica guardado
             </span>
           </div>
 

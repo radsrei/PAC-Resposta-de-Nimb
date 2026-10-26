@@ -50,8 +50,7 @@ git checkout -b feature/docling-segmentacao-pdf
 
 ### 1.5 Adicionar os arquivos novos ao repositório
 
-Sugestão de organização (seguindo o padrão de pastas que o repo já usa,
-como `estrutura-Exemplo/`):
+Sugestão de organização:
 
 ```
 PAC-Resposta-de-Nimb/

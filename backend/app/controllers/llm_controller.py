@@ -80,7 +80,9 @@ def update_connection(connection_id: str, payload: LlmConnectionUpdate) -> dict[
         changes.pop("is_active")  # desativar = ativar outra conexão
 
     provider = changes.get("provider") or current["provider"]
-    info = llm_client.PROVIDERS[provider]
+    info = llm_client.PROVIDERS.get(provider)
+    if info is None:
+        raise AppError("Esta conexão usa um provedor desativado. Cadastre uma conexão DeepSeek.")
     if "model" in changes and not changes["model"]:
         changes["model"] = info.default_model
     final_key = changes["api_key"] if "api_key" in changes else current["api_key"]
@@ -91,7 +93,9 @@ def update_connection(connection_id: str, payload: LlmConnectionUpdate) -> dict[
 
 
 def activate_connection(connection_id: str) -> dict[str, Any]:
-    get_connection_or_404(connection_id)
+    connection = get_connection_or_404(connection_id)
+    if connection["provider"] not in llm_client.PROVIDERS:
+        raise AppError("Esta conexão usa um provedor desativado. Cadastre uma conexão DeepSeek.")
     return to_public(llm_repository.update(connection_id, {"is_active": True}))
 
 

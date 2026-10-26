@@ -8,12 +8,6 @@ nimb/
 .vscode/settings.json
 Livros/*
 
-Convert_file/*.pdf
-Convert_file/*.xml
-Convert_file/saida.md
-Convert_file/saida_estruturada.md
-Convert_file/indexing/saida/*
-
 # Backend
 backend/data/
 # Banco vetorial e catálogo de livros (gerados por backend/vector_builder)

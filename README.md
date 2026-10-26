@@ -8,9 +8,10 @@ Para subir o sistema localmente (backend FastAPI + tela React + conexão com a L
 
 | Ferramenta | Versão | Para quê | Instalação (Windows) |
 |---|---|---|---|
-| Python | 3.11+ | API e construtor do banco vetorial | `winget install -e --id Python.Python.3.11` |
-| Node.js | 20+ | tela (React/Vite) | `winget install -e --id OpenJS.NodeJS.LTS` |
-| Ollama | atual | embeddings (`bge-m3`) e, se quiser, a LLM do chat | `winget install -e --id Ollama.Ollama` |
+| Python | 3.14 (testado; mínimo 3.12) | API e construtor do banco vetorial | `winget install -e --id Python.Python.3.14` |
+| Node.js | 24 (testado 24.20.0) | tela (React/Vite) | `winget install -e --id OpenJS.NodeJS.LTS` |
+| Ollama | 0.40.10 (testado) | embeddings (`bge-m3`) do banco vetorial | `winget install -e --id Ollama.Ollama` |
+| Conta DeepSeek | — | LLM que responde as perguntas (API key) | `platform.deepseek.com` |
 | Conta Google Cloud | — | Client ID do login com Google | ver Setup-Front-Tela.md, seção 3.1 |
 
 O Ollama é opcional se os embeddings forem gerados pelo `sentence-transformers` (instala o PyTorch, cerca de 2 GB).
@@ -22,7 +23,7 @@ Na raiz do projeto, o script cria o `.venv`, instala backend, construtor e front
 ```powershell
 # Windows
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1                     # embeddings pelo Ollama (padrão)
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -InstalarOllama -ModeloChat llama3.1
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -InstalarOllama
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local   # sentence-transformers
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings nenhum  # só API e front
 ```
@@ -33,7 +34,9 @@ bash scripts/setup.sh
 bash scripts/setup.sh --embeddings local
 ```
 
-Depois do script, falta só preencher o `GOOGLE_CLIENT_ID` em `backend/.env`.
+Depois do script, falta preencher o `GOOGLE_CLIENT_ID` e o `LLM_DEEPSEEK_API` (chave do DeepSeek) em `backend/.env`.
+
+Para subir no servidor (AWS): [deploy_aws.md](deploy_aws.md).
 
 ### Ambiente Python (.venv)
 
@@ -45,7 +48,7 @@ O projeto usa um único ambiente virtual, `.venv`, na raiz do repositório (fora
 
 Criar e instalar (primeira vez):
 ```bash
-python3.11 -m venv .venv
+python -m venv .venv               # Python 3.14
 .venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -U pip
 pip install -r requirements.txt   # tudo: API + RAG + Docling

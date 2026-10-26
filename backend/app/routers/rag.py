@@ -1,7 +1,7 @@
 """
 Rotas consumidas pelo front React (`src/services/ragApi.ts`).
 
-POST /api/rag/query   -> envia a pergunta para a LLM ativa e devolve a resposta
+POST /api/rag/query   -> busca nos livros liberados, envia a pergunta à LLM e devolve resposta e fontes
 GET  /api/rag/books   -> livros do catálogo e quais o usuário já liberou
 POST /api/rag/upload  -> valida o PDF de um livro e libera o banco vetorial dele
 """
@@ -28,16 +28,9 @@ def query_rag(payload: QueryRagPayload, user: CurrentUser = Depends(require_user
         chaos_level=payload.chaos_level,
         session_id=payload.session_id,
         connection_id=payload.connection_id,
+        book_ids=payload.book_ids,
     )
-    # Campos de fonte ficam vazios até a busca no banco vetorial ser ligada
-    return QueryRagResponse(
-        **result,
-        book_title="",
-        page=None,
-        similarity="-",
-        quote=None,
-        roll_table=None,
-    )
+    return QueryRagResponse(**result)
 
 
 @router.get("/books", response_model=list[BookOut])

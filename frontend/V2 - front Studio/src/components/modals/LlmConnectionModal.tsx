@@ -17,9 +17,16 @@ interface LlmConnectionModalProps {
   onChanged: (active: LlmConnection | null) => void;
 }
 
+/** Modelos do DeepSeek sugeridos no campo "Modelo" (o campo continua livre). */
+const DEEPSEEK_MODELS = [
+  { id: 'deepseek-chat', label: 'resposta direta (padrão)' },
+  { id: 'deepseek-reasoner', label: 'raciocina antes de responder; mais lento' },
+];
+
+const PROVIDER_ID: LlmProviderId = 'deepseek';
+
 interface FormState {
   name: string;
-  provider: LlmProviderId;
   model: string;
   baseUrl: string;
   apiKey: string;
@@ -29,7 +36,6 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   name: '',
-  provider: 'openai',
   model: '',
   baseUrl: '',
   apiKey: '',
@@ -119,7 +125,7 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
     );
   }
 
-  const provider = providers.find((p) => p.id === form.provider);
+  const provider = providers.find((p) => p.id === PROVIDER_ID);
   const editing = connections.find((c) => c.id === editingId) || null;
 
   const setField = (field: keyof FormState, value: string) =>
@@ -135,7 +141,6 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
     setError(null);
     setForm({
       name: conn.name,
-      provider: conn.provider,
       model: conn.model,
       baseUrl: conn.baseUrl || '',
       apiKey: '',
@@ -150,8 +155,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
     setIsSaving(true);
 
     const payload: LlmConnectionInput = {
-      name: form.name.trim() || provider?.label || form.provider,
-      provider: form.provider,
+      name: form.name.trim() || provider?.label || 'DeepSeek',
+      provider: PROVIDER_ID,
       model: form.model.trim() || null,
       baseUrl: form.baseUrl.trim() || null,
       temperature: form.temperature === '' ? null : Number(form.temperature),
@@ -225,7 +230,7 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
                 Conexão LLM // Núcleo de Linguagem
               </h2>
               <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
-                CONFIGURE A API DO MODELO QUE RESPONDE ÀS CONSULTAS
+                DEEPSEEK // CONFIGURE A API KEY DO MODELO QUE RESPONDE ÀS CONSULTAS
               </span>
             </div>
           </div>
@@ -357,19 +362,8 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
               {editing ? `Editando: ${editing.name}` : 'Nova conexão'}
             </span>
 
-            <div>
-              <label className={labelClass}>Provedor</label>
-              <select
-                value={form.provider}
-                onChange={(e) => setField('provider', e.target.value)}
-                className={inputClass}
-              >
-                {providers.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+            <div className="font-mono text-[10px] text-[#8B87A8]">
+              Provedor: <span className="text-[#d8b9ff]">DeepSeek</span> • chave em platform.deepseek.com
             </div>
 
             <div>
@@ -385,11 +379,19 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
             <div>
               <label className={labelClass}>Modelo</label>
               <input
+                list="deepseek-models"
                 value={form.model}
                 onChange={(e) => setField('model', e.target.value)}
-                placeholder={provider?.defaultModel || 'nome-do-modelo'}
+                placeholder={provider?.defaultModel || 'deepseek-chat'}
                 className={inputClass}
               />
+              <datalist id="deepseek-models">
+                {DEEPSEEK_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -448,9 +450,9 @@ export const LlmConnectionModal: React.FC<LlmConnectionModalProps> = ({
                 />
               </div>
             </div>
-            {form.provider === 'anthropic' && (
+            {form.model.trim() === 'deepseek-reasoner' && (
               <p className="font-mono text-[10px] text-[#8B87A8]">
-                Os modelos Claude 5.x não aceitam temperatura — deixe em branco.
+                O deepseek-reasoner ignora a temperatura — deixe em branco.
               </p>
             )}
 

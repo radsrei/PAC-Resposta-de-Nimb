@@ -6,6 +6,7 @@ interface ChatInputProps {
   onSend: () => void;
   onOpenUploadModal: () => void;
   isLoading: boolean;
+  locked: boolean;
   indexedBooksCount: number;
 }
 
@@ -15,6 +16,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   onOpenUploadModal,
   isLoading,
+  locked,
   indexedBooksCount,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -30,7 +32,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (!isLoading && value.trim()) {
+      if (!isLoading && !locked && value.trim()) {
         onSend();
       }
     }
@@ -54,10 +56,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           ref={textareaRef}
           rows={1}
           value={value}
-          disabled={isLoading}
+          disabled={isLoading || locked}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte a Nimb sobre regras, monstros ou role o dado..."
+          placeholder={
+            locked
+              ? 'Adicione o livro (Subir PDF) para liberar as perguntas'
+              : 'Pergunte a Nimb sobre regras, magias, monstros ou o mundo de Arton...'
+          }
           className="w-full bg-transparent border-0 focus:ring-0 text-[#F0EEF8] placeholder-[#8B87A8]/60 text-sm py-2 resize-none max-h-32 custom-scrollbar font-sans outline-none leading-relaxed"
         />
 
@@ -65,7 +71,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         <button
           type="button"
           onClick={onSend}
-          disabled={isLoading || !value.trim()}
+          disabled={isLoading || locked || !value.trim()}
           title="Disparar Consulta RAG (Enter)"
           className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#A259FF] to-[#39D98A] text-black font-bold flex items-center justify-center flex-shrink-0 hover:scale-105 active:scale-95 transition-all shadow-[0_0_12px_rgba(57,217,138,0.3)] disabled:opacity-40 disabled:hover:scale-100 cursor-pointer"
         >

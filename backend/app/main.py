@@ -3,6 +3,7 @@ Criação da aplicação FastAPI: segurança, CORS, banco, handlers de erro e ro
 """
 
 import logging
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -17,6 +18,7 @@ from app.core.middleware import SecurityMiddleware
 from app.db.database import init_db
 from app.repositories import auth_repository, llm_repository
 from app.routers import admin, auth, health, llm, perguntas, rag, sessions
+from app.services import retrieval
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     [%(name)s] %(message)s")
 logger = logging.getLogger("nimb")
@@ -28,6 +30,7 @@ async def lifespan(_: FastAPI):
     llm_repository.encrypt_legacy_keys()
     auth_repository.purge_expired()
     llm_controller.seed_from_env()
+    threading.Thread(target=retrieval.warm_up, name="rag-warm-up", daemon=True).start()
     if not settings.google_client_id:
         logger.info("GOOGLE_CLIENT_ID não definido: login com Google desativado.")
     yield

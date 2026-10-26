@@ -101,13 +101,8 @@ export interface AuthConfig {
 // ---------------------------------------------------------------------------
 // Conexões LLM (backend: /api/llm)
 // ---------------------------------------------------------------------------
-export type LlmProviderId =
-  | 'openai'
-  | 'anthropic'
-  | 'gemini'
-  | 'deepseek'
-  | 'ollama'
-  | 'openai_compatible';
+/** Único provedor de LLM do projeto. */
+export type LlmProviderId = 'deepseek';
 
 export interface LlmProvider {
   id: LlmProviderId;
@@ -120,7 +115,8 @@ export interface LlmProvider {
 export interface LlmConnection {
   id: string;
   name: string;
-  provider: LlmProviderId;
+  /** string: conexões antigas de provedores desativados ainda podem aparecer. */
+  provider: string;
   model: string;
   baseUrl: string | null;
   temperature: number | null;

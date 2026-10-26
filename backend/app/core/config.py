@@ -46,16 +46,17 @@ class Settings:
         )
     )
 
-    # Tempo máximo (segundos) de espera pela resposta da LLM
-    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "120"))
+    # Tempo máximo (segundos) de espera pela resposta da LLM. Abaixo dos ~100 s
+    # em que o Cloudflare encerra a requisição (erro 524).
+    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "90"))
     # Quantidade de mensagens anteriores da sessão enviadas como contexto
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
 
-    # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API,
-    # uma conexão é criada a partir destas variáveis.
-    default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or None
+    # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API e
+    # LLM_DEEPSEEK_API estiver definida, uma conexão DeepSeek é criada com estes valores.
+    default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or "deepseek"
     default_llm_model: str | None = os.getenv("LLM_MODEL") or None
-    default_llm_api_key: str | None = os.getenv("LLM_API_KEY") or None
+    default_llm_api_key: str | None = os.getenv("LLM_DEEPSEEK_API") or None
     default_llm_base_url: str | None = os.getenv("LLM_BASE_URL") or None
 
     # ------------------------------------------------------------------
@@ -77,12 +78,13 @@ class Settings:
     # Contas são criadas no primeiro login com Google. Com false, só entram
     # usuários que já existem no banco.
     registration_enabled: bool = _bool("REGISTRATION_ENABLED", True)
-    # E-mails que viram administradores ao criar conta
+    # E-mails administradores: viram admin ao criar a conta e a cada login
     admin_emails: list[str] = field(
         default_factory=lambda: [e.lower() for e in _csv(os.getenv("ADMIN_EMAILS", ""))]
     )
-    # A primeira conta criada no sistema vira administradora
-    first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", True)
+    # A primeira conta criada vira administradora. Desligado por padrão: num
+    # domínio público, quem entrar primeiro ganharia o papel de admin
+    first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", False)
 
     # Limite de requisições por minuto, por IP, na rota de login
     auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))
@@ -97,14 +99,29 @@ class Settings:
     )
     # Provedor de embeddings padrão do construtor: sentence-transformers ou ollama.
     # Modelo vazio = padrão do provedor (BAAI/bge-m3 ou bge-m3 no Ollama).
-    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "sentence-transformers").strip().lower()
+    embedding_provider: str = os.getenv("EMBEDDING_PROVIDER", "ollama").strip().lower()
     embedding_model: str | None = os.getenv("EMBEDDING_MODEL") or None
     # Servidor local do Ollama (embeddings e, se configurado na tela, a LLM do chat)
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    # Tamanho máximo do PDF enviado para validação
-    book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "150"))
+    # Tempo que o Ollama mantém o modelo de embeddings na memória ("-1" = sempre, "30m", "24h").
+    # Carregar o bge-m3 de novo leva ~6 s na pergunta seguinte.
+    ollama_keep_alive: str = os.getenv("OLLAMA_KEEP_ALIVE", "-1")
+    # Tamanho máximo do PDF enviado para validação. O plano grátis do Cloudflare
+    # recusa requisições acima de 100 MB; 95 MB deixa margem para o multipart.
+    # Mantenha igual a MAX_UPLOAD_MB do front (PdfUploadModal.tsx).
+    book_upload_max_mb: int = int(os.getenv("BOOK_UPLOAD_MAX_MB", "95"))
     # Validações de livro por minuto, por IP (ler PDF consome CPU)
     book_upload_rate_per_minute: int = int(os.getenv("BOOK_UPLOAD_RATE_PER_MINUTE", "5"))
+    # Busca nos livros: trechos enviados à LLM e similaridade mínima (0 a 1) para um trecho contar
+    rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
+    # Calibrado com `python -m vector_builder evaluate` (24/10/2026): 0.45 mantém 100% das perguntas
+    # do livro e barra metade das fora do tema antes da LLM; o resto a LLM recusa.
+    rag_min_similarity: float = float(os.getenv("RAG_MIN_SIMILARITY", "0.45"))
+    # Busca híbrida (vetores + palavras/BM25, combinados por RRF), candidatos de cada busca e
+    # peso das palavras no RRF (0.5 deu o melhor 1º lugar; 1.0 piora a ordem)
+    rag_hybrid: bool = _bool("RAG_HYBRID", True)
+    rag_candidates: int = int(os.getenv("RAG_CANDIDATES", "20"))
+    rag_lexical_weight: float = float(os.getenv("RAG_LEXICAL_WEIGHT", "0.5"))
 
 
 settings = Settings()

@@ -4,9 +4,8 @@ from pydantic import Field
 
 from app.schemas.base import CamelModel
 
-ProviderName = Literal[
-    "openai", "anthropic", "gemini", "deepseek", "ollama", "openai_compatible"
-]
+# Único provedor ativo do projeto
+ProviderName = Literal["deepseek"]
 
 
 class LlmProviderOut(CamelModel):
@@ -44,7 +43,7 @@ class LlmConnectionUpdate(CamelModel):
 class LlmConnectionOut(CamelModel):
     id: str
     name: str
-    provider: ProviderName
+    provider: str  # str: conexões antigas de outros provedores ainda aparecem na lista
     model: str
     base_url: str | None
     temperature: float | None

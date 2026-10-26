@@ -1,5 +1,7 @@
-# Construtor do banco vetorial (roda à parte da API) — base, para os dois provedores
-pypdf                  # impressão digital do PDF (mesma leitura da API)
-pymupdf                # extração de texto por blocos e sumário do PDF
-chromadb               # banco vetorial, um por livro
-httpx                  # chamadas ao Ollama (provedor "ollama")
+# Construtor do banco vetorial (roda à parte da API) — base, para os dois provedores.
+# Versões testadas em 25/10/2026 (Python 3.14.5). O chromadb precisa ser o mesmo da API
+# (backend/requirements.txt): o banco gravado aqui é lido lá.
+pypdf==6.21.2          # impressão digital do PDF (mesma leitura da API)
+pymupdf==2.0           # extração de texto por blocos e sumário do PDF
+chromadb==1.5.9        # banco vetorial, um por livro
+httpx==0.28.1          # chamadas ao Ollama (provedor "ollama")

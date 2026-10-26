@@ -16,12 +16,12 @@ Os embeddings (texto → vetor) podem ser gerados de dois jeitos. A escolha é f
 
 | Provedor | Onde o modelo roda | Instalação | Modelo padrão | Quando usar |
 |---|---|---|---|---|
-| `ollama` | servidor local do Ollama | leve (sem PyTorch) | `bge-m3` | já usa o Ollama, quer o mesmo servidor para embeddings e para a LLM do chat |
+| `ollama` | servidor local do Ollama | leve (sem PyTorch) | `bge-m3` | quer evitar o PyTorch; o mesmo Ollama atende o construtor e, na etapa do RAG, o servidor |
 | `sentence-transformers` | dentro do Python | PyTorch, cerca de 2 GB | `BAAI/bge-m3` | sem Ollama, ou com GPU NVIDIA (`--device cuda`) |
 
 Os dois rodam o mesmo `bge-m3`, então a qualidade é equivalente; muda só quem executa o modelo.
 
-> **Embeddings não são a LLM do chat.** O Ollama serve os dois, mas são modelos diferentes. Para embeddings use um modelo próprio (`bge-m3`, `nomic-embed-text`, `mxbai-embed-large`, `snowflake-arctic-embed2`). Um modelo de chat (`llama3.1`, `qwen2.5`) até gera vetores, mas a busca fica muito pior. A LLM do chat é configurada na tela, em **Conectar LLM** → Ollama.
+> **Embeddings não são a LLM do chat.** A LLM que responde é o DeepSeek (API externa). O Ollama aqui só gera vetores, com um modelo próprio de embeddings (`bge-m3`, `nomic-embed-text`, `mxbai-embed-large`, `snowflake-arctic-embed2`). Modelos de chat (`llama3.1`, `qwen2.5`) até geram vetores, mas a busca fica muito pior.
 
 Regras importantes:
 
@@ -38,7 +38,7 @@ O script da raiz instala tudo: `.venv`, backend, construtor, Ollama e modelo, `.
 ```powershell
 # Windows (na raiz do projeto)
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1                                # Ollama (padrão)
-powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings ollama -InstalarOllama -ModeloChat llama3.1
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings ollama -InstalarOllama
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -Embeddings local              # sentence-transformers
 ```
 
@@ -52,7 +52,6 @@ bash scripts/setup.sh --embeddings local       # sentence-transformers
 |---|---|
 | `-Embeddings` / `--embeddings` | `ollama` (padrão), `local` (sentence-transformers) ou `nenhum` |
 | `-ModeloEmbeddings` / `--modelo-embeddings` | modelo de embeddings a baixar no Ollama (padrão `bge-m3`) |
-| `-ModeloChat` / `--modelo-chat` | LLM de chat a baixar no Ollama (ex.: `llama3.1`) |
 | `-InstalarOllama` | instala o Ollama pelo winget, se faltar (só Windows) |
 | `-SemFrontend` / `--sem-frontend` | não roda o `npm ci` |
 
@@ -119,6 +118,10 @@ python -m vector_builder check "C:\Downloads\copia.pdf"
 
 # Ver o catálogo e o estado dos bancos (provedor e modelo de cada um)
 python -m vector_builder list
+
+# Medir a busca (recall@k, MRR, vetorial x híbrida) e calibrar RAG_MIN_SIMILARITY
+# com as perguntas de vector_builder/eval/<id>.json
+python -m vector_builder evaluate --id t20-basico
 ```
 
 | Opção (`build`) | Padrão | Uso |
@@ -128,8 +131,10 @@ python -m vector_builder list
 | `--ollama-url` | `OLLAMA_URL` (`http://localhost:11434`) | servidor do Ollama |
 | `--device` | automático | só sentence-transformers: `cpu` ou `cuda` |
 | `--batch-size` | 16 | trechos por lote enviados ao modelo |
-| `--chunk-size` | 1200 | tamanho máximo do trecho, em caracteres |
-| `--overlap` | 200 | sobreposição entre trechos vizinhos |
+| `--profile` | `profiles/<id>.json` | perfil tipográfico do livro; sem ele, o perfil é deduzido das fontes |
+| `--chunk-size` | 2400 | tamanho máximo do trecho, em caracteres (entradas maiores são divididas) |
+| `--overlap` | 300 | o último parágrafo, se tiver até este tamanho, se repete no trecho seguinte da mesma entrada |
+| `--min-chars` | 120 | entradas menores são unidas à anterior |
 | `--probes` | 8 | quantidade de frases de controle automáticas |
 | `--probe PAGINA:TEXTO` | — | frase escolhida à mão (repita a opção); substitui as automáticas |
 | `--skip-register` | — | reconstrói o banco sem mexer na entrada do catálogo |
@@ -171,20 +176,21 @@ O usuário vê só o resultado de cada verificação. Os valores esperados (fras
 
 ## 5. Parte 2: o banco vetorial
 
-Escolhas feitas para melhorar a qualidade em relação aos pipelines anteriores (`RAG_*`):
+Explicação completa e pontos a revisar: [manuais To Do/banco_vetorial_livros.md](../../manuais%20To%20Do/banco_vetorial_livros.md).
 
-- **Extração por blocos (PyMuPDF)**, na ordem do conteúdo do PDF, o que respeita as colunas dos livros de RPG.
-- **Cabeçalhos e rodapés repetidos removidos** (título do livro, número da página).
-- **Hifenização e quebras de linha** dentro do parágrafo corrigidas.
-- **Capítulo e seção** de cada trecho tirados do sumário (bookmarks) do PDF.
-- **Trechos que respeitam parágrafos e frases**, sem misturar seções, com sobreposição entre vizinhos.
-- **Cabeçalho de contexto no embedding** (`livro > capítulo > seção`), para a busca achar trechos que sozinhos não dizem do que falam.
+- **Perfil tipográfico por livro** (`profiles/<id>.json`): diz qual fonte é título, rodapé, número da página, marca d'água ou capitular.
+- **Extração por linha e fonte (PyMuPDF)**, na ordem do conteúdo do PDF, que respeita as colunas. Tabelas viram linhas `a | b | c`.
+- **Marca d'água, rodapé e páginas sem conteúdo** (capa, sumário, índice, ficha) removidos. A construção é interrompida se sobrar um e-mail no texto.
+- **Um trecho por entrada do livro** (magia, ameaça, raça, poder, quadro, tabela), com o caminho de títulos (`Arcanista > Habilidades de Classe > Familiares Arcanos`).
+- **Página impressa** guardada junto com a página do arquivo, para citar a fonte como no livro.
+- **Tipo da entrada** (`magia`, `ameaca`, `raca`, `classe`...) para filtrar a busca.
+- **Cabeçalho de contexto no embedding** (`livro > capítulo > caminho`), para a busca achar trechos que sozinhos não dizem do que falam.
 - **Embeddings locais multilíngues** (`bge-m3`, pelo Ollama ou pelo sentence-transformers), normalizados, com distância cosseno.
 - **Um banco por livro, versionado**: cada construção grava uma pasta `chroma-<data>` nova e só no fim troca o `manifest.json`. Uma construção interrompida não deixa banco pela metade, e dá para reconstruir com a API lendo a versão anterior.
 
 Cada `books/<id>/` tem:
 
-- `chroma-<data>/`: a coleção `chunks` da versão ativa (indicada em `manifest.json` → `chroma_dir`). Metadados de cada trecho: `book_id`, `chunk_index`, `page_start`, `page_end`, `chapter`, `section`.
+- `chroma-<data>/`: a coleção `chunks` da versão ativa (indicada em `manifest.json` → `chroma_dir`). Metadados de cada trecho: `book_id`, `chunk_index`, `title`, `path`, `chapter`, `kind`, `page_start`, `page_end`, `printed_start`, `printed_end`.
 - `chunks.jsonl`: os trechos em texto, para revisar a qualidade.
 - `manifest.json`: a versão ativa, o provedor, o modelo, a dimensão e os prefixos de embeddings, os parâmetros e os totais. A consulta precisa usar o **mesmo provedor e modelo** registrados aqui.
 
@@ -195,6 +201,6 @@ Se o PDF não tiver camada de texto (digitalizado sem OCR), o construtor avisa. 
 Ligar a busca ao chat em `app/controllers/query_controller.py`:
 
 1. pegar os livros liberados do usuário (`book_access`);
-2. gerar o embedding da pergunta com o provedor e o modelo do `manifest.json`: `create_embedder_from_info(manifest["embedding"]).embed_query(pergunta)`, em `vector_builder/embeddings.py` (já aplica o `query_prefix`);
+2. gerar o embedding da pergunta com o provedor e o modelo do `manifest.json`: `query_embedder(manifest["embedding"]).embed_query(pergunta)`, em `app/services/embeddings.py` (já aplica o `query_prefix`, usa o `OLLAMA_URL` da API e fica em cache entre perguntas);
 3. buscar os trechos mais próximos na versão ativa de cada livro (`book_catalog.chroma_path(id)`);
 4. incluir os trechos no prompt e devolver livro, página e trecho na resposta.
