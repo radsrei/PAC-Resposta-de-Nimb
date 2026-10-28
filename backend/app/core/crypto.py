@@ -9,6 +9,7 @@ precisam ser cadastradas de novo.
 
 import base64
 import hashlib
+import json
 import logging
 from functools import lru_cache
 
@@ -53,4 +54,17 @@ def decrypt(value: str | None) -> str | None:
         return _fernet().decrypt(value.encode("ascii")).decode("utf-8")
     except InvalidToken:
         logger.warning("Não foi possível descriptografar um valor (chave secreta diferente?)")
+        return None
+
+
+def seal(data: dict) -> str:
+    """Token criptografado (e com data) para o front devolver depois sem poder alterar."""
+    return _fernet().encrypt(json.dumps(data).encode("utf-8")).decode("ascii")
+
+
+def unseal(token: str, ttl: int) -> dict | None:
+    """Conteúdo de um token de `seal`, ou None se for inválido ou tiver mais de `ttl` segundos."""
+    try:
+        return json.loads(_fernet().decrypt(token.encode("ascii"), ttl=ttl))
+    except (InvalidToken, ValueError):
         return None

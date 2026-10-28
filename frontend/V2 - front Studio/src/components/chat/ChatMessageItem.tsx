@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChatMessage } from '../../types';
 import { MarkdownContent } from './MarkdownContent';
+import { getChaosLevel } from '../../chaosLevels';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -103,7 +104,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 </span>
               )}
               <span className="text-[#d8b9ff] font-mono ml-auto">
-                Caos Atual: {message.ragMetadata.chaosApplied}%
+                Caos: {getChaosLevel(message.ragMetadata.chaosApplied).label}
+                {message.ragMetadata.harnessRounds
+                  ? ` · Harness ${message.ragMetadata.harnessRounds}x`
+                  : ''}
               </span>
             </div>
           ) : (

@@ -5,6 +5,7 @@ export interface RagMetadata {
   page?: number | string | null;
   similarity: string;
   chaosApplied: number;
+  harnessRounds?: number;
   // Dados da LLM que gerou a resposta
   provider?: string;
   model?: string;

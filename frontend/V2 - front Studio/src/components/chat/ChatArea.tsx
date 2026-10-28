@@ -7,6 +7,8 @@ import { ChatInput } from './ChatInput';
 interface ChatAreaProps {
   messages: ChatMessage[];
   isLoading: boolean;
+  /** O dado do caos caiu: o "pensamento" fica laranja. */
+  isHallucinating?: boolean;
   inputValue: string;
   onInputChange: (val: string) => void;
   onSendMessage: () => void;
@@ -22,6 +24,7 @@ interface ChatAreaProps {
 export const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   isLoading,
+  isHallucinating = false,
   inputValue,
   onInputChange,
   onSendMessage,
@@ -111,19 +114,42 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           {/* Dynamic AI Typing Indicator */}
           {isLoading && (
             <div className="flex items-start gap-3.5 max-w-[80%] animate-fadeIn">
-              <div className="w-9 h-9 rounded-xl bg-[#13131F] border border-[#A259FF]/50 flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-outlined text-[#d8b9ff] text-[18px]">
+              <div
+                className={`w-9 h-9 rounded-xl bg-[#13131F] border flex items-center justify-center flex-shrink-0 transition-colors ${
+                  isHallucinating
+                    ? 'border-[#FF8A00]/70 shadow-[0_0_12px_rgba(255,138,0,0.45)]'
+                    : 'border-[#A259FF]/50'
+                }`}
+              >
+                <span
+                  className={`material-symbols-outlined text-[18px] ${
+                    isHallucinating ? 'text-[#FFB547]' : 'text-[#d8b9ff]'
+                  }`}
+                >
                   terminal
                 </span>
               </div>
-              <div className="bg-[#181827]/90 border border-[rgba(162,89,255,0.25)] rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                <span className="font-mono text-xs text-[#d8b9ff] font-medium">
+              <div
+                className={`bg-[#181827]/90 border rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2 transition-colors ${
+                  isHallucinating
+                    ? 'border-[#FF8A00]/60 shadow-[0_0_14px_rgba(255,138,0,0.25)]'
+                    : 'border-[rgba(162,89,255,0.25)]'
+                }`}
+              >
+                <span
+                  className={`font-mono text-xs font-medium ${
+                    isHallucinating ? 'text-[#FFB547]' : 'text-[#d8b9ff]'
+                  }`}
+                >
                   Nimb está consultando os grimórios vetoriais
                 </span>
                 <div className="flex gap-1 items-center ml-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#A259FF] typing-dot"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39D98A] typing-dot"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#d8b9ff] typing-dot"></span>
+                  {(isHallucinating
+                    ? ['bg-[#FF8A00]', 'bg-[#FFB547]', 'bg-[#FF6A00]']
+                    : ['bg-[#A259FF]', 'bg-[#39D98A]', 'bg-[#d8b9ff]']
+                  ).map((color) => (
+                    <span key={color} className={`w-1.5 h-1.5 rounded-full ${color} typing-dot`}></span>
+                  ))}
                 </div>
               </div>
             </div>

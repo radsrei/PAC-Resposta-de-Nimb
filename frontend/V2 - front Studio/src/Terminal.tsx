@@ -19,6 +19,9 @@ import {
 import { ragApiService, toIndexedBook } from './services/ragApi';
 import { llmApiService } from './services/llmApi';
 import { sessionApiService } from './services/sessionApi';
+import { DEFAULT_CHAOS_LEVEL } from './chaosLevels';
+import { ConfettiBurst } from './components/chat/ConfettiBurst';
+import { playChaosSound, preloadChaosSounds } from './services/chaosSound';
 import { ApiError } from './services/http';
 
 const formatTime = (date: Date) =>
@@ -71,6 +74,7 @@ const toChatMessage = (msg: SessionMessage): ChatMessage => {
             page: meta.page ?? null,
             similarity: meta.similarity ?? '-',
             chaosApplied: meta.chaosApplied ?? 0,
+            harnessRounds: meta.harnessRounds,
             provider: meta.provider,
             model: meta.model,
             connectionName: meta.connectionName,
@@ -90,6 +94,11 @@ const toOperator = (user: AuthUser): OperatorProfile => ({
   provider: user.googleLinked ? 'google' : 'manual',
 });
 
+const CHAOS_RULE_STORAGE_KEY = 'nimb:chaos-rule';
+
+// Duração do giro da tela ao revelar uma alucinação (igual à animação .chaos-spiral)
+const SPIRAL_MS = 700;
+
 interface TerminalProps {
   user: AuthUser;
   onUserChange: (user: AuthUser) => void;
@@ -101,7 +110,26 @@ interface TerminalProps {
 
 export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: TerminalProps) {
   const [currentScreen, setCurrentScreen] = useState<ScreenView>('terminal');
-  const [chaosLevel, setChaosLevel] = useState<number>(50);
+  const [chaosLevel, setChaosLevel] = useState<number>(DEFAULT_CHAOS_LEVEL);
+  // Regra Nimb: ligada decide a alucinação pela regra antes da pergunta; desligada, o backend
+  // sorteia com a chance do .env depois da busca. Preferência lembrada só neste navegador.
+  const [useChaosRule, setUseChaosRule] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(CHAOS_RULE_STORAGE_KEY) !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const handleToggleChaosRule = () => {
+    setUseChaosRule((on) => {
+      try {
+        localStorage.setItem(CHAOS_RULE_STORAGE_KEY, on ? 'off' : 'on');
+      } catch {
+        // sem armazenamento (aba anônima): vale só nesta sessão
+      }
+      return !on;
+    });
+  };
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
@@ -113,6 +141,10 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [messages, setMessages] = useState<ChatMessage[]>(() => [welcomeMessage()]);
   const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Alucinação de Nimb: "pensamento" laranja, giro da tela e confetes na resposta
+  const [isHallucinating, setIsHallucinating] = useState<boolean>(false);
+  const [isSpinning, setIsSpinning] = useState<boolean>(false);
+  const [confettiKey, setConfettiKey] = useState<number>(0);
   const [backendOnline, setBackendOnline] = useState<boolean>(true);
   const [llmConnection, setLlmConnection] = useState<LlmConnection | null>(null);
 
@@ -176,6 +208,21 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   }, []);
 
   useEffect(() => {
+    preloadChaosSounds();
+  }, []);
+
+  // Giro rápido (SPIRAL_MS) e, ao terminar, confetes; nada disso segura a resposta na tela
+  const revealHallucination = () => {
+    playChaosSound('hallucinationReveal');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    setIsSpinning(true);
+    window.setTimeout(() => {
+      setIsSpinning(false);
+      setConfettiKey((k) => k + 1);
+    }, SPIRAL_MS);
+  };
+
+  useEffect(() => {
     loadStatus();
     loadSessions();
     loadBooks();
@@ -202,9 +249,18 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
     setIsLoading(true);
 
     try {
+      // Só com a Regra Nimb a alucinação é conhecida antes da resposta ("pensamento" laranja)
+      const roll = useChaosRule ? await ragApiService.rollChaos(query, chaosLevel) : null;
+      if (roll?.hallucinated) {
+        setIsHallucinating(true);
+        playChaosSound('hallucinationThinking');
+      }
+
       const response = await ragApiService.queryRag({
         prompt: query,
         chaosLevel,
+        useChaosRule,
+        rollToken: roll?.rollToken ?? null,
         bookIds: readyBooks.map((b) => b.id),
         sessionId: activeSessionId,
       });
@@ -219,6 +275,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
           page: response.page,
           similarity: response.similarity,
           chaosApplied: response.chaosApplied,
+          harnessRounds: response.harnessRounds,
           provider: response.provider,
           model: response.model,
           connectionName: response.connectionName,
@@ -230,6 +287,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
 
       setMessages((prev) => [...prev, nimbMsg]);
       setBackendOnline(true);
+      if (response.hallucinated ?? roll?.hallucinated) revealHallucination();
 
       if (response.sessionId) {
         setActiveSessionId(response.sessionId);
@@ -239,6 +297,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       pushNimbError(handleApiError(err, 'Error querying RAG:'));
     } finally {
       setIsLoading(false);
+      setIsHallucinating(false);
     }
   };
 
@@ -302,7 +361,12 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col cyber-bg overflow-hidden relative select-none">
+    <>
+    <div
+      className={`h-screen w-screen flex flex-col cyber-bg overflow-hidden relative select-none ${
+        isSpinning ? 'chaos-spiral' : ''
+      }`}
+    >
       {/* Background Graphic Watermark */}
       <div className="nimb-watermark pointer-events-none opacity-[0.03]"></div>
 
@@ -310,6 +374,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       <Header
         chaosLevel={chaosLevel}
         onChaosChange={setChaosLevel}
+        useChaosRule={useChaosRule}
+        onToggleChaosRule={handleToggleChaosRule}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onOpenLlmModal={() => setIsLlmModalOpen(true)}
@@ -346,6 +412,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
           <ChatArea
             messages={messages}
             isLoading={isLoading}
+            isHallucinating={isHallucinating}
             inputValue={inputValue}
             onInputChange={setInputValue}
             onSendMessage={() => handleSendMessage()}
@@ -390,5 +457,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
         }}
       />
     </div>
+    <ConfettiBurst burstKey={confettiKey} />
+    </>
   );
 }

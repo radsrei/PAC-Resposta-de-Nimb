@@ -18,7 +18,7 @@ from app.core.middleware import SecurityMiddleware
 from app.db.database import init_db
 from app.repositories import auth_repository, llm_repository
 from app.routers import admin, auth, health, llm, perguntas, rag, sessions
-from app.services import retrieval
+from app.services import chaos, retrieval
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     [%(name)s] %(message)s")
 logger = logging.getLogger("nimb")
@@ -33,6 +33,8 @@ async def lifespan(_: FastAPI):
     threading.Thread(target=retrieval.warm_up, name="rag-warm-up", daemon=True).start()
     if not settings.google_client_id:
         logger.info("GOOGLE_CLIENT_ID não definido: login com Google desativado.")
+    for warning in chaos.check_progression():
+        logger.warning(warning)
     yield
 
 
