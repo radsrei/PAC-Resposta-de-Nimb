@@ -46,7 +46,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           type="button"
           onClick={onOpenUploadModal}
           className="p-2 text-[#8B87A8] hover:text-[#39D98A] hover:bg-[#181827] rounded-xl transition-colors flex-shrink-0 cursor-pointer"
-          title="Anexar documento ou carregar novo Grimório PDF"
+          title="Anexar documento ou carregar novo Livro PDF"
         >
           <span className="material-symbols-outlined text-[20px] block">attach_file</span>
         </button>

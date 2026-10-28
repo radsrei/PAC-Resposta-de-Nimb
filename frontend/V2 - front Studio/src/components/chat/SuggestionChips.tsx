@@ -6,8 +6,8 @@ interface SuggestionChipsProps {
 }
 
 const DEFAULT_SUGGESTIONS = [
-  { text: 'Qual o efeito da magia do Caos?', iconColor: 'text-[#39D98A]' },
-  { text: 'Resumir atributos de Nimb', iconColor: 'text-[#d8b9ff]' },
+  { text: 'Quem é Nimb?', iconColor: 'text-[#39D98A]' },
+  { text: 'O que são Atributos em Tormenta 20?', iconColor: 'text-[#d8b9ff]' },
   { text: 'Consultar tabela de perícias', iconColor: 'text-[#39D98A]' },
   { text: 'Regras de combate aleatório', iconColor: 'text-[#d8b9ff]' },
 ];

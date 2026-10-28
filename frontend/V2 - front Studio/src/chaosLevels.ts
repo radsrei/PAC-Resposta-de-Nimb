@@ -4,18 +4,21 @@
 export interface ChaosLevelInfo {
   id: number;
   label: string;
-  harnessRounds: number;
+  //harnessRounds: number;
   className: string;
 }
 
 export const CHAOS_LEVELS: ChaosLevelInfo[] = [
-  { id: 0, label: 'Baixo', harnessRounds: 0, className: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
-  { id: 1, label: 'Médio', harnessRounds: 1, className: 'bg-purple-500/15 text-[#d8b9ff] border-purple-500/30' },
-  { id: 2, label: 'Alto', harnessRounds: 2, className: 'bg-[#39d98a]/15 text-[#39d98a] border-[#39d98a]/30' },
+  { id: 0, label: 'Baixo', //harnessRounds: 0,
+    className: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  { id: 1, label: 'Médio', //harnessRounds: 1,
+    className: 'bg-purple-500/15 text-[#d8b9ff] border-purple-500/30' },
+  { id: 2, label: 'Alto', //harnessRounds: 2,
+    className: 'bg-[#39d98a]/15 text-[#39d98a] border-[#39d98a]/30' },
   {
     id: 3,
     label: 'Louco',
-    harnessRounds: 3,
+    //harnessRounds: 3,
     className: 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse',
   },
 ];

@@ -70,7 +70,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </span>
               </div>
               <h2 className="text-xl font-bold text-[#F0EEF8] tracking-tight">
-                Bem-vindo ao Núcleo de Consulta NIMB
+                Bem-vindo ao Oraculo de NIMB
               </h2>
               <p className="text-sm text-[#8B87A8] max-w-2xl leading-relaxed">
                 Todas as respostas são sintetizadas cruzando seus tomos indexados com o grau de instabilidade do Medidor de Caos. Faça perguntas sobre magias, regras ou consulte a sorte dos dados.
@@ -141,7 +141,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     isHallucinating ? 'text-[#FFB547]' : 'text-[#d8b9ff]'
                   }`}
                 >
-                  Nimb está consultando os grimórios vetoriais
+                  As palvras estão se alinhando
                 </span>
                 <div className="flex gap-1 items-center ml-2">
                   {(isHallucinating
