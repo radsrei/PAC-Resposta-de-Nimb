@@ -110,6 +110,32 @@
   .chaos-spiral { animation: none; }
 }
 
+/* Alucinação em curso: cabeçalho, menu lateral, rodapé e "pensamento" acendem e apagam em laranja */
+@keyframes chaos-glow-pulse {
+  0%, 100% {
+    border-color: rgba(255, 138, 0, 0.9);
+    background-color: rgba(38, 20, 8, 0.92);
+    box-shadow: 0 0 22px rgba(255, 138, 0, 0.55), inset 0 0 16px rgba(255, 138, 0, 0.2);
+  }
+  50% {
+    border-color: rgba(255, 138, 0, 0.15);
+    background-color: rgba(13, 13, 20, 0.9);
+    box-shadow: 0 0 0 rgba(255, 138, 0, 0), inset 0 0 0 rgba(255, 138, 0, 0);
+  }
+}
+.chaos-glow .chaos-glow-target,
+.chaos-pulse {
+  animation: chaos-glow-pulse 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chaos-glow .chaos-glow-target,
+  .chaos-pulse {
+    animation: none;
+    border-color: rgba(255, 138, 0, 0.7);
+    box-shadow: 0 0 14px rgba(255, 138, 0, 0.4);
+  }
+}
+
 /* Pulse Glow */
 @keyframes pulse-glow {
   0%, 100% { opacity: 0.95; filter: drop-shadow(0 0 4px rgba(57, 217, 138, 0.6)); }

@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 // Explosão de confetes saindo dos 4 cantos da tela em direção ao centro.
 // Canvas sem dependências; some sozinho após DURATION_MS e não bloqueia cliques.
 
-const DURATION_MS = 1300;
+export const DURATION_MS = 1300;
 const PER_CORNER = 45;
 const COLORS = ['#FF8A00', '#FFB547', '#A259FF', '#d8b9ff', '#39D98A', '#F0EEF8'];
 

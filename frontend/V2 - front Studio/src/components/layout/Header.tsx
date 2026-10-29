@@ -34,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
   const badge = getChaosLevel(chaosLevel);
 
   return (
-    <header className="h-16 flex-shrink-0 border-b border-[rgba(162,89,255,0.25)] bg-[#0D0D14]/90 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between z-30 relative select-none">
+    <header className="chaos-glow-target h-16flex-shrink-0 border-b border-[rgba(162,89,255,0.25)] bg-[#0D0D14]/90 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between z-30 relative select-none">
       {/* Left: Logo & Project Name */}
       <div className="flex items-center gap-3">
         <button
@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
             value={chaosLevel}
             onChange={(e) => onChaosChange(Number(e.target.value))}
             className="chaos-slider w-16 sm:w-24 md:w-28 h-1.5 bg-[#222236] rounded-lg appearance-none cursor-pointer"
-            title={`Nível de Caos: ${badge.label} (${badge.harnessRounds} volta(s) de harness)`}
+            title={`Nível de Caos: ${badge.label}`}
           />
           <datalist id="chaos-levels">
             {CHAOS_LEVELS.map((level) => (
@@ -112,12 +112,6 @@ export const Header: React.FC<HeaderProps> = ({
             {badge.label}
           </div>
         </div>
-
-        <span
-          className={`hidden lg:inline text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border transition-all ${badge.className}`}
-        >
-          Harness {badge.harnessRounds}x
-        </span>
 
         <button
           type="button"

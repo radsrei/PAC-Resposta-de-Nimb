@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AuthUser } from '../../types';
 import { adminApiService, authApiService } from '../../services/authApi';
+import { AcknowledgmentsModal } from '../modals/AcknowledgmentsModal';
 
 interface AccountScreenProps {
   user: AuthUser;
@@ -176,6 +177,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
   const [sessionFeedback, setSessionFeedback] = useState<Feedback>(null);
   const [deleteFeedback, setDeleteFeedback] = useState<Feedback>(null);
   const [busy, setBusy] = useState(false);
+  const [showAcknowledgments, setShowAcknowledgments] = useState(false);
 
   const run = async (setFeedback: (f: Feedback) => void, action: () => Promise<string>) => {
     setBusy(true);
@@ -289,9 +291,31 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
             </button>
           </form>
 
+          {/* Agradecimentos */}
+          <section className={cardClass}>
+            <h3 className="font-bold text-[#F0EEF8] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#39D98A]">favorite</span> Agradecimentos
+            </h3>
+            <p className="text-xs text-[#8B87A8]">
+              Conheça as pessoas que ajudaram a construir o Respostas de Nimb.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAcknowledgments(true)}
+              className="self-start px-4 py-2 rounded-lg bg-[#39D98A]/15 border border-[#39D98A]/40 text-[#39D98A] text-xs font-semibold cursor-pointer"
+            >
+              Ver agradecimentos
+            </button>
+          </section>
+
           {user.role === 'admin' && <AdminUsersPanel currentEmail={user.email} />}
         </div>
       </div>
+
+      <AcknowledgmentsModal
+        isOpen={showAcknowledgments}
+        onClose={() => setShowAcknowledgments(false)}
+      />
     </div>
   );
 };

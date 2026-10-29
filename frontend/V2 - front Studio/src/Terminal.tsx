@@ -20,7 +20,7 @@ import { ragApiService, toIndexedBook } from './services/ragApi';
 import { llmApiService } from './services/llmApi';
 import { sessionApiService } from './services/sessionApi';
 import { DEFAULT_CHAOS_LEVEL } from './chaosLevels';
-import { ConfettiBurst } from './components/chat/ConfettiBurst';
+import { ConfettiBurst, DURATION_MS as CONFETTI_MS } from './components/chat/ConfettiBurst';
 import { playChaosSound, preloadChaosSounds } from './services/chaosSound';
 import { ApiError } from './services/http';
 
@@ -144,6 +144,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   // Alucinação de Nimb: "pensamento" laranja, giro da tela e confetes na resposta
   const [isHallucinating, setIsHallucinating] = useState<boolean>(false);
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
+  // Cabeçalho, menu lateral e rodapé pulsam em laranja do "pensamento" até o fim dos confetes
+  const [isChaosGlowing, setIsChaosGlowing] = useState<boolean>(false);
   const [confettiKey, setConfettiKey] = useState<number>(0);
   const [backendOnline, setBackendOnline] = useState<boolean>(true);
   const [llmConnection, setLlmConnection] = useState<LlmConnection | null>(null);
@@ -211,14 +213,19 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
     preloadChaosSounds();
   }, []);
 
-  // Giro rápido (SPIRAL_MS) e, ao terminar, confetes; nada disso segura a resposta na tela
+  // Giro rápido (SPIRAL_MS) e, ao terminar, confetes; nada disso segura a resposta na tela.
+  // O brilho só apaga depois dos confetes, voltando às cores padrão.
   const revealHallucination = () => {
     playChaosSound('hallucinationReveal');
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIsChaosGlowing(false);
+      return;
+    }
     setIsSpinning(true);
     window.setTimeout(() => {
       setIsSpinning(false);
       setConfettiKey((k) => k + 1);
+      window.setTimeout(() => setIsChaosGlowing(false), CONFETTI_MS);
     }, SPIRAL_MS);
   };
 
@@ -253,6 +260,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       const roll = useChaosRule ? await ragApiService.rollChaos(query, chaosLevel) : null;
       if (roll?.hallucinated) {
         setIsHallucinating(true);
+        setIsChaosGlowing(true);
         playChaosSound('hallucinationThinking');
       }
 
@@ -288,6 +296,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       setMessages((prev) => [...prev, nimbMsg]);
       setBackendOnline(true);
       if (response.hallucinated ?? roll?.hallucinated) revealHallucination();
+      else setIsChaosGlowing(false);
 
       if (response.sessionId) {
         setActiveSessionId(response.sessionId);
@@ -295,6 +304,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       }
     } catch (err) {
       pushNimbError(handleApiError(err, 'Error querying RAG:'));
+      setIsChaosGlowing(false);
     } finally {
       setIsLoading(false);
       setIsHallucinating(false);
@@ -365,7 +375,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
     <div
       className={`h-screen w-screen flex flex-col cyber-bg overflow-hidden relative select-none ${
         isSpinning ? 'chaos-spiral' : ''
-      }`}
+      } ${isChaosGlowing ? 'chaos-glow' : ''}`}
     >
       {/* Background Graphic Watermark */}
       <div className="nimb-watermark pointer-events-none opacity-[0.03]"></div>
