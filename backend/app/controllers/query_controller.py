@@ -5,15 +5,16 @@ Fluxo de pergunta -> busca nos livros -> LLM -> resposta.
 2. Resolve a conexão LLM (a informada ou a ativa) e o histórico recente da sessão;
 3. Busca os trechos mais próximos; sem nenhum trecho relevante, a pergunta é recusada sem chamar a LLM;
 4. Monta o prompt de sistema (persona Nimb + escopo Tormenta20 + nível de caos + trechos) e chama a LLM;
+   o nível define as voltas de revisão (harness) e a chance de Nimb alucinar (services/chaos.py);
 5. Persiste pergunta, resposta e fontes na sessão e devolve o resultado.
 """
 
 from typing import Any
 
 from app.core.config import settings
-from app.core.exceptions import BookRequiredError, NoActiveConnectionError, OutOfScopeError
+from app.core.exceptions import AppError, BookRequiredError, NoActiveConnectionError, OutOfScopeError
 from app.repositories import book_repository, llm_repository, session_repository
-from app.services import book_catalog, llm_client, retrieval
+from app.services import book_catalog, chaos, retrieval
 from app.services.prompts import BOOK_REQUIRED, OUT_OF_SCOPE, build_system_prompt
 from app.controllers.session_controller import get_session_or_404
 
@@ -77,12 +78,18 @@ def _source(passage: retrieval.Passage) -> dict[str, Any]:
 def ask(
     user_email: str,
     prompt: str,
-    chaos_level: int = 50,
+    chaos_level: int,
+    use_chaos_rule: bool,
+    roll_token: str | None = None,
     session_id: str | None = None,
     connection_id: str | None = None,
     book_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     prompt = prompt.strip()
+    level = chaos.get_level(chaos_level)
+    if use_chaos_rule and not roll_token:
+        raise AppError("Regra Nimb ligada: role o caos (POST /api/rag/roll) antes de perguntar.")
+    roll = chaos.read_roll(roll_token, user_email, prompt, level) if use_chaos_rule else None
     books = _searchable_books(user_email, book_ids)
     connection = _resolve_connection(connection_id)
 
@@ -100,12 +107,18 @@ def ask(
     passages = retrieval.search(books, _search_text(prompt, history))
     if not passages:
         raise OutOfScopeError(OUT_OF_SCOPE)
+    if roll is None:
+        roll = chaos.roll_by_chance(level)  # Regra Nimb desligada: decide só depois da busca
 
-    result = llm_client.generate(
+    outcome = chaos.answer(
         connection,
-        system=build_system_prompt(chaos_level, passages),
+        system=build_system_prompt(level, passages),
         messages=[*history, {"role": "user", "content": prompt}],
+        level=level,
+        hallucinate=roll["hallucinated"],
+        is_refusal=_is_refusal,
     )
+    result = outcome.llm
     if _is_refusal(result.text):
         raise OutOfScopeError(OUT_OF_SCOPE)
 
@@ -126,13 +139,17 @@ def ask(
         "model": result.model,
         "connectionName": connection["name"],
         "latencyMs": result.latency_ms,
-        "chaosApplied": chaos_level,
+        "chaosApplied": level.id,
+        "chaosLabel": level.label,
+        "harnessRounds": outcome.harness_rounds,
+        "hallucinated": outcome.hallucinated,
+        "chaosRoll": roll,
         "bookTitle": source["book_title"],
         "page": source["page"],
         "similarity": source["similarity"],
         "sources": sources,
     }
-    session_repository.add_message(session_id, "user", prompt, {"chaosLevel": chaos_level})
+    session_repository.add_message(session_id, "user", prompt, {"chaosLevel": level.id})
     assistant_message = session_repository.add_message(session_id, "assistant", result.text, metadata)
 
     return {
@@ -143,7 +160,10 @@ def ask(
         "model": result.model,
         "connection_name": connection["name"],
         "latency_ms": result.latency_ms,
-        "chaos_applied": chaos_level,
+        "chaos_applied": level.id,
+        "chaos_label": level.label,
+        "harness_rounds": outcome.harness_rounds,
+        "hallucinated": outcome.hallucinated,
         **source,
         "sources": sources,
     }

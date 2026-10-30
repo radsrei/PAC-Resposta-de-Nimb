@@ -150,7 +150,8 @@ sem alterações de código.
 |---|---|---|---|---|
 | `/api/health` | GET | monitoramento | — | `{status, service, rag_engine}` |
 | `/api/perguntas` | POST | `frontend/Claude`, `docs/nimb_prototipo/frontend` | `{pergunta, categoria?, sessao_id?}` | `{pergunta, resposta, fontes[], status, tempo_resposta_ms}` |
-| `/api/rag/query` | POST | `frontend/nimb-os-react` (`ragApi.ts`) | `{prompt, chaosLevel, bookIds?}` | `{answer, bookTitle, page, similarity, chaosApplied, quote?, rollTable?}` |
+| `/api/rag/roll` | POST | `frontend/nimb-os-react` (`ragApi.ts`) | `{prompt, chaosLevel}` (0 Baixo a 3 Louco) | `{rollToken, hallucinated, chaosLevel, chaosLabel, roll}` |
+| `/api/rag/query` | POST | `frontend/nimb-os-react` (`ragApi.ts`) | `{prompt, chaosLevel, useChaosRule, rollToken?, bookIds?}` (`rollToken` obrigatório com `useChaosRule`) | `{answer, bookTitle, page, similarity, chaosApplied, quote?, rollTable?}` |
 | `/api/rag/upload` | POST (multipart) | `frontend/nimb-os-react` (`ragApi.ts`) | `file, chunkSize, model, entropy` | `{id, title, fileName, size, chunks, progress, status, badgeColor?}` |
 
 Os `TODO`s marcados no arquivo indicam onde plugar o pipeline RAG real

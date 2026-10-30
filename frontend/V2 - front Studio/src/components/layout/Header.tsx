@@ -1,9 +1,12 @@
 import React from 'react';
 import { LlmConnection, OperatorProfile, ScreenView } from '../../types';
+import { CHAOS_LEVELS, getChaosLevel } from '../../chaosLevels';
 
 interface HeaderProps {
   chaosLevel: number;
   onChaosChange: (val: number) => void;
+  useChaosRule: boolean;
+  onToggleChaosRule: () => void;
   onToggleSidebar: () => void;
   onOpenUploadModal: () => void;
   onNavigateLogin: () => void;
@@ -17,6 +20,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   chaosLevel,
   onChaosChange,
+  useChaosRule,
+  onToggleChaosRule,
   onToggleSidebar,
   onOpenUploadModal,
   onNavigateLogin,
@@ -26,35 +31,10 @@ export const Header: React.FC<HeaderProps> = ({
   operator,
   currentScreen,
 }) => {
-  // Determine dynamic chaos badge label and color
-  const getChaosBadge = () => {
-    if (chaosLevel < 30) {
-      return {
-        label: 'Ordem',
-        className: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
-      };
-    } else if (chaosLevel < 70) {
-      return {
-        label: 'Equilibrado',
-        className: 'bg-purple-500/15 text-[#d8b9ff] border-purple-500/30',
-      };
-    } else if (chaosLevel < 90) {
-      return {
-        label: 'Instável',
-        className: 'bg-[#39d98a]/15 text-[#39d98a] border-[#39d98a]/30',
-      };
-    } else {
-      return {
-        label: 'CAOS TOTAL!',
-        className: 'bg-red-500/20 text-red-400 border-red-500/50 animate-pulse',
-      };
-    }
-  };
-
-  const badge = getChaosBadge();
+  const badge = getChaosLevel(chaosLevel);
 
   return (
-    <header className="h-16 flex-shrink-0 border-b border-[rgba(162,89,255,0.25)] bg-[#0D0D14]/90 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between z-30 relative select-none">
+    <header className="chaos-glow-target h-16flex-shrink-0 border-b border-[rgba(162,89,255,0.25)] bg-[#0D0D14]/90 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between z-30 relative select-none">
       {/* Left: Logo & Project Name */}
       <div className="flex items-center gap-3">
         <button
@@ -115,22 +95,53 @@ export const Header: React.FC<HeaderProps> = ({
           <input
             type="range"
             min="0"
-            max="100"
+            max={CHAOS_LEVELS.length - 1}
+            step="1"
+            list="chaos-levels"
             value={chaosLevel}
             onChange={(e) => onChaosChange(Number(e.target.value))}
-            className="chaos-slider w-20 sm:w-28 md:w-36 h-1.5 bg-[#222236] rounded-lg appearance-none cursor-pointer"
-            title={`Nível de Caos: ${chaosLevel}%`}
+            className="chaos-slider w-16 sm:w-24 md:w-28 h-1.5 bg-[#222236] rounded-lg appearance-none cursor-pointer"
+            title={`Nível de Caos: ${badge.label}`}
           />
-          <div className="flex items-baseline font-mono text-xs font-bold text-[#39D98A] w-9 text-right tabular-nums">
-            <span>{chaosLevel}</span>%
+          <datalist id="chaos-levels">
+            {CHAOS_LEVELS.map((level) => (
+              <option key={level.id} value={level.id} label={level.label} />
+            ))}
+          </datalist>
+          <div className="font-mono text-xs font-bold text-[#39D98A] w-11 uppercase">
+            {badge.label}
           </div>
         </div>
 
-        <span
-          className={`hidden lg:inline text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border transition-all ${badge.className}`}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={useChaosRule}
+          onClick={onToggleChaosRule}
+          title={
+            useChaosRule
+              ? 'Regra Nimb ligada: a alucinação é decidida pela regra (palavras x primo + data) antes da pergunta'
+              : 'Regra Nimb desligada: a alucinação é sorteada com a chance do nível depois da busca nos livros'
+          }
+          className={`flex items-center gap-1.5 text-[10px] font-mono uppercase px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${
+            useChaosRule
+              ? 'bg-[#FF8A00]/15 text-[#FFB547] border-[#FF8A00]/50'
+              : 'bg-[#222236] text-[#8B87A8] border-[#34344E] hover:text-[#F0EEF8]'
+          }`}
         >
-          {badge.label}
-        </span>
+          <span
+            className={`relative w-6 h-3 rounded-full transition-colors ${
+              useChaosRule ? 'bg-[#FF8A00]' : 'bg-[#34344E]'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-2 h-2 rounded-full bg-[#F0EEF8] transition-all ${
+                useChaosRule ? 'left-3.5' : 'left-0.5'
+              }`}
+            />
+          </span>
+          <span className="hidden sm:inline">Regra</span>
+        </button>
       </div>
 
       {/* Right: Actions, Upload Trigger, Link Status & Auth Button */}

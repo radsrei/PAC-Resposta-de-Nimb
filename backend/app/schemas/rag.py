@@ -9,9 +9,26 @@ class RollTable(CamelModel):
     description: str
 
 
+class ChaosRollPayload(CamelModel):
+    prompt: str = Field(..., min_length=1, max_length=4000)
+    chaos_level: int = Field(..., ge=0, le=3)  # 0 Baixo, 1 Médio, 2 Alto, 3 Louco
+
+
+class ChaosRollOut(CamelModel):
+    roll_token: str     # devolvido em QueryRagPayload.roll_token
+    hallucinated: bool  # o front muda o "pensamento" para laranja
+    chaos_level: int
+    chaos_label: str
+    roll: dict  # cálculo da regra: words, dateSum, divisor, result, decimal, threshold, recordedAt
+
+
 class QueryRagPayload(CamelModel):
     prompt: str = Field(..., min_length=1, max_length=4000)
-    chaos_level: int = Field(default=50, ge=0, le=100)
+    chaos_level: int = Field(..., ge=0, le=3)  # 0 Baixo, 1 Médio, 2 Alto, 3 Louco
+    # Regra Nimb ligada: decide pela regra, com o token de POST /api/rag/roll.
+    # Desligada: decide depois da busca, pela chance do nível no .env.
+    use_chaos_rule: bool
+    roll_token: str | None = None
     book_ids: list[str] | None = None  # só restringe a busca aos livros já liberados
     session_id: str | None = None
     connection_id: str | None = None
@@ -33,6 +50,9 @@ class QueryRagResponse(CamelModel):
     page: str | int | None = None
     similarity: str
     chaos_applied: int
+    chaos_label: str
+    harness_rounds: int  # voltas de revisão executadas
+    hallucinated: bool   # Nimb alterou a resposta de propósito
     quote: str | None = None
     roll_table: RollTable | None = None
     sources: list[SourceOut] = []

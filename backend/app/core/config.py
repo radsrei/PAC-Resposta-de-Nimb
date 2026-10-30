@@ -52,6 +52,19 @@ class Settings:
     # Quantidade de mensagens anteriores da sessão enviadas como contexto
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
 
+    # Níveis de caos (Baixo, Médio, Alto, Louco), ver app/services/chaos.py:
+    # limite (%) da regra de alucinação e voltas de revisão (harness) de cada nível
+    chaos_hallucination_chances: list[float] = field(
+        default_factory=lambda: [float(v) for v in _csv(os.getenv("CHAOS_HALLUCINATION_CHANCES", "5,15,30,50"))]
+    )
+    chaos_harness_rounds: list[int] = field(
+        default_factory=lambda: [int(v) for v in _csv(os.getenv("CHAOS_HARNESS_ROUNDS", "0,1,2,3"))]
+    )
+    # Fuso do "registro" (data e hora) usado na regra de alucinação
+    chaos_timezone: str = os.getenv("CHAOS_TIMEZONE", "America/Sao_Paulo")
+    # Tempo (s) a partir do qual não se inicia outra volta de harness/alucinação
+    chaos_time_budget: float = float(os.getenv("CHAOS_TIME_BUDGET", "60"))
+
     # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API e
     # LLM_DEEPSEEK_API estiver definida, uma conexão DeepSeek é criada com estes valores.
     default_llm_provider: str | None = os.getenv("LLM_PROVIDER") or "deepseek"

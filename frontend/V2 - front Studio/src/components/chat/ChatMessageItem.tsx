@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ChatMessage } from '../../types';
+import { MarkdownContent } from './MarkdownContent';
+import { getChaosLevel } from '../../chaosLevels';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -62,7 +64,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
         />
       </div>
 
-      <div className="space-y-2 flex-1">
+      <div className="space-y-2 flex-1 min-w-0">
         <div
           className={`bg-[#181827]/95 border rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-[#F0EEF8] shadow-xl space-y-3 ${
             message.isError ? 'border-red-500/50' : 'border-[rgba(162,89,255,0.25)]'
@@ -102,7 +104,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
                 </span>
               )}
               <span className="text-[#d8b9ff] font-mono ml-auto">
-                Caos Atual: {message.ragMetadata.chaosApplied}%
+                Caos: {getChaosLevel(message.ragMetadata.chaosApplied).label}
+                {message.ragMetadata.harnessRounds
+                  ? ` · Harness ${message.ragMetadata.harnessRounds}x`
+                  : ''}
               </span>
             </div>
           ) : (
@@ -112,7 +117,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             </div>
           )}
 
-          <p className="whitespace-pre-wrap leading-relaxed">{message.text}</p>
+          <MarkdownContent text={message.text} />
 
           {/* Roll table / stylized quote block */}
           {message.rollTable && (

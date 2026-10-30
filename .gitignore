@@ -19,3 +19,7 @@ __pycache__/
 *$py.class
 # Frontend
 node_modules/
+
+# Execucao rapida local (skill iniciar-nimb)
+.claude/skills/iniciar-nimb/
+Iniciar-Nimb.bat

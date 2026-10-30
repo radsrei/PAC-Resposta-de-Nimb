@@ -1,6 +1,7 @@
 """
 Rotas consumidas pelo front React (`src/services/ragApi.ts`).
 
+POST /api/rag/roll    -> rola o dado do caos (se Nimb vai alucinar) antes da pergunta
 POST /api/rag/query   -> busca nos livros liberados, envia a pergunta à LLM e devolve resposta e fontes
 GET  /api/rag/books   -> livros do catálogo e quais o usuário já liberou
 POST /api/rag/upload  -> valida o PDF de um livro e libera o banco vetorial dele
@@ -13,11 +14,32 @@ from app.core.config import settings
 from app.core.deps import CurrentUser, require_user
 from app.core.exceptions import AppError
 from app.core.rate_limit import limit_book_upload
-from app.schemas.rag import BookOut, BookValidationOut, QueryRagPayload, QueryRagResponse
+from app.schemas.rag import (
+    BookOut,
+    BookValidationOut,
+    ChaosRollOut,
+    ChaosRollPayload,
+    QueryRagPayload,
+    QueryRagResponse,
+)
+from app.services import chaos
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
 
 _READ_CHUNK = 1024 * 1024
+
+
+@router.post("/roll", response_model=ChaosRollOut)
+def roll_chaos(payload: ChaosRollPayload, user: CurrentUser = Depends(require_user)):
+    level = chaos.get_level(payload.chaos_level)
+    token, roll = chaos.create_roll(user["email"], payload.prompt.strip(), level)
+    return ChaosRollOut(
+        roll_token=token,
+        hallucinated=roll["hallucinated"],
+        chaos_level=level.id,
+        chaos_label=level.label,
+        roll=roll,
+    )
 
 
 @router.post("/query", response_model=QueryRagResponse)
@@ -26,6 +48,8 @@ def query_rag(payload: QueryRagPayload, user: CurrentUser = Depends(require_user
         user_email=user["email"],
         prompt=payload.prompt,
         chaos_level=payload.chaos_level,
+        use_chaos_rule=payload.use_chaos_rule,
+        roll_token=payload.roll_token,
         session_id=payload.session_id,
         connection_id=payload.connection_id,
         book_ids=payload.book_ids,

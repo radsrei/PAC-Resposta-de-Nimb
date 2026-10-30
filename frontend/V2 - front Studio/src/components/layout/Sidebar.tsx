@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Panel */}
       <aside
-        className={`w-72 md:w-80 flex-shrink-0 bg-[#0A0A10]/95 md:bg-[#13131F]/80 border-r border-[rgba(162,89,255,0.25)] flex flex-col justify-between backdrop-blur-xl z-40 transition-all duration-300 fixed md:static inset-y-0 ${
+        className={`chaos-glow-target w-72 md:w-80flex-shrink-0 bg-[#0A0A10]/95 md:bg-[#13131F]/80 border-r border-[rgba(162,89,255,0.25)] flex flex-col justify-between backdrop-blur-xl z-40 transition-all duration-300 fixed md:static inset-y-0 ${
           isOpen ? 'left-0' : '-left-full md:left-0'
         }`}
       >
