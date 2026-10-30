@@ -3,10 +3,12 @@ Sorteio de tesouro: só para quem já liberou um livro que tem as tabelas de tes
 
 1. Escolhe o livro (o informado, se liberado; senão o primeiro liberado com tesouro);
 2. Sorteia pela criatura (ND e tipo de tesouro da ficha) ou pelo ND informado; no sorteio em grupo,
-   uma rolagem por unidade de cada criatura, com os d% da Tabela 8-1 informados pelo jogador quando houver;
-3. Grava cada resultado no histórico do usuário e devolve o sorteio com as fontes.
+   uma rolagem por unidade de cada criatura;
+3. Na consulta, usa os resultados rolados na mesa e devolve a próxima rolagem que falta ou o tesouro pronto;
+4. Grava cada resultado no histórico do usuário e devolve o sorteio com as fontes.
 """
 
+from dataclasses import asdict
 from typing import Any
 
 from app.core.exceptions import AppError, BookRequiredError, NotFoundError
@@ -43,14 +45,11 @@ def roll_group(user_email: str, book_id: str | None, items: list[dict[str, Any]]
     book = _book(user_email, book_id)
     groups = []
     for item in items:
-        typed = item.get("rolls") or []
         results = []
-        for unit in range(item["quantity"]):
-            given = typed[unit] if unit < len(typed) else {}
+        for _ in range(item["quantity"]):
             try:
                 result = treasure.roll_treasure(
                     book, creature=item["creature"], treasure_type=item.get("treasure_type"),
-                    table_rolls={"dinheiro": given.get("money") or [], "itens": given.get("items") or []},
                 ).to_dict()
             except LookupError as exc:
                 raise NotFoundError(str(exc)) from exc
@@ -61,6 +60,22 @@ def roll_group(user_email: str, book_id: str | None, items: list[dict[str, Any]]
         groups.append({"creature": results[0]["creature"], "quantity": item["quantity"],
                        "total_value": total, "results": results})
     return {"groups": groups, "total_value": round(sum(g["total_value"] for g in groups), 1)}
+
+
+def lookup(user_email: str, book_id: str | None, creature: str, treasure_type: str | None,
+           values: list[int]) -> dict[str, Any]:
+    book = _book(user_email, book_id)
+    dice = treasure.TypedDice(values)
+    try:
+        result = treasure.roll_treasure(book, creature=creature, treasure_type=treasure_type, dice=dice).to_dict()
+    except treasure.RollNeeded as need:
+        return {"done": False, "steps": dice.log, "next": asdict(need.request), "result": None}
+    except LookupError as exc:
+        raise NotFoundError(str(exc)) from exc
+    except ValueError as exc:
+        raise AppError(str(exc)) from exc
+    result = {**result, **treasure_repository.add(user_email, result)}
+    return {"done": True, "steps": dice.log, "next": None, "result": result}
 
 
 def creatures(user_email: str, book_id: str | None, query: str, limit: int) -> list[dict[str, Any]]:

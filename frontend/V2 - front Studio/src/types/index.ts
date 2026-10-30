@@ -214,8 +214,6 @@ export interface TreasureColumnRoll {
   result: string;
   rewards: TreasureReward[];
   source: string;
-  /** d% informado pelo jogador (false = rolado pelo sistema) */
-  manual: boolean;
 }
 
 export interface TreasureRollResult {
@@ -230,16 +228,31 @@ export interface TreasureRollResult {
   notes: string[];
 }
 
-/** d% da Tabela 8-1 de uma unidade da criatura (null = rolagem automática). */
-export interface TreasureTableRolls {
-  money: (number | null)[];
-  items: (number | null)[];
-}
-
 export interface TreasureGroupItem {
   creature: string;
   quantity: number;
-  rolls?: TreasureTableRolls[];
+}
+
+/** Rolagem pedida ao jogador: `count`d`sides` (informa a soma) e para que serve. */
+export interface TreasureDiceRequest {
+  dice: string;
+  count: number;
+  sides: number;
+  purpose: string;
+}
+
+export interface TreasureDiceStep extends TreasureDiceRequest {
+  value: number;
+  /** O que o valor encontrou na tabela, ou por que foi descartado ("...: role de novo") */
+  outcome: string;
+}
+
+/** Consulta com resultados rolados na mesa: falta `next` ou o tesouro está em `result`. */
+export interface TreasureLookup {
+  done: boolean;
+  steps: TreasureDiceStep[];
+  next: TreasureDiceRequest | null;
+  result: TreasureRollResult | null;
 }
 
 export interface TreasureGroupResult {

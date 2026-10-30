@@ -19,22 +19,21 @@ class TreasureRollPayload(CamelModel):
         return self
 
 
-D100 = Annotated[int, Field(ge=1, le=100)]
 TreasureType = Literal["padrao", "metade", "dobro", "nenhum"]
-
-
-class TableRolls(CamelModel):
-    """d% da Tabela 8-1 rolados pelo jogador para uma criatura (vazio = rolagem automática)."""
-    money: list[D100 | None] = Field(default_factory=list, max_length=2)
-    items: list[D100 | None] = Field(default_factory=list, max_length=2)
 
 
 class TreasureGroupItem(CamelModel):
     creature: str = Field(..., min_length=1, max_length=120)
     quantity: int = Field(1, ge=1, le=20)
     treasure_type: TreasureType | None = None
-    # Uma entrada por unidade da criatura, na ordem
-    rolls: list[TableRolls] = Field(default_factory=list, max_length=20)
+
+
+class TreasureLookupPayload(CamelModel):
+    """Resultados rolados na mesa para uma criatura, na ordem em que o sistema pediu."""
+    book_id: str | None = Field(None, max_length=64)
+    creature: str = Field(..., min_length=1, max_length=120)
+    treasure_type: TreasureType | None = None
+    values: list[Annotated[int, Field(ge=1, le=10000)]] = Field(default_factory=list, max_length=300)
 
 
 class TreasureGroupPayload(CamelModel):
@@ -57,7 +56,6 @@ class ColumnRollOut(CamelModel):
     result: str
     rewards: list[RewardOut]
     source: str
-    manual: bool = False
 
 
 class CreatureOut(CamelModel):
@@ -85,6 +83,27 @@ class TreasureGroupEntryOut(CamelModel):
     quantity: int
     total_value: float
     results: list[TreasureRollOut]
+
+
+class DiceRequestOut(CamelModel):
+    dice: str
+    count: int
+    sides: int
+    purpose: str
+
+
+class DiceStepOut(DiceRequestOut):
+    value: int
+    # O que o valor encontrou na tabela, ou por que foi descartado
+    outcome: str = ""
+
+
+class TreasureLookupOut(CamelModel):
+    """`done` false: falta a rolagem `next`. `done` true: `result` é o tesouro (já gravado no histórico)."""
+    done: bool
+    steps: list[DiceStepOut]
+    next: DiceRequestOut | None = None
+    result: TreasureRollOut | None = None
 
 
 class TreasureGroupOut(CamelModel):

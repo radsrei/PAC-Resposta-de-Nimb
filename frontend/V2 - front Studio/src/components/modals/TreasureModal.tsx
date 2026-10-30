@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TreasureCreature, TreasureGroupResult, TreasureReward, TreasureTableRolls } from '../../types';
+import {
+  TreasureCreature,
+  TreasureDiceRequest,
+  TreasureGroupResult,
+  TreasureLookup,
+  TreasureReward,
+} from '../../types';
 import { treasureApiService } from '../../services/treasureApi';
 
 // Mesmos limites do backend (TreasureGroupPayload)
 const MAX_CREATURES = 10;
 const MAX_QUANTITY = 20;
-
-const COLUMNS = [
-  { key: 'money', label: 'Dinheiro' },
-  { key: 'items', label: 'Itens' },
-] as const;
 
 const TYPE_STYLE: Record<string, string> = {
   Nenhum: 'bg-[#34344E]/40 text-[#8B87A8] border-[#34344E]',
@@ -21,6 +22,13 @@ const TYPE_STYLE: Record<string, string> = {
 interface Selected {
   creature: TreasureCreature;
   quantity: number;
+}
+
+/** Uma unidade de uma criatura (ex.: o 2º goblin), consultada separadamente no modo informado. */
+interface Unit {
+  key: string;
+  creature: TreasureCreature;
+  unit: number;
 }
 
 interface TreasureModalProps {
@@ -38,17 +46,16 @@ const formatValue = (value: number) =>
 const rollsPerColumn = (creature: TreasureCreature) =>
   creature.treasure === 'Nenhum' ? 0 : creature.treasure === 'Dobro' ? 2 : 1;
 
-const manualKey = (name: string, unit: number, column: string, index: number) =>
-  `${name}|${unit}|${column}|${index}`;
-
-/** "" = rolagem automática; "00" vale 100 como no dado percentual. */
-const parseD100 = (raw: string): number | null | undefined => {
+/** Soma dos dados pedidos; no d% "00" vale 100. undefined = fora do intervalo possível. */
+const parseRoll = (raw: string, request: TreasureDiceRequest): number | undefined => {
   const text = raw.trim();
-  if (!text) return null;
-  if (!/^\d{1,3}$/.test(text)) return undefined;
-  const value = text === '00' ? 100 : Number(text);
-  return value >= 1 && value <= 100 ? value : undefined;
+  if (!/^\d{1,4}$/.test(text)) return undefined;
+  const value = request.sides === 100 && request.count === 1 && text === '00' ? 100 : Number(text);
+  return value >= request.count && value <= request.count * request.sides ? value : undefined;
 };
+
+const rollHint = (request: TreasureDiceRequest) =>
+  request.count > 1 ? `Role ${request.dice} e informe a soma` : `Role ${request.dice}`;
 
 const RewardItem: React.FC<{ reward: TreasureReward }> = ({ reward }) => (
   <li className="flex flex-col gap-1">
@@ -75,8 +82,9 @@ const RewardItem: React.FC<{ reward: TreasureReward }> = ({ reward }) => (
 );
 
 /**
- * Sorteio de tesouro: escolhe as criaturas (lista com busca) e quantas são de cada,
- * e rola automaticamente ou com os d% da Tabela 8-1 rolados na mesa.
+ * Sorteio de tesouro: escolhe as criaturas (lista com busca) e quantas são de cada, e
+ * rola automaticamente ou informa os dados rolados na mesa. No modo informado o sistema
+ * pede um dado por vez (quantidade, tipo e para quê) e consulta o resultado nas tabelas.
  * Sair (Esc ou X) pede confirmação; os sorteios feitos ficam no histórico do backend.
  */
 export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose }) => {
@@ -87,13 +95,18 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
   const [highlight, setHighlight] = useState(0);
   const [selected, setSelected] = useState<Selected[]>([]);
   const [manualMode, setManualMode] = useState(false);
-  const [manual, setManual] = useState<Record<string, string>>({});
+  const [lookups, setLookups] = useState<Record<string, TreasureLookup>>({});
+  const [typed, setTyped] = useState('');
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [isRolling, setIsRolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TreasureGroupResult | null>(null);
   const [confirmExit, setConfirmExit] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const stayRef = useRef<HTMLButtonElement>(null);
+  const rollInputRef = useRef<HTMLInputElement>(null);
+  const stepsRef = useRef<HTMLOListElement>(null);
 
   // Carrega as criaturas ao abrir (uma vez por sessão do modal)
   useEffect(() => {
@@ -111,12 +124,67 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
     return creatures.filter((c) => normalize(c.name).includes(term));
   }, [creatures, query]);
 
+  // Modo informado: cada unidade é consultada à parte, na ordem da lista
+  const units = useMemo<Unit[]>(
+    () =>
+      selected.flatMap(({ creature, quantity }) =>
+        Array.from({ length: quantity }, (_, unit) => ({ key: `${creature.name}|${unit}`, creature, unit }))
+      ),
+    [selected]
+  );
+  const active = units.find((u) => !lookups[u.key]?.done);
+  const activeLookup = active ? lookups[active.key] : undefined;
+  const doneCount = units.filter((u) => lookups[u.key]?.done).length;
+
+  // Resultados do modo informado no mesmo formato do sorteio automático
+  const manualResult = useMemo<TreasureGroupResult | null>(() => {
+    const groups = selected
+      .map(({ creature, quantity }) => {
+        const results = Array.from({ length: quantity }, (_, unit) => lookups[`${creature.name}|${unit}`]?.result)
+          .filter((r): r is NonNullable<typeof r> => !!r);
+        const totalValue = Math.round(results.reduce((sum, r) => sum + r.totalValue, 0) * 10) / 10;
+        return { creature, quantity, totalValue, results };
+      })
+      .filter((g) => g.results.length > 0);
+    if (groups.length === 0) return null;
+    return { groups, totalValue: Math.round(groups.reduce((sum, g) => sum + g.totalValue, 0) * 10) / 10 };
+  }, [selected, lookups]);
+
+  const sendLookup = async (target: Unit, values: number[]) => {
+    setLookupBusy(true);
+    setLookupError(null);
+    try {
+      const response = await treasureApiService.lookup(target.creature.name, values);
+      setLookups((prev) => ({ ...prev, [target.key]: response }));
+      setTyped('');
+    } catch (err) {
+      setLookupError((err as Error).message);
+    } finally {
+      setLookupBusy(false);
+    }
+  };
+
+  // Pede ao backend a primeira rolagem da próxima unidade
+  useEffect(() => {
+    if (!isOpen || !manualMode || !active || activeLookup || lookupBusy || lookupError) return;
+    sendLookup(active, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, manualMode, active?.key, activeLookup, lookupBusy, lookupError]);
+
+  // Foco no campo do dado a cada nova rolagem pedida; a lista de passos mostra o mais recente
+  useEffect(() => {
+    if (manualMode && activeLookup?.next) rollInputRef.current?.focus();
+    stepsRef.current?.scrollTo({ top: stepsRef.current.scrollHeight });
+  }, [manualMode, activeLookup]);
+
   const reset = () => {
     setQuery('');
     setDropdownOpen(false);
     setSelected([]);
     setManualMode(false);
-    setManual({});
+    setLookups({});
+    setTyped('');
+    setLookupError(null);
     setError(null);
     setResult(null);
     setConfirmExit(false);
@@ -146,6 +214,8 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
   }, [confirmExit]);
 
   if (!isOpen) return null;
+
+  const shown = manualMode ? manualResult : result;
 
   const addCreature = (creature: TreasureCreature) => {
     const existing = selected.some((s) => s.creature.name === creature.name);
@@ -190,35 +260,34 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
     }
   };
 
+  const handleTypedRoll = () => {
+    if (!active || !activeLookup?.next || lookupBusy) return;
+    const request = activeLookup.next;
+    const value = parseRoll(typed, request);
+    if (value === undefined) {
+      const zero = request.sides === 100 && request.count === 1 ? ' (00 = 100)' : '';
+      setLookupError(`O resultado de ${request.dice} deve ser um número de ${request.count} a ${request.count * request.sides}${zero}.`);
+      return;
+    }
+    sendLookup(active, [...activeLookup.steps.map((s) => s.value), value]);
+  };
+
+  const undoTypedRoll = () => {
+    if (!active || !activeLookup || activeLookup.steps.length === 0 || lookupBusy) return;
+    sendLookup(active, activeLookup.steps.slice(0, -1).map((s) => s.value));
+  };
+
+  const restartLookups = () => {
+    setLookups({});
+    setTyped('');
+    setLookupError(null);
+  };
+
   const handleRoll = async () => {
     setError(null);
-    const items = [];
-    for (const { creature, quantity } of selected) {
-      const per = rollsPerColumn(creature);
-      let rolls: TreasureTableRolls[] | undefined;
-      if (manualMode && per > 0) {
-        rolls = [];
-        for (let unit = 0; unit < quantity; unit++) {
-          const unitRolls: TreasureTableRolls = { money: [], items: [] };
-          for (const column of COLUMNS) {
-            for (let i = 0; i < per; i++) {
-              const value = parseD100(manual[manualKey(creature.name, unit, column.key, i)] ?? '');
-              if (value === undefined) {
-                setError(`${creature.name} #${unit + 1}: o d% de ${column.label} deve ser um número de 1 a 100 (00 = 100).`);
-                return;
-              }
-              unitRolls[column.key].push(value);
-            }
-          }
-          rolls.push(unitRolls);
-        }
-      }
-      items.push({ creature: creature.name, quantity, rolls });
-    }
-
     setIsRolling(true);
     try {
-      setResult(await treasureApiService.rollGroup(items));
+      setResult(await treasureApiService.rollGroup(selected.map((s) => ({ creature: s.creature.name, quantity: s.quantity }))));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -232,7 +301,7 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
         role="dialog"
         aria-modal="true"
         aria-labelledby="treasure-title"
-        className="relative w-full max-w-4xl max-h-[90vh] bg-[#1B1B22] border border-[rgba(162,89,255,0.3)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-[92vw] h-[90vh] max-w-none bg-[#1B1B22] border border-[rgba(162,89,255,0.3)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Glow ambient effects */}
         <div className="absolute -top-32 -right-32 w-80 h-80 bg-[#A259FF]/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -436,68 +505,192 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
                 ))}
               </div>
 
-              {manualMode && (
+              {manualMode ? (
                 <div className="flex flex-col gap-3">
-                  <p className="font-mono text-[10px] text-[#8B87A8]">
-                    Digite os d% rolados na mesa para a Tabela 8-1 (00 = 100). Campo vazio é rolado pelo sistema; as
-                    rolagens seguintes (riquezas, itens, encantos) são automáticas.
-                  </p>
-                  {selected.map(({ creature, quantity }) => {
-                    const per = rollsPerColumn(creature);
-                    return (
-                      <div key={creature.name} className="p-3 rounded-xl bg-[#181827]/50 border border-[#34344E] flex flex-col gap-2">
-                        <span className="text-xs font-semibold text-[#d8b9ff]">{creature.name}</span>
-                        {per === 0 ? (
-                          <span className="font-mono text-[10px] text-[#8B87A8]">
-                            Tesouro Nenhum ou especial na ficha: sem rolagem na tabela.
-                          </span>
-                        ) : (
-                          Array.from({ length: quantity }, (_, unit) => (
-                            <div key={unit} className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                              <span className="font-mono text-[10px] text-[#8B87A8] w-8">#{unit + 1}</span>
-                              {COLUMNS.map((column) => (
-                                <label key={column.key} className="flex items-center gap-1.5 font-mono text-[10px] text-[#8B87A8]">
-                                  {column.label} d%
-                                  {Array.from({ length: per }, (_, i) => {
-                                    const key = manualKey(creature.name, unit, column.key, i);
-                                    const invalid = parseD100(manual[key] ?? '') === undefined;
-                                    return (
-                                      <input
-                                        key={i}
-                                        inputMode="numeric"
-                                        maxLength={3}
-                                        value={manual[key] ?? ''}
-                                        onChange={(e) => setManual((prev) => ({ ...prev, [key]: e.target.value }))}
-                                        placeholder="auto"
-                                        aria-label={`${creature.name} #${unit + 1} ${column.label} d% ${i + 1}`}
-                                        className={`w-14 h-8 rounded-lg bg-[#13131F] border text-center text-sm text-[#F0EEF8] placeholder-[#8B87A8]/60 outline-none focus:border-[#A259FF]/60 ${
-                                          invalid ? 'border-red-400/70' : 'border-[#34344E]'
-                                        }`}
-                                      />
-                                    );
-                                  })}
-                                </label>
-                              ))}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                  {/* Dados a rolar: as primeiras rolagens de cada criatura e o que vem depois */}
+                  <div className="p-3 rounded-xl bg-[#181827]/50 border border-[#34344E] flex flex-col gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#8B87A8]">Dados a rolar</span>
+                    <ul className="flex flex-col gap-1 text-xs text-[#c9c5de]">
+                      {selected.map(({ creature, quantity }) => {
+                        const per = rollsPerColumn(creature);
+                        return (
+                          <li key={creature.name} className="flex flex-wrap gap-x-2">
+                            <span className="font-semibold text-[#F0EEF8]">
+                              {creature.name} x{quantity}:
+                            </span>
+                            {per === 0 ? (
+                              <span className="text-[#8B87A8]">tesouro Nenhum ou especial, sem rolagem</span>
+                            ) : (
+                              <span>
+                                {per * quantity}x <b className="text-[#39D98A]">1d100</b> para Dinheiro e{' '}
+                                {per * quantity}x <b className="text-[#39D98A]">1d100</b> para Itens na Tabela 8-1 (ND{' '}
+                                {creature.nd}
+                                {per === 2 ? ', tesouro Dobro: 2 de cada por criatura' : ''})
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="font-mono text-[10px] text-[#8B87A8]">
+                      Depois, cada resultado pede os seus dados: a quantidade de moedas (ex.: 2d8 x100 T$), o tipo do item
+                      (1d6) e um 1d100 em cada tabela seguinte (8-2 a 8-15). O sistema pede um por vez, com a tabela e o
+                      motivo, e consulta o valor informado.
+                    </p>
+                  </div>
 
-              <button
-                type="button"
-                onClick={handleRoll}
-                disabled={isRolling}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-[#A259FF]/30 to-[#39D98A]/25 hover:from-[#A259FF]/40 hover:to-[#39D98A]/35 border border-[#A259FF]/50 text-[#F0EEF8] text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
-              >
-                <span className={`material-symbols-outlined text-[20px] text-[#39D98A] ${isRolling ? 'animate-spin' : ''}`}>
-                  {isRolling ? 'sync' : 'casino'}
-                </span>
-                {isRolling ? 'Sorteando...' : result ? 'Sortear novamente' : 'Sortear tesouro'}
-              </button>
+                  {/* Consulta da unidade atual */}
+                  {active ? (
+                    <div className="p-4 rounded-xl bg-[#13131F] border border-[#A259FF]/40 flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-[#F0EEF8]">
+                          {active.creature.name} <span className="font-mono text-xs text-[#8B87A8]">#{active.unit + 1}</span>
+                        </span>
+                        <span className="font-mono text-[10px] text-[#8B87A8]">
+                          {doneCount} de {units.length} concluída(s)
+                        </span>
+                      </div>
+
+                      {activeLookup && activeLookup.steps.length > 0 && (
+                        <ol
+                          ref={stepsRef}
+                          className="max-h-48 overflow-y-auto custom-scrollbar flex flex-col gap-1.5 font-mono text-[10px] text-[#8B87A8] pr-1"
+                        >
+                          {activeLookup.steps.map((step, i) => {
+                            const rejected = step.outcome.endsWith('role de novo');
+                            return (
+                              <li key={i} className="flex gap-2">
+                                <span className="text-[#d8b9ff] flex-shrink-0 w-20">
+                                  {step.dice} = {step.value}
+                                </span>
+                                <span className="flex flex-col min-w-0">
+                                  <span className="break-words">{step.purpose.split('. Role de novo:')[0]}</span>
+                                  {step.outcome && (
+                                    <span className={`break-words ${rejected ? 'text-amber-300' : 'text-[#39D98A]'}`}>
+                                      → {step.outcome}
+                                    </span>
+                                  )}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
+
+                      {activeLookup?.next ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-start gap-2">
+                            <span className="material-symbols-outlined text-[20px] text-[#39D98A]">casino</span>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-[#39D98A]">{rollHint(activeLookup.next)}</span>
+                              <span className="text-xs text-[#c9c5de] break-words">
+                                {activeLookup.next.purpose.split('. Role de novo:')[0]}
+                              </span>
+                              {activeLookup.next.purpose.includes('. Role de novo:') && (
+                                <span className="text-xs text-amber-300 break-words">
+                                  Role de novo: {activeLookup.next.purpose.split('. Role de novo:')[1].trim()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input
+                              ref={rollInputRef}
+                              inputMode="numeric"
+                              maxLength={4}
+                              value={typed}
+                              onChange={(e) => setTyped(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleTypedRoll();
+                                }
+                              }}
+                              placeholder={`${activeLookup.next.count}-${activeLookup.next.count * activeLookup.next.sides}`}
+                              aria-label={`Resultado de ${activeLookup.next.dice}`}
+                              disabled={lookupBusy}
+                              className="w-24 h-10 rounded-lg bg-[#181827] border border-[#34344E] focus:border-[#A259FF]/60 text-center text-base font-mono text-[#F0EEF8] placeholder-[#8B87A8]/60 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleTypedRoll}
+                              disabled={lookupBusy || !typed.trim()}
+                              className="h-10 px-4 rounded-lg bg-[#A259FF]/25 hover:bg-[#A259FF]/35 border border-[#A259FF]/50 text-xs font-semibold text-[#F0EEF8] flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                {lookupBusy ? 'sync' : 'manage_search'}
+                              </span>
+                              Consultar tabela
+                            </button>
+                            <button
+                              type="button"
+                              onClick={undoTypedRoll}
+                              disabled={lookupBusy || activeLookup.steps.length === 0}
+                              className="h-10 px-3 rounded-lg border border-[#34344E] text-xs text-[#8B87A8] hover:text-[#F0EEF8] hover:bg-[#222236] flex items-center gap-1 disabled:opacity-40 cursor-pointer"
+                              title="Desfazer o último resultado informado"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">undo</span>
+                              Desfazer
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        !lookupError && (
+                          <span className="font-mono text-[10px] text-[#8B87A8] flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                            Consultando...
+                          </span>
+                        )
+                      )}
+
+                      {lookupError && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-red-200">
+                          <span className="material-symbols-outlined text-[16px] text-red-300">error</span>
+                          <span className="flex-1 min-w-0">{lookupError}</span>
+                          {!activeLookup && (
+                            <button
+                              type="button"
+                              onClick={() => setLookupError(null)}
+                              className="px-2 py-1 rounded border border-red-400/40 hover:bg-red-500/15 cursor-pointer"
+                            >
+                              Tentar de novo
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="p-3 rounded-xl bg-[#39D98A]/10 border border-[#39D98A]/30 text-xs text-[#39D98A] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      Todas as criaturas foram consultadas. O resultado está abaixo.
+                    </p>
+                  )}
+
+                  {doneCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={restartLookups}
+                      disabled={lookupBusy}
+                      className="self-start px-3 py-1.5 rounded-lg border border-[#34344E] text-[11px] text-[#8B87A8] hover:text-[#F0EEF8] hover:bg-[#222236] flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+                      Recomeçar consulta
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRoll}
+                  disabled={isRolling}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#A259FF]/30 to-[#39D98A]/25 hover:from-[#A259FF]/40 hover:to-[#39D98A]/35 border border-[#A259FF]/50 text-[#F0EEF8] text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer"
+                >
+                  <span className={`material-symbols-outlined text-[20px] text-[#39D98A] ${isRolling ? 'animate-spin' : ''}`}>
+                    {isRolling ? 'sync' : 'casino'}
+                  </span>
+                  {isRolling ? 'Sorteando...' : result ? 'Sortear novamente' : 'Sortear tesouro'}
+                </button>
+              )}
             </section>
           )}
 
@@ -509,7 +702,7 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
           )}
 
           {/* 3. Resultado */}
-          {result && (
+          {shown && (
             <section className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-mono text-[11px] uppercase tracking-wider text-[#8B87A8] font-semibold flex items-center gap-1.5">
@@ -517,15 +710,20 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
                   Resultado
                 </h3>
                 <span className="font-mono text-xs text-[#39D98A]" title="Soma de moedas, riquezas e itens com preço (opções 2D não entram)">
-                  Total: {formatValue(result.totalValue)}
+                  Total: {formatValue(shown.totalValue)}
                 </span>
               </div>
 
-              {result.groups.map((group) => (
+              {shown.groups.map((group) => (
                 <div key={group.creature.name} className="rounded-xl border border-[#34344E] bg-[#181827]/60 overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-[#34344E] flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-[#F0EEF8] truncate">
-                      {group.creature.name} <span className="text-[#8B87A8] font-mono text-xs">x{group.quantity}</span>
+                      {group.creature.name}{' '}
+                      <span className="text-[#8B87A8] font-mono text-xs">
+                        {group.results.length < group.quantity
+                          ? `${group.results.length} de ${group.quantity}`
+                          : `x${group.quantity}`}
+                      </span>
                     </span>
                     <span className="font-mono text-[11px] text-[#39D98A] flex-shrink-0">{formatValue(group.totalValue)}</span>
                   </div>
@@ -544,8 +742,8 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
                             <div className="flex flex-wrap items-center gap-2 font-mono text-[10px]">
                               <span className="px-1.5 py-0.5 rounded bg-[#222236] text-[#d8b9ff] uppercase">{roll.column}</span>
                               <span className="text-[#F0EEF8]">d% {roll.roll}</span>
-                              <span className={roll.manual ? 'text-amber-300' : 'text-[#8B87A8]'}>
-                                {roll.manual ? 'informado' : 'automático'}
+                              <span className={manualMode ? 'text-amber-300' : 'text-[#8B87A8]'}>
+                                {manualMode ? 'informado' : 'automático'}
                               </span>
                               <span className="text-[#8B87A8]">→ {roll.result}</span>
                               <span className="text-[#8B87A8]/70">({roll.source})</span>

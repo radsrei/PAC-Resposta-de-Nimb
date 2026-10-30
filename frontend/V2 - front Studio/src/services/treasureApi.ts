@@ -1,4 +1,4 @@
-import { TreasureCreature, TreasureGroupItem, TreasureGroupResult } from '../types';
+import { TreasureCreature, TreasureGroupItem, TreasureGroupResult, TreasureLookup } from '../types';
 import { http } from './http';
 
 /**
@@ -14,5 +14,13 @@ export const treasureApiService = {
   /** Sorteia o tesouro de cada unidade das criaturas e grava no histórico. */
   async rollGroup(creatures: TreasureGroupItem[]): Promise<TreasureGroupResult> {
     return http.post<TreasureGroupResult>('/api/tesouro/sortear-grupo', { creatures });
+  },
+
+  /**
+   * Consulta nas tabelas com os resultados rolados na mesa (na ordem pedida).
+   * Devolve a próxima rolagem que falta ou o tesouro pronto (gravado no histórico).
+   */
+  async lookup(creature: string, values: number[]): Promise<TreasureLookup> {
+    return http.post<TreasureLookup>('/api/tesouro/consultar', { creature, values });
   },
 };

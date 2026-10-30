@@ -115,7 +115,8 @@ A LLM continua sem escrever SQL: recebe as linhas certas e completas. A página 
 | Rota | Uso |
 |---|---|
 | `POST /api/tesouro/sortear` | `{"creature": "necromante"}` ou `{"nd": "7", "treasureType": "dobro"}` (`bookId` opcional). Devolve as rolagens, as recompensas, o total em T$ e as fontes, e grava no histórico |
-| `POST /api/tesouro/sortear-grupo` | `{"creatures": [{"creature": "Necromante", "quantity": 2, "rolls": [{"money": [100], "items": [null]}]}]}`: uma rolagem por unidade (até 10 criaturas e 20 de cada). `rolls` traz, por unidade, os d% da Tabela 8-1 rolados na mesa (dois por coluna no tipo Dobro; `null` = automático). Devolve os resultados por criatura, o total e marca cada d% como `manual` ou não |
+| `POST /api/tesouro/sortear-grupo` | `{"creatures": [{"creature": "Necromante", "quantity": 2}]}`: uma rolagem automática por unidade (até 10 criaturas e 20 de cada). Devolve os resultados por criatura e o total |
+| `POST /api/tesouro/consultar` | Resultados rolados na mesa: `{"creature": "Necromante", "values": [45, 9]}`, na ordem em que foram pedidos. O sorteio é refeito com esses valores e para na primeira rolagem que falta: devolve `done: false`, os passos já informados (`steps`) e o próximo dado (`next`: `dice` como `2d8`, `count`, `sides` e `purpose` com a tabela e o motivo). Com todos os dados, devolve `done: true` e o tesouro em `result`, gravado no histórico. Valor fora do intervalo do dado: **400** |
 | `GET /api/tesouro/criaturas?q=dragao` | criaturas com ND e tipo de tesouro (para autocompletar) |
 | `GET /api/tesouro/nds` | NDs da Tabela 8-1 |
 | `GET /api/tesouro/historico?limit=20` | últimos sorteios do usuário (tabela `treasure_rolls` do `nimb.db`) |
@@ -126,8 +127,13 @@ Sem livro liberado a resposta é **428**, como nas perguntas; criatura ou ND ine
 
 - Aberta pelo botão **Sorteio de Tesouro** na barra lateral esquerda (abaixo de "Nova Sinapse Neural").
 - **Criaturas**: campo de busca com lista suspensa (nome, ND e tipo de tesouro; setas e Enter funcionam). Escolher a mesma criatura de novo soma 1 na quantidade; a quantidade também muda pelos botões − / + ou digitando (1 a 20).
-- **Rolagem**: *automática* ou *informar resultados*. No modo informado aparece, para cada unidade, o d% de Dinheiro e de Itens da Tabela 8-1 (dois de cada no tipo Dobro; 00 = 100; vazio = automático). Criaturas com tesouro Nenhum ou especial não têm campos. As rolagens seguintes (riquezas, itens, encantos) continuam automáticas.
-- **Resultado**: total geral e por criatura, e para cada unidade o d% (informado ou automático), o resultado da tabela, as recompensas com detalhes, as opções 2D e as fontes.
+- **Rolagem automática**: um botão sorteia tudo (`sortear-grupo`).
+- **Informar resultados** (consulta nas tabelas com os dados rolados na mesa, `consultar`):
+  - um quadro "Dados a rolar" mostra, por criatura, quantos 1d100 rolar na Tabela 8-1 (Dinheiro e Itens, dois de cada no Dobro) e avisa que cada resultado pede os seus dados (moedas como 2d8, 1d6 para o tipo do item, 1d100 nas tabelas 8-2 a 8-15);
+  - as unidades são consultadas uma por vez: o sistema mostra "Role 2d8 e informe a soma" com a tabela e o motivo, o jogador digita o valor (Enter ou "Consultar tabela") e vem o próximo dado, até o tesouro sair; "Desfazer" volta o último valor;
+  - o valor é conferido no intervalo do dado (2d8: 2 a 16; no d%, 00 = 100); cada passo mostra o que o valor encontrou na tabela (`outcome`, com a faixa de d%) ou por que foi descartado (melhoria/encanto já escolhido, conta como dois e só resta 1, apenas escudos), e o novo pedido lista o que já foi escolhido. Ex.: na Tabela 8-5 (armadura), 01-15 é Ajustada: depois dela, qualquer valor de 01 a 15 pede nova rolagem;
+  - criaturas com tesouro Nenhum ou especial terminam sem pedir dados.
+- **Resultado**: total geral e por criatura, e para cada unidade o d% da Tabela 8-1, o resultado, as recompensas com detalhes, as opções 2D e as fontes. No modo informado o resultado aparece conforme cada unidade termina.
 - **Saída**: Esc ou X abrem a confirmação "Sair do sorteio?" (Esc de novo volta ao sorteio). Clicar fora não fecha. Os sorteios feitos já estão gravados no histórico.
 
 ## 6. Como rodar
@@ -170,7 +176,7 @@ O mínimo de similaridade 0,45 continua respondendo 100% das perguntas do livro.
 ## 8. To Do — revisar e ajustar
 
 - [x] **Interface do sorteio**: pop-up com criaturas, quantidade, d% informados ou automáticos e resultado (ver seção 5, "Tela").
-- [ ] **Tela do sorteio, próximos passos**: mostrar o histórico (`GET /api/tesouro/historico`), sorteio só pelo ND e troca do tipo de tesouro; informar também as rolagens seguintes (riquezas, itens).
+- [ ] **Tela do sorteio, próximos passos**: mostrar o histórico (`GET /api/tesouro/historico`), sorteio só pelo ND e troca do tipo de tesouro; mostrar no resultado os dados informados de cada unidade.
 - [ ] **Etapa B (comparações)**: dar à LLM uma ferramenta `consultar_tabela(tabela, filtros, ordenar_por)` com SQL parametrizado e somente leitura, para perguntas como "a arma de duas mãos mais barata com dano 1d10". As tabelas e o índice FTS já estão prontos para isso.
 - [ ] **Tabelas com estrutura mais simples**: 6-1 (rótulo abaixo dos valores) e 5-2/8-7 (cabeçalho em duas linhas) saem certas no texto, mas conferir a coluna de cada valor.
 - [ ] **Ligar linha de tabela à entrada completa**: usar `entries` para trazer, junto da linha da Tabela 1-5 ("Caminho do arcanista"), a descrição da habilidade.

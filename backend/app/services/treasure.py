@@ -6,6 +6,10 @@ Sorteio de tesouro pelas regras do Tormenta20 (Capítulo 8, "Tesouro em Combate"
 - cada resultado leva à tabela seguinte: riquezas (8-2), diverso (8-3), equipamento (1d6 para o tipo e 8-4),
   superior (8-5 por melhoria), poções (8-12) e mágico (1d6 para o tipo e 8-8 a 8-15);
 - "+%" soma 20 ao d% de riqueza ou poção; "2D" rola 2d6 para o tipo e o jogador escolhe uma das opções.
+
+Os dados vêm de `Dice` (sorteio do sistema) ou de `TypedDice` (resultados rolados na mesa): com `TypedDice`
+o sorteio é refeito com os valores já informados e para na primeira rolagem que falta (`RollNeeded`),
+dizendo quais dados rolar e para quê.
 """
 
 import json
@@ -34,6 +38,10 @@ CATEGORY = {"menor": "menor", "média": "media", "médio": "media", "maior": "ma
 ENCHANTMENTS = {"menor": 1, "media": 2, "maior": 3}
 ACCESSORIES = {"menor": "acessorio_menor", "media": "acessorio_medio", "maior": "acessorio_maior"}
 LABELS = {"menor": "menor", "media": "médio", "maior": "maior"}
+CATEGORY_NAMES = {"menor": "menor", "media": "média", "maior": "maior", "arma": "arma",
+                  "armadura": "armadura ou escudo", "esoterico": "esotérico", "acessorio": "acessório"}
+EQUIPMENT_FACES = {range(1, 4): "arma", range(4, 6): "armadura", range(6, 7): "esoterico"}
+MAGIC_FACES = {range(1, 3): "arma", range(3, 4): "armadura", range(4, 7): "acessorio"}
 MAX_REROLLS = 50
 
 
@@ -54,7 +62,6 @@ class ColumnRoll:
     result: str
     rewards: list[Reward]
     source: str
-    manual: bool = False
 
 
 @dataclass
@@ -71,29 +78,87 @@ class TreasureResult:
         return asdict(self)
 
 
+@dataclass
+class DiceRequest:
+    """Rolagem pedida ao jogador: `count`d`sides` (ele informa a soma) e para que serve."""
+    dice: str
+    count: int
+    sides: int
+    purpose: str
+
+
+class RollNeeded(Exception):
+    def __init__(self, request: DiceRequest):
+        super().__init__(request.purpose)
+        self.request = request
+
+
 class Dice:
     def __init__(self, rng: Random | None = None):
         self.rng = rng or secrets.SystemRandom()
 
-    def d(self, sides: int) -> int:
-        return self.rng.randint(1, sides)
+    def faces(self, count: int, sides: int, purpose: str) -> list[int]:
+        return [self.rng.randint(1, sides) for _ in range(count)]
 
-    def d100(self, bonus: int = 0) -> int:
-        return min(100, self.d(100) + bonus)
+    def note(self, outcome: str) -> None:
+        """O que a última rolagem encontrou na tabela (só registrado nos dados rolados na mesa)."""
 
-    def roll(self, expression: str) -> tuple[int, str]:
+    def d(self, sides: int, purpose: str = "") -> int:
+        return self.faces(1, sides, purpose)[0]
+
+    def d100(self, bonus: int = 0, purpose: str = "") -> int:
+        return min(100, self.d(100, purpose) + bonus)
+
+    def roll(self, expression: str, purpose: str = "") -> tuple[int, str]:
         if expression.isdigit():
             return int(expression), expression
         match = DICE.match(expression)
         if not match:
             raise ValueError(f"Expressão de dados inválida: {expression}")
         count, sides, plus, times = match.groups()
-        faces = [self.d(int(sides)) for _ in range(int(count))]
+        faces = self.faces(int(count), int(sides), f"{purpose} ({expression})" if purpose else expression)
         total = sum(faces) + int(plus or 0)
         multiplier = int(times.replace(".", "")) if times else 1
+        self.note(f"{expression} = {total * multiplier}")
         shown = "+".join(map(str, faces)) + (f"+{plus}" if plus else "")
         detail = f"{expression}: ({shown})" + (f" x {multiplier}" if times else "") + f" = {total * multiplier}"
         return total * multiplier, detail
+
+
+class TypedDice(Dice):
+    """Resultados rolados na mesa: cada valor responde, na ordem, à próxima rolagem pedida."""
+
+    def __init__(self, values: list[int]):
+        super().__init__()
+        self.values = list(values)
+        self.log: list[dict] = []
+
+    def faces(self, count: int, sides: int, purpose: str) -> list[int]:
+        request = DiceRequest(f"{count}d{sides}", count, sides, purpose)
+        if not self.values:
+            raise RollNeeded(request)
+        value = self.values.pop(0)
+        if not count <= value <= count * sides:
+            raise ValueError(f"O resultado de {request.dice} deve estar entre {count} e {count * sides} ({purpose}).")
+        self.log.append({**asdict(request), "value": value, "outcome": ""})
+        return [value]
+
+    def note(self, outcome: str) -> None:
+        if self.log:
+            self.log[-1]["outcome"] = outcome
+
+
+def _span(row: sqlite3.Row) -> str:
+    low, high = row["roll_min"], row["roll_max"]
+    return f"{low:02d}" if low == high else f"{low:02d}-{high:02d}"
+
+
+def _slot_purpose(what: str, slots: int, total: int, chosen: list[str], reason: str) -> str:
+    """Pedido de melhoria/encanto: espaços restantes, o que já saiu e por que rolar de novo."""
+    text = f"{what} ({slots} de {total} restante(s))"
+    if chosen:
+        text += f"; já escolhidos: {', '.join(chosen)}"
+    return text + (f". Role de novo: {reason}" if reason else "")
 
 
 def _notes(raw: str) -> str:
@@ -108,6 +173,7 @@ def _price(text: str) -> float | None:
 class _Roller:
     def __init__(self, conn: sqlite3.Connection, dice: Dice, half: bool):
         self.conn, self.dice, self.half = conn, dice, half
+        self.labels = {role: value[0] for role, value in treasure_store.sources(conn).items()}
 
     def _row(self, role: str, category: str, roll: int) -> sqlite3.Row:
         row = self.conn.execute(
@@ -118,17 +184,26 @@ class _Roller:
             raise LookupError(f"Sem resultado para d% {roll} na tabela '{role}' ({category or 'geral'}).")
         return row
 
-    def pick(self, role: str, category: str = "", bonus: int = 0) -> tuple[sqlite3.Row, int, str]:
-        roll = self.dice.d100(bonus)
+    def pick(self, role: str, category: str = "", bonus: int = 0, purpose: str = "") -> tuple[sqlite3.Row, int, str]:
+        text = self.labels.get(role, role) + (f", coluna {CATEGORY_NAMES[category]}" if category else "")
+        text += (f": {purpose}" if purpose else "") + (f" (o sistema soma +{bonus})" if bonus else "")
+        roll = self.dice.d100(bonus, text)
         row = self._row(role, category, roll)
+        self.dice.note(f"{row['result']} (d% {_span(row)})")
         return row, roll, f"{row['label']}, p. {row['page']}"
 
-    def _type(self, choose: bool, faces: dict[range, str]) -> list[str]:
-        rolls = [self.dice.d(6) for _ in range(2 if choose else 1)]
-        return [next(kind for span, kind in faces.items() if r in span) for r in rolls]
+    def _type(self, choose: bool, faces: dict[range, str], purpose: str) -> list[str]:
+        legend = ", ".join(f"{s.start}-{s.stop - 1}: {CATEGORY_NAMES[k]}" if len(s) > 1 else f"{s.start}: {CATEGORY_NAMES[k]}"
+                           for s, k in faces.items())
+        kinds = []
+        for n in range(2 if choose else 1):
+            roll = self.dice.d(6, f"{purpose} ({legend})" + (f", dado {n + 1} de 2 (2D: o jogador escolhe)" if choose else ""))
+            kinds.append(next(kind for span, kind in faces.items() if roll in span))
+            self.dice.note(CATEGORY_NAMES[kinds[-1]])
+        return kinds
 
     def coins(self, expression: str, coin: str) -> Reward:
-        amount, detail = self.dice.roll(expression)
+        amount, detail = self.dice.roll(expression, f"moedas em {coin}")
         details = [detail]
         if self.half:
             amount //= 2
@@ -137,12 +212,12 @@ class _Roller:
                       amount * COIN_VALUE[coin], sources=[])
 
     def riches(self, count: str, category: str, bonus: bool) -> list[Reward]:
-        total, detail = self.dice.roll(count)
+        total, detail = self.dice.roll(count, f"quantidade de riquezas ({category})")
         rewards = []
         for n in range(total):
-            row, roll, source = self.pick("riqueza", CATEGORY[category], 20 if bonus else 0)
+            row, roll, source = self.pick("riqueza", CATEGORY[category], 20 if bonus else 0, f"riqueza {n + 1} de {total}")
             expression = row["result"].split("(")[0].strip()
-            value, value_detail = self.dice.roll(expression)
+            value, value_detail = self.dice.roll(expression, f"valor em T$ da riqueza {n + 1} de {total}")
             details = [f"d% {roll}" + (" (+20%)" if bonus else ""), f"valor {value_detail}"]
             if self.half:
                 value //= 2
@@ -154,11 +229,11 @@ class _Roller:
         return rewards
 
     def misc(self) -> Reward:
-        row, roll, source = self.pick("diverso")
+        row, roll, source = self.pick("diverso", purpose="item diverso")
         return Reward("diverso", row["result"], [f"d% {roll}"], sources=[source])
 
     def base_item(self, kind: str) -> Reward:
-        row, roll, source = self.pick("equipamento", kind)
+        row, roll, source = self.pick("equipamento", kind, purpose="item base")
         label = {"arma": "arma", "armadura": "armadura ou escudo", "esoterico": "esotérico"}[kind]
         return Reward("equipamento", row["result"], [f"tipo: {label}", f"d% {roll}"], sources=[source])
 
@@ -170,25 +245,32 @@ class _Roller:
                       options=items, sources=sorted({s for i in items for s in i.sources}))
 
     def equipment(self, choose: bool) -> Reward:
-        faces = {range(1, 4): "arma", range(4, 6): "armadura", range(6, 7): "esoterico"}
-        return self._options(self._type(choose, faces), self.base_item)
+        return self._options(self._type(choose, EQUIPMENT_FACES, "tipo do equipamento"), self.base_item)
 
     def superior(self, upgrades: int, choose: bool) -> Reward:
-        faces = {range(1, 4): "arma", range(4, 6): "armadura", range(6, 7): "esoterico"}
-
         def build(kind: str) -> Reward:
             item = self.base_item(kind)
-            chosen, slots, tries = [], upgrades, 0
+            chosen, slots, tries, reason = [], upgrades, 0, ""
             while slots > 0 and tries < MAX_REROLLS:
                 tries += 1
-                row, roll, source = self.pick("superior", kind)
+                row, roll, source = self.pick("superior", kind, purpose=_slot_purpose(
+                    "melhoria", slots, upgrades, [c.split(" (")[0] for c in chosen], reason))
                 name, notes = row["result"], _notes(row["notes"])
                 cost = 2 if "Conta como duas" in notes else 1
-                if name in [c.split(" (")[0] for c in chosen] or cost > slots:
+                if name in [c.split(" (")[0] for c in chosen]:
+                    reason = f"{name} (d% {_span(row)}) já foi escolhida"
+                elif cost > slots:
+                    reason = f"{name} (d% {_span(row)}) conta como duas melhorias e só resta 1"
+                else:
+                    reason = ""
+                if reason:
+                    self.dice.note(f"{reason}: role de novo")
                     continue
                 if "material" in notes:
                     materials = dict(MATERIALS.findall(notes))
-                    face = self.dice.d(6)
+                    legend = ", ".join(f"{k}: {v.strip()}" for k, v in materials.items())
+                    face = self.dice.d(6, f"material especial ({legend})")
+                    self.dice.note(materials.get(str(face), "?").strip())
                     name = f"{name} ({materials.get(str(face), '?')}, 1d6 = {face})"
                 chosen.append(name)
                 slots -= cost
@@ -199,13 +281,13 @@ class _Roller:
             item.sources = sorted(set(item.sources))
             return item
 
-        return self._options(self._type(choose, faces), build)
+        return self._options(self._type(choose, EQUIPMENT_FACES, "tipo do item superior"), build)
 
     def potions(self, count: str, bonus: bool) -> list[Reward]:
-        total, detail = self.dice.roll(count)
+        total, detail = self.dice.roll(count, "quantidade de poções")
         rewards = []
         for n in range(total):
-            row, roll, source = self.pick("pocao", bonus=20 if bonus else 0)
+            row, roll, source = self.pick("pocao", bonus=20 if bonus else 0, purpose=f"poção {n + 1} de {total}")
             details = [f"d% {roll}" + (" (+20%)" if bonus else ""), f"preço {row['price']}"]
             if n == 0 and count != "1":
                 details.insert(0, f"quantidade {detail}")
@@ -215,21 +297,31 @@ class _Roller:
     def _enchanted(self, kind: str, category: str) -> Reward:
         role, specific = ("encanto_arma", "arma_especifica") if kind == "arma" else ("encanto_armadura", "armadura_especifica")
         base = self.base_item(kind)
-        chosen, slots, tries, sources = [], ENCHANTMENTS[category], 0, list(base.sources)
+        chosen, slots, tries, sources, reason = [], ENCHANTMENTS[category], 0, list(base.sources), ""
         while slots > 0 and tries < MAX_REROLLS:
             tries += 1
-            row, roll, source = self.pick(role)
+            row, roll, source = self.pick(role, purpose=_slot_purpose(
+                "encanto", slots, ENCHANTMENTS[category], chosen, reason))
             name, notes = row["result"], _notes(row["notes"])
             if "específic" in name.lower():
-                special, special_roll, special_source = self.pick(specific)
+                special, special_roll, special_source = self.pick(specific, purpose="item específico")
                 return Reward("magico", special["result"],
                               [f"d% {roll}: item específico", f"d% {special_roll}", f"preço {special['price']}"],
                               _price(special["price"]), sources=sorted({source, special_source}))
             double = name.endswith("*") or "Conta como dois" in notes
             name = name.rstrip("*")
-            if name in chosen or (double and (category == "menor" or slots < 2)):
-                continue
-            if "Apenas escudos" in notes and "escudo" not in base.name.lower():
+            if name in chosen:
+                reason = f"{name} (d% {_span(row)}) já foi escolhido"
+            elif double and category == "menor":
+                reason = f"{name} (d% {_span(row)}) conta como dois encantos e não vale em item menor"
+            elif double and slots < 2:
+                reason = f"{name} (d% {_span(row)}) conta como dois encantos e só resta 1"
+            elif "Apenas escudos" in notes and "escudo" not in base.name.lower():
+                reason = f"{name} (d% {_span(row)}) é apenas para escudos"
+            else:
+                reason = ""
+            if reason:
+                self.dice.note(f"{reason}: role de novo")
                 continue
             chosen.append(name)
             slots -= 2 if double else 1
@@ -239,16 +331,14 @@ class _Roller:
                       base.details + ["encantos: " + ", ".join(chosen)], sources=sorted(set(sources)))
 
     def magic(self, category: str, choose: bool) -> Reward:
-        faces = {range(1, 3): "arma", range(3, 4): "armadura", range(4, 7): "acessorio"}
-
         def build(kind: str) -> Reward:
             if kind == "acessorio":
-                row, roll, source = self.pick(ACCESSORIES[category])
+                row, roll, source = self.pick(ACCESSORIES[category], purpose="acessório")
                 return Reward("magico", row["result"], [f"acessório, d% {roll}", f"preço {row['price']}"],
                               _price(row["price"]), sources=[source])
             return self._enchanted(kind, category)
 
-        return self._options(self._type(choose, faces), build)
+        return self._options(self._type(choose, MAGIC_FACES, "tipo do item mágico"), build)
 
     def money(self, result: str) -> list[Reward]:
         text = result.strip()
@@ -308,16 +398,12 @@ def nd_levels(book_id: str) -> list[str]:
 
 
 def roll_treasure(book_id: str, creature: str | None = None, nd: str | None = None,
-                  treasure_type: str | None = None, dice: Dice | None = None,
-                  table_rolls: dict[str, list[int | None]] | None = None) -> TreasureResult:
+                  treasure_type: str | None = None, dice: Dice | None = None) -> TreasureResult:
     """
     Sorteia o tesouro de uma criatura (pelo nome) ou de um ND, com o tipo da ficha ou o informado.
-
-    `table_rolls` traz os d% da Tabela 8-1 rolados pelo jogador ({"dinheiro": [..], "itens": [..]},
-    dois valores por coluna no tipo Dobro); valor vazio é rolado aqui. As rolagens seguintes são automáticas.
+    Com `TypedDice`, levanta `RollNeeded` na primeira rolagem que ainda não foi informada.
     """
     dice = dice or Dice()
-    given = {column: list(values) for column, values in (table_rolls or {}).items()}
     found = find_creature(book_id, creature) if creature else None
     nd = (nd or (found["nd"] if found else "")).strip()
     if not nd:
@@ -347,14 +433,15 @@ def roll_treasure(book_id: str, creature: str | None = None, nd: str | None = No
         table = treasure_store.sources(conn)["nd"][0]
         rolls = []
         for column, resolve in (("dinheiro", roller.money), ("itens", roller.items)):
-            for _ in range(2 if kind == "Dobro" else 1):
-                typed = given.get(column, []).pop(0) if given.get(column) else None
-                roll = typed or dice.d100()
+            times = 2 if kind == "Dobro" else 1
+            for n in range(times):
+                purpose = f"{table}, ND {nd}, coluna {'Dinheiro' if column == 'dinheiro' else 'Itens'}"
+                roll = dice.d100(0, purpose + (f" ({n + 1}ª de 2, tesouro Dobro)" if times > 1 else ""))
                 row = conn.execute(
                     "SELECT result, page FROM treasure_nd WHERE nd = ? AND kind = ? AND ? BETWEEN roll_min AND roll_max",
                     (nd, column, roll),
                 ).fetchone()
-                rolls.append(ColumnRoll(column, roll, row["result"], resolve(row["result"]), f"{table}, p. {row['page']}",
-                                        typed is not None))
+                dice.note(row["result"])
+                rolls.append(ColumnRoll(column, roll, row["result"], resolve(row["result"]), f"{table}, p. {row['page']}"))
     total = sum(_value(r) for c in rolls for r in c.rewards)
     return TreasureResult(book_id, nd, kind, found, rolls, round(total, 1), notes)

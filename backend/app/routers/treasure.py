@@ -2,7 +2,8 @@
 Sorteio de tesouro pelas tabelas do livro (Tormenta20, Capítulo 8).
 
 POST /api/tesouro/sortear    -> sorteia pela criatura ou pelo ND e grava no histórico
-POST /api/tesouro/sortear-grupo -> sorteia várias criaturas (com quantidade e d% informados) e grava no histórico
+POST /api/tesouro/sortear-grupo -> sorteia várias criaturas (com quantidade) e grava no histórico
+POST /api/tesouro/consultar  -> resultados rolados na mesa: devolve o próximo dado a rolar ou o tesouro pronto
 GET  /api/tesouro/criaturas  -> criaturas do livro com ND e tipo de tesouro (busca por nome)
 GET  /api/tesouro/nds        -> NDs que existem na tabela de tesouro
 GET  /api/tesouro/historico  -> últimos sorteios do usuário
@@ -13,7 +14,8 @@ from fastapi import APIRouter, Depends, Query
 from app.controllers import treasure_controller
 from app.core.deps import CurrentUser, require_user
 from app.schemas.treasure import (
-    CreatureOut, TreasureGroupOut, TreasureGroupPayload, TreasureRollOut, TreasureRollPayload,
+    CreatureOut, TreasureGroupOut, TreasureGroupPayload, TreasureLookupOut, TreasureLookupPayload, TreasureRollOut,
+    TreasureRollPayload,
 )
 
 router = APIRouter(prefix="/api/tesouro", tags=["tesouro"])
@@ -28,6 +30,12 @@ def roll(payload: TreasureRollPayload, user: CurrentUser = Depends(require_user)
 def roll_group(payload: TreasureGroupPayload, user: CurrentUser = Depends(require_user)):
     items = [item.model_dump() for item in payload.creatures]
     return treasure_controller.roll_group(user["email"], payload.book_id, items)
+
+
+@router.post("/consultar", response_model=TreasureLookupOut)
+def lookup(payload: TreasureLookupPayload, user: CurrentUser = Depends(require_user)):
+    return treasure_controller.lookup(user["email"], payload.book_id, payload.creature, payload.treasure_type,
+                                      payload.values)
 
 
 @router.get("/criaturas", response_model=list[CreatureOut])
