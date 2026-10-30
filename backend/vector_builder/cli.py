@@ -65,7 +65,7 @@ def _load_profile(args):
         return auto_profile(doc)
 
 
-def _report(extraction, chunks) -> None:
+def _report(extraction, chunks, tables) -> None:
     from collections import Counter
     from vector_builder.extract import EMAIL
 
@@ -73,6 +73,8 @@ def _report(extraction, chunks) -> None:
     print(f"{len(chunks)} trechos | mediana {sizes[len(sizes) // 2]} | maior {sizes[-1]} caracteres | "
           f"{len(extraction.skipped)} páginas ignoradas")
     print("Por tipo: " + ", ".join(f"{k} {v}" for k, v in Counter(c.kind for c in chunks).most_common()))
+    print(f"{len(tables)} tabelas, {sum(len(t.rows) for t in tables)} linhas; sem cabeçalho: "
+          + (", ".join(t.key for t in tables if any(c.startswith("Coluna ") for c in t.columns)) or "nenhuma"))
     if len(extraction.empty) > extraction.page_count * 0.3:
         print(f"AVISO: {len(extraction.empty)} páginas sem texto. O PDF precisa de OCR antes de indexar.")
     if not any(extraction.printed.values()):
@@ -83,9 +85,10 @@ def _report(extraction, chunks) -> None:
 
 
 def cmd_build(args) -> int:
-    from vector_builder.chunking import chunk_book, embedding_text
+    from vector_builder.chunking import book_entries, chunk_book, embedding_text, row_chunks
     from vector_builder.extract import extract
-    from vector_builder.store import write_book_store, write_chunks_jsonl
+    from vector_builder.store import write_book_store, write_chunks_jsonl, write_tables
+    from vector_builder.tables import build_tables
 
     book = _register(args) if not args.skip_register else book_catalog.get_book(args.id)
     if book is None:
@@ -96,12 +99,15 @@ def cmd_build(args) -> int:
     print(f"Extraindo texto com o perfil '{profile.name}'...")
     extraction = extract(args.pdf, profile)
     chunks = chunk_book(extraction, profile, args.chunk_size, args.overlap, args.min_chars)
-    _report(extraction, chunks)
+    tables = build_tables(book_entries(extraction, args.min_chars), extraction.printed)
+    chunks += row_chunks(tables, extraction.printed, len(chunks))
+    _report(extraction, chunks, tables)
 
     if args.dry_run:
         out = settings.vector_store_dir / "preview" / f"{book['id']}.chunks.jsonl"
         write_chunks_jsonl(out, chunks)
-        print(f"Simulação: trechos gravados em {out} (nenhum embedding gerado).")
+        write_tables(out.with_name(f"{book['id']}.tables.sqlite"), tables, chunks)
+        print(f"Simulação: trechos e tabelas gravados em {out.parent} (nenhum embedding gerado).")
         return 0
 
     from app.services.embeddings import create_embedder
@@ -118,6 +124,7 @@ def cmd_build(args) -> int:
         source_sha256=fingerprint_pdf(args.pdf.read_bytes()).sha256,
         page_count=extraction.page_count,
         profile=profile.describe(),
+        tables=tables,
     )
     print(f"Banco vetorial pronto em {path} ({time.monotonic() - started:.0f}s).")
     return 0

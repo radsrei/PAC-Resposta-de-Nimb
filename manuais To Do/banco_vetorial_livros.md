@@ -191,8 +191,8 @@ Ambiente verificado em 23/10/2026: `.venv` com Python 3.14.5, `pymupdf` e `chrom
 ### Qualidade dos trechos
 
 - [ ] **Revisar o `chunks.jsonl` por amostragem**, 10 trechos de cada tipo, procurando texto fora de ordem, título errado ou quadro misturado com o texto principal.
-- [ ] **Tabelas com cabeçalho em fonte de corpo ou estreito:** o cabeçalho às vezes não se separa em células (`Nível Dinheiro Inicial (T$)`). Avaliar o Docling (ver `backend/RAG_Claude/Conversao_Docling/`) só nas ~60 páginas de tabela, ou ajustar à mão as tabelas mais consultadas (armas, armaduras, itens, tesouro).
-- [ ] **Tabela seguida de entrada pequena:** a `Tabela 3-1` absorveu o texto curto "Usando & Carregando" (regra das entradas pequenas). Avaliar não unir entradas pequenas a tabelas.
+- [x] **Tabelas com cabeçalho em fonte de corpo ou estreito:** resolvido em 30/10/2026 sem o Docling: células separadas por posição e por tab, cabeçalho em várias linhas e tabelas em SQLite. Ver [tabelas_e_tesouro.md](tabelas_e_tesouro.md).
+- [x] **Tabela seguida de entrada pequena:** resolvido em 30/10/2026: tabelas nunca são unidas a outras entradas (nem recebem entradas pequenas). Ver [tabelas_e_tesouro.md](tabelas_e_tesouro.md).
 - [ ] **Quadro que passa de página** termina na troca de página. Conferir se algum quadro grande foi cortado.
 - [ ] **Fichas de monstro** saem com as linhas do bloco de estatísticas num parágrafo só (`Monstro Pequeno Iniciativa +0, …`). Funciona para a busca. Avaliar quebrar por campo (`Defesa`, `Pontos de Vida`…) para a exibição.
 - [ ] **Lista de raças e classes no perfil** (`kinds`) está escrita à mão. Conferir se falta alguma.
@@ -253,7 +253,7 @@ Ambiente verificado em 23/10/2026: `.venv` com Python 3.14.5, `pymupdf` e `chrom
 ### Dados e direitos
 
 - [ ] O PDF em `Livros/` é uma cópia licenciada com nome e e-mail do comprador. Não versionar (já está no `.gitignore`) e não enviar a outras pessoas.
-- [ ] Decidir o uso restrito ou público (D4 do `proximos_passos.md`) antes de levar o `vector_store/` para o servidor.
+- [x] Uso restrito ou público (D4), decidido em 29/10/2026: uso em ambiente controlado, por poucos usuários, todos cadastrados pelo administrador na lista de acesso. Reavaliar se o uso for ampliado.
 
 ### Ambiente
 

@@ -95,6 +95,19 @@ export interface AuthUser {
   lastLoginAt: string | null;
 }
 
+/** E-mail da lista de acesso (backend: /api/admin/allowed-emails). */
+export interface AllowedEmail {
+  email: string;
+  addedBy: string;
+  createdAt: string;
+  hasAccount: boolean;
+}
+
+export interface Allowlist {
+  enabled: boolean;
+  emails: AllowedEmail[];
+}
+
 export interface AuthConfig {
   googleClientId: string | null;
 }
@@ -171,4 +184,70 @@ export interface SessionMessage {
 
 export interface ChatSessionDetail extends ChatSession {
   messages: SessionMessage[];
+}
+
+// ---------------------------------------------------------------------------
+// Sorteio de tesouro (backend: /api/tesouro)
+// ---------------------------------------------------------------------------
+export type TreasureType = 'Nenhum' | 'Padrão' | 'Metade' | 'Dobro';
+
+export interface TreasureCreature {
+  name: string;
+  nd: string;
+  treasure: TreasureType;
+  treasureNote: string;
+  page: string;
+}
+
+export interface TreasureReward {
+  kind: string;
+  name: string;
+  details: string[];
+  value?: number | null;
+  options: TreasureReward[];
+  sources: string[];
+}
+
+export interface TreasureColumnRoll {
+  column: 'dinheiro' | 'itens';
+  roll: number;
+  result: string;
+  rewards: TreasureReward[];
+  source: string;
+  /** d% informado pelo jogador (false = rolado pelo sistema) */
+  manual: boolean;
+}
+
+export interface TreasureRollResult {
+  id: string;
+  createdAt: string;
+  bookId: string;
+  nd: string;
+  treasureType: TreasureType;
+  creature: TreasureCreature | null;
+  rolls: TreasureColumnRoll[];
+  totalValue: number;
+  notes: string[];
+}
+
+/** d% da Tabela 8-1 de uma unidade da criatura (null = rolagem automática). */
+export interface TreasureTableRolls {
+  money: (number | null)[];
+  items: (number | null)[];
+}
+
+export interface TreasureGroupItem {
+  creature: string;
+  quantity: number;
+  rolls?: TreasureTableRolls[];
+}
+
+export interface TreasureGroupResult {
+  groups: {
+    creature: TreasureCreature;
+    quantity: number;
+    totalValue: number;
+    results: TreasureRollResult[];
+  }[];
+  totalValue: number;
 }

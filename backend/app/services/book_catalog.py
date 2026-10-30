@@ -7,6 +7,7 @@ Estrutura da pasta `VECTOR_STORE_DIR` (fora do Git, gerada por `vector_builder`)
     ├── catalog.json            livros permitidos + impressão digital de cada um
     └── books/<book_id>/
         ├── chroma-<data>/      banco vetorial (Chroma) do livro, uma pasta por construção
+        ├── tables-<data>.sqlite  tabelas do livro em estrutura, da mesma construção
         ├── chunks.jsonl        trechos indexados, para revisão de qualidade
         └── manifest.json       versão ativa (`chroma_dir`), modelo de embeddings e totais
 
@@ -113,6 +114,12 @@ def chroma_path(book_id: str) -> Path | None:
     """Pasta do Chroma da versão ativa do banco do livro."""
     manifest = vector_manifest(book_id)
     return book_dir(book_id) / manifest["chroma_dir"] if manifest else None
+
+
+def tables_path(book_id: str) -> Path | None:
+    """SQLite com as tabelas da versão ativa do banco do livro (bancos antigos não têm)."""
+    manifest = vector_manifest(book_id)
+    return book_dir(book_id) / manifest["tables_db"] if manifest and manifest.get("tables_db") else None
 
 
 def vector_manifest(book_id: str) -> dict[str, Any] | None:

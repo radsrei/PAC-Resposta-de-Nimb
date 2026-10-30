@@ -62,14 +62,18 @@ A pergunta precisa ser vetorizada **com o mesmo modelo** usado para construir o 
 | sentence-transformers dentro da API | um processo só | imagem Docker de cerca de 3 GB; mais memória por worker |
 | Embeddings por API (ex.: OpenAI) | sem modelo no servidor | exige reconstruir todos os bancos e adicionar o provedor |
 
-### D4. Direitos dos livros — ALTA (se o sistema for público)
+### D4. Direitos dos livros — MÉDIA (decidido em 29/10/2026)
+**Decisão:** uso em ambiente controlado, por poucos usuários, todos cadastrados pelo administrador na lista de acesso. Com isso, a criticidade cai de alta para média. Reavaliar se o sistema for aberto ao público.
+
 O `catalog.json` guarda frases dos livros, e o banco vetorial guarda o texto completo em trechos. As respostas citam o conteúdo.
 - Decidir: uso restrito (turma, grupo fechado) ou público.
 - Se público: obter autorização da editora (Jambô) ou limitar a aberto/SRD.
 - Relacionado: quem pode entrar (D5).
 
-### D5. Quem pode acessar — ALTA
-Hoje qualquer conta Google cria conta no primeiro login (`REGISTRATION_ENABLED=true`).
+### D5. Quem pode acessar — decidido em 29/10/2026
+**Decisão:** lista de acesso (`ALLOWLIST_ENABLED=true`, padrão). Só entram os e-mails cadastrados pelo administrador em **Minha conta → E-mails com acesso**; os de `ADMIN_EMAILS` entram sempre.
+
+Opções avaliadas (antes da decisão, qualquer conta Google criava conta no primeiro login):
 - Aberto para qualquer conta Google;
 - Restrito: `REGISTRATION_ENABLED=false` e os usuários cadastrados antes. Falta tela ou comando para o admin cadastrar e-mails.
 - Lista de domínios permitidos (ex.: só `@empresa.com.br`): **não implementado**.

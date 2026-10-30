@@ -33,7 +33,7 @@ EC2 (Docker Compose) ── cloudflared ──► web (Caddy :80) ──► fron
 | 5 | Subir os containers e baixar o `bge-m3` | servidor | a fazer |
 | 6 | Validar no modo A (túnel SSH, sem domínio) | local | a fazer |
 | 7 | Cloudflare Tunnel e domínio | Cloudflare + servidor | ✅ domínio já delegado ao Cloudflare (`dalary`/`pranab.ns.cloudflare.com`) |
-| 8 | Google Cloud: origem e publicação | Google | a fazer (depende de D4/D5) |
+| 8 | Google Cloud: origem e publicação | Google | a fazer (D4/D5 decididos em 29/10/2026: uso controlado + lista de acesso) |
 | 9 | Fechar portas e teste de aceite online | AWS + navegador | a fazer |
 | 10 | Rotina: backup, atualização, livros novos | servidor | a fazer |
 
@@ -125,17 +125,20 @@ nano backend/.env
 ### `backend/.env`
 | Variável | Modo A (validação, túnel SSH) | Online (Cloudflare) | Observação |
 |---|---|---|---|
-| `ENABLE_DOCS` | `false` | `false` | o padrão do código é `true` |
+| `ENABLE_DOCS` | `false` | `false` | padrão `false` desde 29/10/2026 (M7); `true` só na sua máquina |
 | `CORS_ORIGINS` | `http://localhost:8080` | `https://respostas-nimb.com.br` | diferente disso, todo POST é bloqueado |
 | `COOKIE_SECURE` | `false` | `true` | `true` sem HTTPS faz o login voltar à tela inicial |
 | `APP_SECRET_KEY` | valor gerado | o mesmo | |
 | `GOOGLE_CLIENT_ID` | seu Client ID | o mesmo | |
 | **`ADMIN_EMAILS`** | **e-mail Google do administrador** | o mesmo | obrigatório: é o único jeito de ter administrador. Fica só no `.env` (repositório público). Vira admin na criação da conta e a cada login |
 | `FIRST_USER_IS_ADMIN` | `false` | `false` | já é o padrão desde 25/10/2026 (item C4) |
-| `REGISTRATION_ENABLED` | `true` | decisão D5 | `false`: só entram usuários já cadastrados |
+| `REGISTRATION_ENABLED` | `true` | `true` | quem entra é decidido pela lista de acesso abaixo; `false` só deixa entrar quem já tem conta |
+| **`ALLOWLIST_ENABLED`** | `true` | `true` | só entram os e-mails da lista de acesso, que o administrador preenche em **Minha conta → E-mails com acesso**. Os de `ADMIN_EMAILS` entram sempre (A4) |
 | `LLM_DEEPSEEK_API` | chave do DeepSeek | a mesma | cria a conexão "DeepSeek (.env)" na 1ª subida |
 | `LLM_MODEL` | `deepseek-chat` | `deepseek-chat` | |
-| `LLM_TIMEOUT` | `90` | `90` | abaixo dos ~100 s do Cloudflare (erro 524) |
+| `LLM_TIMEOUT` | `90` | `90` | limite de uma chamada à LLM |
+| `ANSWER_TIME_BUDGET` | `85` | `85` | tempo total da pergunta (busca + resposta + revisões e alucinação do Medidor de Caos); cada chamada recebe só o que resta, abaixo dos ~100 s do Cloudflare (erro 524). Substitui o antigo `CHAOS_TIME_BUDGET` |
+| `CHAOS_HALLUCINATION_CHANCES`, `CHAOS_HARNESS_ROUNDS`, `CHAOS_TIMEZONE` | padrão do `.env.example` | o mesmo | níveis do Medidor de Caos |
 | `EMBEDDING_PROVIDER` | `ollama` | `ollama` | |
 | **`OLLAMA_URL`** | **`http://ollama:11434`** | **`http://ollama:11434`** | nome do container, não `localhost` |
 | `OLLAMA_KEEP_ALIVE` | `-1` | `-1` | modelo sempre carregado |
@@ -201,6 +204,7 @@ No Google Cloud, adicione temporariamente a origem `http://localhost:8080` (pass
 | # | Teste | Esperado |
 |---|---|---|
 | 1 | Entrar com o Google (e-mail de `ADMIN_EMAILS`) | entra como administrador |
+| 1b | Outra conta Google, fora da lista | recusada: "Seu e-mail ainda não tem acesso…". Incluí-la em **Minha conta → E-mails com acesso** e entrar de novo: entra como usuário |
 | 2 | **Conectar LLM** → "DeepSeek (.env)" → **Testar** | ativa e respondendo |
 | 3 | Sem livro: campo de pergunta | travado, com o aviso "Adicione o livro…" e o botão **Subir PDF** |
 | 4 | **Subir PDF** do Tormenta20 (89 MB) | "Livro reconhecido… Acesso liberado." |
@@ -246,7 +250,7 @@ O domínio já está delegado ao Cloudflare. Falta:
 
 - **Origens JavaScript autorizadas:** `https://respostas-nimb.com.br`. Remova o `http://localhost:8080` depois da validação.
 - **Tela de consentimento → Domínios autorizados:** `respostas-nimb.com.br`. Se pedir verificação, adicione o TXT do Search Console no DNS do Cloudflare.
-- **Publicar app:** tira do modo *Teste* e libera qualquer conta Google. **Só depois das decisões D4 (direitos dos livros) e D5 (quem pode entrar).** Até lá, mantenha em *Teste* com os e-mails do grupo.
+- **Publicar app:** tira do modo *Teste*. Pode ser feito: quem entra no sistema é controlado pela lista de acesso (`ALLOWLIST_ENABLED=true`), e não pelo Google. Decisão de 29/10/2026: uso em ambiente controlado, por poucos usuários. Alternativa: manter em *Teste* com os mesmos e-mails como usuários de teste (limite de 100).
 
 ---
 

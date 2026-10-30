@@ -22,6 +22,10 @@ from app.core.config import settings
 from app.core.exceptions import LLMError
 
 
+class LLMTimeoutError(LLMError):
+    """A LLM não respondeu dentro do tempo limite da chamada."""
+
+
 @dataclass(frozen=True)
 class ProviderInfo:
     id: str
@@ -46,7 +50,10 @@ class LLMResult:
 Message = dict[str, str]
 
 
-def generate(connection: dict[str, Any], system: str, messages: list[Message]) -> LLMResult:
+def generate(
+    connection: dict[str, Any], system: str, messages: list[Message], timeout: float | None = None,
+) -> LLMResult:
+    """`timeout` (s) limita esta chamada; sem ele vale o LLM_TIMEOUT."""
     provider = connection["provider"]
     if provider not in PROVIDERS:
         raise LLMError(
@@ -61,7 +68,8 @@ def generate(connection: dict[str, Any], system: str, messages: list[Message]) -
         raise LLMError(f"A conexão '{connection['name']}' não possui API key configurada.")
 
     started = perf_counter()
-    text = _call_deepseek(connection, model, base_url, api_key, system, messages)
+    timeout = timeout or settings.llm_timeout
+    text = _call_deepseek(connection, model, base_url, api_key, system, messages, timeout)
     if not text.strip():
         raise LLMError("A LLM retornou uma resposta vazia.")
 
@@ -76,11 +84,11 @@ def generate(connection: dict[str, Any], system: str, messages: list[Message]) -
 # --------------------------------------------------------------------------
 # HTTP
 # --------------------------------------------------------------------------
-def _post_json(url: str, body: dict, headers: dict | None = None) -> dict:
+def _post_json(url: str, body: dict, headers: dict | None, timeout: float) -> dict:
     try:
-        response = httpx.post(url, json=body, headers=headers, timeout=settings.llm_timeout)
+        response = httpx.post(url, json=body, headers=headers, timeout=timeout)
     except httpx.TimeoutException as exc:
-        raise LLMError(f"Tempo esgotado aguardando a LLM ({settings.llm_timeout:.0f}s).") from exc
+        raise LLMTimeoutError(f"Tempo esgotado aguardando a LLM ({timeout:.0f}s).") from exc
     except httpx.HTTPError as exc:
         raise LLMError(f"Não foi possível conectar em {url}: {exc}") from exc
 
@@ -111,7 +119,7 @@ def _error_detail(response: httpx.Response) -> str:
     return str(data)[:300]
 
 
-def _call_deepseek(connection, model, base_url, api_key, system, messages) -> str:
+def _call_deepseek(connection, model, base_url, api_key, system, messages, timeout) -> str:
     body: dict[str, Any] = {
         "model": model,
         "messages": [{"role": "system", "content": system}, *messages],
@@ -121,7 +129,7 @@ def _call_deepseek(connection, model, base_url, api_key, system, messages) -> st
     if connection.get("max_tokens"):
         body["max_tokens"] = connection["max_tokens"]
 
-    data = _post_json(f"{base_url}/chat/completions", body, {"Authorization": f"Bearer {api_key}"})
+    data = _post_json(f"{base_url}/chat/completions", body, {"Authorization": f"Bearer {api_key}"}, timeout)
     try:
         # deepseek-reasoner também devolve `reasoning_content`: só a resposta final é usada
         return data["choices"][0]["message"]["content"] or ""

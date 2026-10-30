@@ -9,6 +9,8 @@ Tabelas:
 - chat_messages:         mensagens de cada conversa
 - book_access:           livros liberados para cada usuário (após validar o PDF)
 - book_validation_log:   histórico de tentativas de validação de livro
+- allowed_emails:        lista de acesso (e-mails que podem entrar), mantida pelos admins
+- treasure_rolls:        sorteios de tesouro de cada usuário (entrada e resultado)
 
 Segurança: todas as consultas usam parâmetros (`?`). Nenhum valor vindo do
 usuário é concatenado em SQL, o que impede SQL injection.
@@ -103,6 +105,27 @@ CREATE TABLE IF NOT EXISTS book_validation_log (
 
 CREATE INDEX IF NOT EXISTS idx_book_validation_user
     ON book_validation_log (user_email, created_at);
+
+CREATE TABLE IF NOT EXISTS allowed_emails (
+    email       TEXT PRIMARY KEY,
+    added_by    TEXT NOT NULL,
+    created_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS treasure_rolls (
+    id             TEXT PRIMARY KEY,
+    user_email     TEXT NOT NULL REFERENCES users(email) ON DELETE CASCADE ON UPDATE CASCADE,
+    book_id        TEXT NOT NULL,
+    creature       TEXT,
+    nd             TEXT NOT NULL,
+    treasure_type  TEXT NOT NULL,
+    total_value    REAL NOT NULL,
+    result         TEXT NOT NULL,
+    created_at     TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_treasure_rolls_user
+    ON treasure_rolls (user_email, created_at);
 """
 
 

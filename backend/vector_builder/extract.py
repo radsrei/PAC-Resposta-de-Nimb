@@ -9,7 +9,11 @@ from vector_builder.profile import FontRule, Profile
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
 SENTENCE_END = re.compile(r"[.!?:;)”\"»]$")
 CELL_GAP = 12.0
+TABLE_GAP = 5.0
+TAB = 0.5
 INDENT = 8.0
+BOLD = re.compile(r"Bold|Black")
+MARKER = re.compile(r"^([•●▪◦·]|\d{1,2}\))$")
 
 
 @dataclass
@@ -24,6 +28,8 @@ class Element:
     detour: str = ""
     body: bool = True
     row: bool = False
+    bold: bool = False
+    cells: list[tuple[float, float, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -41,8 +47,9 @@ class _Line:
     rule: FontRule | None
     body: bool
     indent: bool
-    cells: int
+    cells: list[tuple[float, float, str]]
     block: int
+    bold: bool
 
 
 def _zone(bbox, height: float, margin: float) -> str:
@@ -100,6 +107,10 @@ def _rows(lines: list[dict]) -> list[list[dict]]:
     return rows
 
 
+def _is_tab(span: dict) -> bool:
+    return not span["text"].strip() and span["bbox"][2] - span["bbox"][0] > TAB * span["size"]
+
+
 def _glue(parts: list[str]) -> str:
     text = ""
     for part in parts:
@@ -141,30 +152,59 @@ class _PageReader:
             return None
         return min((r for cell in cells for r in cell[3] if r), key=lambda r: r.level)
 
+    def _segments(self, line: dict):
+        split, space = False, False
+        for span in line["spans"]:
+            if _is_tab(span):
+                split = True
+                continue
+            if not span["text"].strip():
+                space = True
+                continue
+            for n, text in enumerate(span["text"].split("\t")):
+                kept = self._keep({**span, "text": text})
+                if kept:
+                    yield span, (" " if space else "") + kept[0], kept[1], split or n > 0
+                    split, space = False, False
+            split = split or span["text"].endswith("\t")
+
     def _row(self, row: list[dict], block: int, left: float) -> _Line | None:
-        cells, first_span = [], None
-        for line in row:
-            kept = [(span, *k) for span in line["spans"] if (k := self._keep(span))]
-            if kept:
-                first_span = first_span or kept[0][0]
-                rules = [rule for _, _, rule in kept]
-                cells.append((line["bbox"][0], line["bbox"][2], _glue([text for _, text, _ in kept]), rules))
+        cells, spans, previous = [], [], None
+        for line in sorted(row, key=lambda l: l["bbox"][0]):
+            body = all(self.profile.is_body(s["font"], s["size"]) for s in line["spans"] if s["text"].strip())
+            gap = CELL_GAP if body and (previous is None or previous[1]) else TABLE_GAP
+            new_line = True
+            for span, text, rule, split in self._segments(line):
+                apart = previous is not None and new_line and line["bbox"][0] - previous[0] > gap
+                if not cells or split or apart:
+                    cells.append([span["bbox"][0], span["bbox"][2], [[text]], []])
+                elif new_line:
+                    cells[-1][2].append([text])
+                else:
+                    cells[-1][2][-1].append(text)
+                cells[-1][1] = max(cells[-1][1], span["bbox"][2])
+                cells[-1][3].append(rule)
+                spans.append(span)
+                new_line = False
+            if not new_line:
+                previous = (max(s["bbox"][2] for s in line["spans"] if s["text"].strip()), body)
         if not cells:
             return None
-        rule = self._heading(cells)
-        gaps = [x0 - prev_x1 > CELL_GAP for (_, prev_x1, _, _), (x0, _, _, _) in zip(cells, cells[1:])]
-        text = cells[0][2]
-        for wide, (_, _, cell, _) in zip(gaps, cells[1:]):
-            text += (" | " if wide and rule is None else " ") + cell
+        texts = [" ".join(_glue(parts) for parts in lines) for _, _, lines, _ in cells]
+        while len(texts) > 1 and MARKER.match(texts[0]):
+            texts[:2] = [f"{texts[0]} {texts[1]}"]
+            cells[:2] = [[cells[0][0], cells[1][1], [], cells[0][3] + cells[1][3]]]
+        rule = self._heading([(x0, x1, text, rules) for (x0, x1, _, rules), text in zip(cells, texts)])
         if self.dropcap and rule is None:
-            text, self.dropcap = self.dropcap + text, ""
+            texts[0], self.dropcap = self.dropcap + texts[0], ""
         return _Line(
-            text=text,
+            text=" ".join(texts) if rule else " | ".join(texts),
             rule=rule,
-            body=self.profile.is_body(first_span["font"], first_span["size"]),
+            body=self.profile.is_body(spans[0]["font"], spans[0]["size"]),
             indent=row[0]["bbox"][0] > left + INDENT,
-            cells=1 if rule else sum(gaps) + 1,
+            cells=[(round(x0, 1), round(x1, 1), text) for (x0, x1, _, _), text in zip(cells, texts)],
             block=block,
+            bold=all(BOLD.search(span["font"]) for span in spans),
         )
 
     def lines(self) -> list[_Line]:
@@ -183,7 +223,7 @@ def _add(elements: list[Element], line: _Line, page: int, chapter: str, previous
     same_chapter = last is not None and last.chapter == chapter
     after_heading = same_chapter and last.kind == "heading" and previous is not None and previous.rule is not None
 
-    if suffix and after_heading and suffix.search(line.text):
+    if suffix and after_heading and len(line.cells) == 1 and suffix.search(line.text):
         last.text = f"{last.text} {line.text}"
         return
     if line.rule:
@@ -194,18 +234,29 @@ def _add(elements: list[Element], line: _Line, page: int, chapter: str, previous
                                 line.rule.kind, line.rule.detour))
         return
 
-    row = line.cells > 1
+    row = len(line.cells) > 1
     same_paragraph = (not line.indent and previous is not None
                       and previous.block == line.block and previous.rule is None)
+    wraps = (same_chapter and last.kind == "text" and last.row and not row and last.page_end == page
+             and abs(last.cells[-1][0] - line.cells[0][0]) <= INDENT)
+    if wraps:
+        x0, x1, cell = last.cells[-1]
+        last.cells[-1] = (x0, max(x1, line.cells[0][1]), _join(cell, line.text))
+        last.text = " | ".join(text for _, _, text in last.cells)
+        return
+    same_column = line.body or not last or not last.cells or abs(last.cells[0][0] - line.cells[0][0]) <= INDENT
     continues = (
         same_chapter and last.kind == "text" and not last.row and not row and last.body == line.body
-        and (same_paragraph or not SENTENCE_END.search(last.text))
+        and ((same_paragraph and same_column) or not SENTENCE_END.search(last.text))
     )
     if continues:
         last.text = _join(last.text, line.text)
         last.page_end = page
+        if last.bold and line.bold:
+            last.cells = last.cells + line.cells
     else:
-        elements.append(Element("text", line.text, chapter, page, page, body=line.body, row=row))
+        elements.append(Element("text", line.text, chapter, page, page, body=line.body, row=row,
+                                bold=line.bold, cells=line.cells))
 
 
 def extract(pdf_path: Path, profile: Profile) -> Extraction:

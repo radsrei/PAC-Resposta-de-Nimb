@@ -5,9 +5,11 @@ from dataclasses import dataclass, replace
 
 from vector_builder.extract import Element, Extraction
 from vector_builder.profile import Profile
+from vector_builder.tables import Table, table_key
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 DETOUR_KINDS = ("quadro", "tabela")
+ROW_KIND = "linha_tabela"
 
 
 @dataclass
@@ -22,6 +24,8 @@ class Chunk:
     page_end: int
     printed_start: str
     printed_end: str
+    table: str = ""
+    row: int = 0
 
 
 @dataclass
@@ -61,7 +65,7 @@ def _entries(elements: list[Element]) -> list[_Entry]:
                 path = [stack[k] for k in sorted(stack)]
             current = open_entry(path + [el.text] if el.detour else path, el.heading_kind)
             continue
-        if detour and (el.page_start != detour_page or (detour == "body" and el.body)):
+        if detour and (el.page_start != detour_page or (detour == "body" and el.body and not el.row)):
             detour, current = "", open_entry(path, "")
         if current is None:
             current = open_entry(path, "")
@@ -73,7 +77,8 @@ def _merge_small(entries: list[_Entry], min_chars: int) -> list[_Entry]:
     merged: list[_Entry] = []
     for entry in entries:
         previous = merged[-1] if merged else None
-        if entry.size < min_chars and previous and previous.chapter == entry.chapter:
+        tables = DETOUR_KINDS[1] in (entry.heading_kind, previous.heading_kind if previous else "")
+        if entry.size < min_chars and previous and previous.chapter == entry.chapter and not tables:
             first = entry.paragraphs[0]
             label = replace(first, text=f"{entry.title}: {first.text}") if entry.title != previous.title else first
             previous.paragraphs.extend([label, *entry.paragraphs[1:]])
@@ -113,11 +118,15 @@ def _pack(paragraphs: list[Element], max_chars: int, overlap: int) -> list[list[
     return groups
 
 
+def book_entries(extraction: Extraction, min_chars: int = 120) -> list[_Entry]:
+    return _merge_small(_entries(extraction.elements), min_chars)
+
+
 def chunk_book(extraction: Extraction, profile: Profile, max_chars: int = 2400,
                overlap: int = 300, min_chars: int = 120) -> list[Chunk]:
     chunks: list[Chunk] = []
     printed = extraction.printed
-    for entry in _merge_small(_entries(extraction.elements), min_chars):
+    for entry in book_entries(extraction, min_chars):
         full_text = "\n\n".join(p.text for p in entry.paragraphs)
         kind = (entry.heading_kind if entry.heading_kind in DETOUR_KINDS
                 else profile.kind_of(entry.title, full_text, entry.chapter))
@@ -134,6 +143,30 @@ def chunk_book(extraction: Extraction, profile: Profile, max_chars: int = 2400,
                 page_end=end,
                 printed_start=printed.get(start, ""),
                 printed_end=printed.get(end, ""),
+                table=table_key(entry.title) if kind == DETOUR_KINDS[1] else "",
+            ))
+    return chunks
+
+
+def row_chunks(tables: list[Table], printed: dict[int, str], start: int) -> list[Chunk]:
+    """Um trecho curto por linha de tabela, com o nome da tabela e do grupo, para a busca achar o item exato."""
+    chunks = []
+    for table in tables:
+        for position, row in enumerate(table.rows, start=1):
+            page = row.page or table.page_start
+            chunks.append(Chunk(
+                index=start + len(chunks),
+                title=table.label,
+                path=" > ".join(p for p in (table.label, row.group) if p),
+                chapter=table.chapter,
+                kind=ROW_KIND,
+                text=table.row_text(row),
+                page_start=page,
+                page_end=page,
+                printed_start=printed.get(page, ""),
+                printed_end=printed.get(page, ""),
+                table=table.key,
+                row=position,
             ))
     return chunks
 

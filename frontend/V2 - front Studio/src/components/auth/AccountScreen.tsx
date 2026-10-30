@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AuthUser } from '../../types';
+import { Allowlist, AuthUser } from '../../types';
 import { adminApiService, authApiService } from '../../services/authApi';
 import { AcknowledgmentsModal } from '../modals/AcknowledgmentsModal';
 
@@ -162,6 +162,130 @@ const AdminUsersPanel: React.FC<{ currentEmail: string }> = ({ currentEmail }) =
 };
 
 // ---------------------------------------------------------------------------
+// Lista de acesso: e-mails que podem entrar (só administradores editam)
+// ---------------------------------------------------------------------------
+const AllowlistPanel: React.FC = () => {
+  const [allowlist, setAllowlist] = useState<Allowlist>({ enabled: true, emails: [] });
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback>(null);
+
+  useEffect(() => {
+    adminApiService
+      .listAllowed()
+      .then(setAllowlist)
+      .catch((err) => setFeedback({ type: 'error', text: err.message }));
+  }, []);
+
+  const run = async (action: () => Promise<string>) => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      setFeedback({ type: 'ok', text: await action() });
+    } catch (err) {
+      setFeedback({ type: 'error', text: (err as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Aceita vários e-mails separados por vírgula, ponto e vírgula, espaço ou linha
+    const emails = input.split(/[\s,;]+/).filter(Boolean);
+    if (emails.length === 0) return;
+    run(async () => {
+      const before = allowlist.emails.length;
+      const updated = await adminApiService.addAllowed(emails);
+      setAllowlist(updated);
+      setInput('');
+      const added = updated.emails.length - before;
+      return added === 1 ? '1 e-mail incluído.' : `${added} e-mails incluídos.`;
+    });
+  };
+
+  const handleRemove = (email: string) => {
+    if (!window.confirm(`Remover ${email} da lista? As sessões abertas dele serão encerradas.`)) return;
+    run(async () => {
+      await adminApiService.removeAllowed(email);
+      setAllowlist(await adminApiService.listAllowed());
+      return `${email} removido da lista.`;
+    });
+  };
+
+  return (
+    <section className={`${cardClass} lg:col-span-2`}>
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-outlined text-[#d8b9ff]">how_to_reg</span>
+        <h3 className="font-bold text-[#F0EEF8]">E-mails com acesso</h3>
+        <span className="font-mono text-[10px] text-[#8B87A8]">({allowlist.emails.length})</span>
+      </div>
+      <p className="text-xs text-[#8B87A8]">
+        Só as contas Google destes e-mails conseguem entrar no sistema. Administradores entram sempre.
+        {!allowlist.enabled && (
+          <span className="text-amber-300"> A lista está desligada no servidor (ALLOWLIST_ENABLED=false): hoje qualquer conta entra.</span>
+        )}
+      </p>
+
+      <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="email@gmail.com, outro@gmail.com"
+          className={inputClass}
+        />
+        <button
+          disabled={busy || !input.trim()}
+          className="shrink-0 px-4 py-2 rounded-lg bg-[#39D98A]/15 border border-[#39D98A]/40 text-[#39D98A] text-xs font-semibold cursor-pointer disabled:opacity-40"
+        >
+          Incluir
+        </button>
+      </form>
+      <FeedbackLine feedback={feedback} />
+
+      {allowlist.emails.length > 0 && (
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left font-mono text-[10px] uppercase text-[#8B87A8] border-b border-[#34344E]">
+                <th className="py-2 pr-3">E-mail</th>
+                <th className="py-2 pr-3">Conta</th>
+                <th className="py-2 pr-3">Incluído por</th>
+                <th className="py-2 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allowlist.emails.map((a) => (
+                <tr key={a.email} className="border-b border-[#34344E]/50 align-middle">
+                  <td className="py-2.5 pr-3 font-mono text-[11px] text-[#F0EEF8]">{a.email}</td>
+                  <td className="py-2.5 pr-3 font-mono text-[10px] text-[#8B87A8]">
+                    {a.hasAccount ? 'já entrou' : 'aguardando 1º login'}
+                  </td>
+                  <td className="py-2.5 pr-3 font-mono text-[10px] text-[#8B87A8]">
+                    {a.addedBy} • {formatDate(a.createdAt)}
+                  </td>
+                  <td className="py-2.5">
+                    <div className="flex justify-end font-mono text-[10px]">
+                      <button
+                        disabled={busy}
+                        onClick={() => handleRemove(a.email)}
+                        className="px-2 py-1 rounded border border-red-500/30 text-red-300 hover:bg-red-500/10 cursor-pointer disabled:opacity-40"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Minha conta
 // ---------------------------------------------------------------------------
 export const AccountScreen: React.FC<AccountScreenProps> = ({
@@ -308,6 +432,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
             </button>
           </section>
 
+          {user.role === 'admin' && <AllowlistPanel />}
           {user.role === 'admin' && <AdminUsersPanel currentEmail={user.email} />}
         </div>
       </div>
