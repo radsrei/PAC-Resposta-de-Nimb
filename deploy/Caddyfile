@@ -19,11 +19,21 @@
 {$SITE_ADDRESS::80} {
 	encode zstd gzip
 
-	# Livros em PDF de até 95 MiB (BOOK_UPLOAD_MAX_MB = 99,6 milhões de bytes) +
+	# Limite do corpo (pentest V-02): sem ele, qualquer pessoa sem login manda 100 MB
+	# para qualquer rota e a API lê tudo antes de checar o login. Os matchers são
+	# exclusivos: um request_body sem matcher valeria também para o upload.
+	# Upload: PDF de até 95 MiB (BOOK_UPLOAD_MAX_MB = 99,6 milhões de bytes) +
 	# margem do multipart. Aqui "MB" é decimal: 100MB = 100.000.000 bytes.
 	# Não passar de 100 MB: é o limite do plano grátis do Cloudflare.
-	request_body {
+	@upload path /api/rag/upload
+	request_body @upload {
 		max_size 100MB
+	}
+	# Demais rotas: o maior corpo legítimo é um prompt de 4000 caracteres (~48 KB
+	# com escapes). O mesmo limite vale na API (app/core/middleware.py)
+	@notUpload not path /api/rag/upload
+	request_body @notUpload {
+		max_size 128KB
 	}
 
 	handle /api/* {

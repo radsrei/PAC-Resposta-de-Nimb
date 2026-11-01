@@ -216,7 +216,9 @@ As versões testadas foram fixadas em todos os pontos:
     - cliente DeepSeek e RAG → `app/services/llm_client.py` e `retrieval.py`.
   - Pastas e códigos (`.py`, `.ipynb`) receberam o sufixo `_OLD`.
   - Em seguida as três pastas `_OLD` foram **apagadas** (inclusive o `tormenta20.xml` e o `.venv` locais). As regras delas no `.gitignore` e no `.dockerignore` foram retiradas e as referências nos documentos, atualizadas.
-- **Pendente:** `backend/RAG_*`, `docs/nimb_prototipo/`, a rota `/api/perguntas` e o `requirements.txt` da raiz. O conteúdo apagado continua acessível no histórico do Git (ver A3).
+- **Feito em 31/10/2026:** `backend/RAG_Claude`, `RAG_GPT` e `RAG_Gemini` apagadas. Eram pipelines de exemplo com LangChain e Docling (embeddings simulados, sem uso): nada no sistema as importava ou executava, e o Docker só copia `backend/app`.
+- **Feito em 31/10/2026:** rota `/api/perguntas` (sempre respondia 500, V-13 do pentest; nenhuma tela a usava) e `requirements.txt` da raiz (Docling e LangChain, nada importado pelo sistema) removidos.
+- **Mantido como legado:** `docs/nimb_prototipo/`. O conteúdo apagado continua acessível no histórico do Git (ver A3).
 
 ---
 

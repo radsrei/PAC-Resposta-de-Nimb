@@ -14,10 +14,10 @@ from fastapi.responses import JSONResponse
 from app.controllers import llm_controller
 from app.core.config import settings
 from app.core.exceptions import AppError, TooManyRequestsError
-from app.core.middleware import SecurityMiddleware
+from app.core.middleware import BodyLimitMiddleware, SecurityMiddleware
 from app.db.database import init_db
 from app.repositories import auth_repository, llm_repository
-from app.routers import admin, auth, health, llm, perguntas, rag, sessions, treasure
+from app.routers import admin, auth, health, llm, rag, sessions, treasure
 from app.services import chaos, retrieval, treasure_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     [%(name)s] %(message)s")
@@ -48,6 +48,9 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.enable_docs else None,
 )
 
+# O último adicionado roda primeiro: o limite do corpo fica por dentro, e o 413
+# dele ainda recebe os cabeçalhos de segurança e de CORS
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(SecurityMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -90,4 +93,3 @@ app.include_router(llm.router)
 app.include_router(sessions.router)
 app.include_router(rag.router)
 app.include_router(treasure.router)
-app.include_router(perguntas.router)

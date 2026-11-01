@@ -223,10 +223,10 @@ OLLAMA_URL=http://ollama:11434
 |---|---|---|
 | P2.1 | Textos fixos na tela: selo "RAG v2.4", "NEURAL CHAOS RETRIEVAL ENGINE", sugestões fixas do chat | `Header.tsx`, `SuggestionChips.tsx` |
 | P2.2 | Botão **Subir PDF** escondido no celular (`hidden sm:flex`); no celular só abre pela barra lateral | `Header.tsx` |
-| P2.3 | Limpeza do repositório: pipelines antigos `backend/RAG_*`, `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` (`Convert_file/`, `deepseek/` e `estrutura-Exemplo/` já removidas em 25/10/2026) |
-| P2.4 | Rota legada `/api/perguntas` e a docstring desatualizada de `backend/main.py` (cita `frontend/nimb-os-react` e `frontend/Claude`, que não existem mais) | `routers/perguntas.py`, `backend/main.py` |
-| P2.5 | `requirements.txt` da raiz instala tudo (Docling, LangChain), mas o servidor só precisa de `backend/requirements.txt` | raiz |
-| P2.6 | Docs antigas: `resp.md` (cita o venv `nimb` e o "upload como stub"), tutoriais do Docling usando `env` | `resp.md`, `*/TUTORIAL_GIT_E_DOCLING.md` |
+| P2.3 | Limpeza do repositório: `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` (`Convert_file/`, `deepseek/` e `estrutura-Exemplo/` já removidas em 25/10/2026; `backend/RAG_*` em 31/10/2026) |
+| P2.4 | ✅ 31/10/2026: rota `/api/perguntas` removida. Rota legada `/api/perguntas` e a docstring desatualizada de `backend/main.py` (cita `frontend/nimb-os-react` e `frontend/Claude`, que não existem mais) | `routers/perguntas.py`, `backend/main.py` |
+| P2.5 | ✅ 31/10/2026: removido. `requirements.txt` da raiz instala tudo (Docling, LangChain), mas o servidor só precisa de `backend/requirements.txt` | raiz |
+| P2.6 | Docs antigas: `resp.md` (cita o venv `nimb` e o "upload como stub"), tutorial do Docling (apagado com `backend/RAG_Claude` em 31/10/2026) | `resp.md` |
 | P2.7 | Imagens com nomes de pessoas em `PAC-7+8/` (presença, PRs) num repositório público: avaliar se devem continuar versionadas | `PAC-7+8/` |
 | P2.8 | Licença AGPL-3.0: num serviço online, o código-fonte precisa ficar disponível aos usuários (link no rodapé para o GitHub) | `LICENSE`, tela |
 | P2.9 | Comando para cadastrar outra edição do mesmo livro sem refazer as frases (`add-edition`) e uma etapa de OCR automática (`ocrmypdf`) | `vector_builder/` |

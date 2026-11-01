@@ -64,7 +64,8 @@ def list_books(user: CurrentUser = Depends(require_user)):
 
 @router.post("/upload", response_model=BookValidationOut, dependencies=[Depends(limit_book_upload)])
 def upload_book(file: UploadFile = File(...), user: CurrentUser = Depends(require_user)):
-    # Lê em blocos para recusar arquivos grandes sem carregá-los inteiros
+    # O BodyLimitMiddleware já cortou o envio acima do limite + margem do multipart;
+    # aqui vale o limite exato do arquivo
     limit = settings.book_upload_max_mb * 1024 * 1024
     data = bytearray()
     while chunk := file.file.read(_READ_CHUNK):
