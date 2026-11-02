@@ -1,4 +1,4 @@
-import { AuthConfig, AuthUser } from '../types';
+import { Allowlist, AuthConfig, AuthUser } from '../types';
 import { http } from './http';
 
 /**
@@ -36,4 +36,12 @@ export const adminApiService = {
 
   deleteUser: (email: string) =>
     http.delete<{ message: string }>(`/api/admin/users/${encodeURIComponent(email)}`),
+
+  // Lista de acesso: só esses e-mails (e os administradores) conseguem entrar
+  listAllowed: () => http.get<Allowlist>('/api/admin/allowed-emails'),
+
+  addAllowed: (emails: string[]) => http.post<Allowlist>('/api/admin/allowed-emails', { emails }),
+
+  removeAllowed: (email: string) =>
+    http.delete<{ message: string }>(`/api/admin/allowed-emails/${encodeURIComponent(email)}`),
 };

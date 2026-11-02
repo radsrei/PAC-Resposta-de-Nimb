@@ -5,8 +5,8 @@ Levantamento de 24/10/2026, feito na validação para o deploy na AWS EC2 (branc
 | Gravidade | Quantidade | Significado |
 |---|---|---|
 | 🔴 Crítico | 5 | impede o sistema de funcionar online ou expõe o sistema |
-| 🟠 Alto | 8 | segurança, dados ou operação; resolver antes de abrir ao público |
-| 🟡 Médio | 9 | qualidade das respostas e robustez; resolver logo após subir |
+| 🟠 Alto | 7 | segurança, dados ou operação; resolver antes de abrir ao público |
+| 🟡 Médio | 10 | qualidade das respostas e robustez; resolver logo após subir |
 | ⚪ Documentação | 4 | guias desatualizados |
 
 ---
@@ -132,10 +132,18 @@ As versões testadas foram fixadas em todos os pontos:
 
 </details>
 
-### A4. Decisões D4 (direitos do livro) e D5 (quem acessa) em aberto
+### A4. Direitos do livro (D4) e quem acessa (D5) — 🟡 rebaixado de Alto para Médio em 29/10/2026
+- **Decisão do grupo (29/10/2026):** uso em ambiente controlado, por poucos usuários, todos cadastrados pelo administrador na lista de acesso. Nesse cenário, o risco legal do D4 é baixo, e o item deixa de bloquear a abertura do sistema.
 - **Evidência:** o `vector_store/` tem o texto completo do Livro Básico. Hoje, qualquer conta Google pode se cadastrar, e quem tiver uma cópia do PDF libera o acesso.
 - **Impacto:** risco legal ao publicar o app no Google (sair do modo *Teste*).
 - **Correção:** decidir antes do passo 8 do guia. Se o uso for restrito, `REGISTRATION_ENABLED=false` com cadastro dos e-mails, ou Cloudflare Access (até 50 usuários grátis).
+- **Feito em 29/10/2026 (D5, primeiro momento):** lista de acesso (`ALLOWLIST_ENABLED=true`, padrão).
+  - Só entram os e-mails da tabela `allowed_emails`. Somente administradores a preenchem, em **Minha conta → E-mails com acesso** (rotas `/api/admin/allowed-emails`).
+  - Os e-mails de `ADMIN_EMAILS` e as contas com papel admin entram sempre.
+  - A regra vale no login e em cada requisição: remover um e-mail encerra as sessões abertas dele na hora.
+- **Pendente (não bloqueia):**
+  - Reavaliar o D4 se o uso deixar de ser controlado (abrir para o público, ou muitos usuários): aí é preciso a autorização da editora (Jambô) ou limitar o conteúdo ao aberto/SRD.
+  - Opcional: criptografar o texto do `vector_store` no disco e limitar as perguntas por usuário por dia.
 
 ### A5. Não há testes automatizados nem CI
 - **Evidência:** não existe `backend/tests/` nem `.github/workflows/`. Todos os testes desta fase (E1/E2, RAG ponta a ponta, DeepSeek, uvicorn em produção) estão em scripts temporários fora do projeto.
@@ -186,8 +194,9 @@ As versões testadas foram fixadas em todos os pontos:
 - **Correção:** passo 6 do guia, no modo A.
 
 ### M7. Configurações com padrão inseguro ou divergente
+- **Feito em 29/10/2026:** `ENABLE_DOCS` passou a ter padrão `false` no código e no `.env.example`; o tempo do Medidor de Caos virou um prazo total da pergunta (`ANSWER_TIME_BUDGET=85`, igual no código e no `.env.example`), em que cada chamada à LLM recebe só o tempo que resta.
 - **Evidência:**
-  - `ENABLE_DOCS` tem padrão `true` no código.
+  - ~~`ENABLE_DOCS` tem padrão `true` no código.~~ resolvido.
   - `LLM_TIMEOUT` local é 60 e no servidor deve ser 90.
   - O rate limit fica em memória, por processo (P1.7).
   - Não há resposta em streaming: respostas longas se aproximam do limite de 100 s do Cloudflare e ficam longe da meta de 3–5 s do RFC.
@@ -207,7 +216,9 @@ As versões testadas foram fixadas em todos os pontos:
     - cliente DeepSeek e RAG → `app/services/llm_client.py` e `retrieval.py`.
   - Pastas e códigos (`.py`, `.ipynb`) receberam o sufixo `_OLD`.
   - Em seguida as três pastas `_OLD` foram **apagadas** (inclusive o `tormenta20.xml` e o `.venv` locais). As regras delas no `.gitignore` e no `.dockerignore` foram retiradas e as referências nos documentos, atualizadas.
-- **Pendente:** `backend/RAG_*`, `docs/nimb_prototipo/`, a rota `/api/perguntas` e o `requirements.txt` da raiz. O conteúdo apagado continua acessível no histórico do Git (ver A3).
+- **Feito em 31/10/2026:** `backend/RAG_Claude`, `RAG_GPT` e `RAG_Gemini` apagadas. Eram pipelines de exemplo com LangChain e Docling (embeddings simulados, sem uso): nada no sistema as importava ou executava, e o Docker só copia `backend/app`.
+- **Feito em 31/10/2026:** rota `/api/perguntas` (sempre respondia 500, V-13 do pentest; nenhuma tela a usava) e `requirements.txt` da raiz (Docling e LangChain, nada importado pelo sistema) removidos.
+- **Mantido como legado:** `docs/nimb_prototipo/`. O conteúdo apagado continua acessível no histórico do Git (ver A3).
 
 ---
 
@@ -229,6 +240,6 @@ Resolvidos em 25/10/2026: **C3**, **C4** e **A3** (versão atual; o histórico f
 ```text
 Antes do deploy        C2 (merge no main) → C1/A7 (Ollama obrigatório no compose)
 No deploy (modo A)     C5 + M6 (build e teste no navegador) → A2 (medir memória e CPU)
-Antes de abrir         A3 (dados pessoais no repositório) → A4 (D4/D5) → A6 (backup) → A1 (script de livros)
+Antes de abrir         A3 (dados pessoais no repositório) → A6 (backup) → A1 (script de livros); A4 rebaixado (uso controlado + lista de acesso)
 Logo depois            A5 (testes + CI) → A8 → M1–M5 (qualidade da busca e da validação) → M7–M9
 ```

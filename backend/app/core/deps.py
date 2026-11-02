@@ -1,7 +1,8 @@
 """
 Dependências FastAPI de autenticação/autorização.
 
-- get_current_user: exige um cookie de sessão válido (401 se ausente/expirado).
+- get_current_user: exige um cookie de sessão válido (401 se ausente/expirado) e
+                    um e-mail na lista de acesso (ALLOWLIST_ENABLED).
 - require_user:     idem (ponto único para regras extras de acesso de usuário).
 - require_admin:    idem, e exige papel de administrador (403).
 """
@@ -10,6 +11,7 @@ from typing import Any
 
 from fastapi import Depends, Request
 
+from app.controllers import auth_controller
 from app.core.config import settings
 from app.core.exceptions import ForbiddenError, UnauthorizedError
 from app.core.security import hash_token
@@ -32,6 +34,10 @@ def get_current_user(request: Request) -> CurrentUser:
     if user is None or not user["is_active"]:
         auth_repository.delete_session(token_hash)
         raise UnauthorizedError("Sessão inválida. Faça login novamente.")
+    if not auth_controller.is_allowed(user["email"], user["role"]):
+        # Removido da lista de acesso com uma sessão ainda aberta
+        auth_repository.delete_user_sessions(user["email"])
+        raise UnauthorizedError(auth_controller.NOT_ALLOWED)
 
     user["token_hash"] = token_hash
     return user

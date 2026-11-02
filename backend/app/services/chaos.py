@@ -27,10 +27,13 @@ No modo 1, o resultado vai num token assinado que o front devolve na pergunta,
 sem poder alterá-lo (`create_roll` / `read_roll`).
 
 Chances e voltas são configuráveis no `.env` (CHAOS_HALLUCINATION_CHANCES e
-CHAOS_HARNESS_ROUNDS). As voltas de harness param antes do fim se o tempo gasto
-passar de CHAOS_TIME_BUDGET, para a requisição não estourar o limite do Cloudflare.
+CHAOS_HARNESS_ROUNDS). A pergunta inteira tem ANSWER_TIME_BUDGET segundos: cada chamada
+à LLM recebe só o tempo que resta, uma volta só começa se couber e, quando o dado manda
+alucinar, sobra tempo reservado para a alucinação. Assim a requisição termina antes do
+limite de ~100 s do Cloudflare (erro 524).
 """
 
+import logging
 import random
 from dataclasses import dataclass
 from datetime import datetime
@@ -43,7 +46,12 @@ from app.core.config import settings
 from app.core.crypto import seal, unseal
 from app.core.exceptions import AppError
 from app.services import llm_client
-from app.services.llm_client import LLMResult, Message
+from app.services.llm_client import LLMResult, LLMTimeoutError, Message
+
+logger = logging.getLogger("nimb.chaos")
+
+# Menor tempo (s) que vale dar a uma chamada extra à LLM (revisão ou alucinação)
+MIN_EXTRA_CALL_SECONDS = 15.0
 
 
 @dataclass(frozen=True)
@@ -182,7 +190,8 @@ HALLUCINATION_SYSTEM = (
 
 
 def _harness_round(
-    connection: dict[str, Any], system: str, question: str, draft: str, round_no: int, total: int
+    connection: dict[str, Any], system: str, question: str, draft: str, round_no: int, total: int,
+    timeout: float,
 ) -> str:
     instruction = (
         f"REVISÃO {round_no}/{total}. Abaixo está a pergunta do usuário e o rascunho da sua resposta.\n"
@@ -194,10 +203,11 @@ def _harness_round(
         "Devolva SOMENTE a resposta final revisada, sem comentar a revisão.\n\n"
         f"PERGUNTA:\n{question}\n\nRASCUNHO:\n{draft}"
     )
-    return llm_client.generate(connection, system=system, messages=[{"role": "user", "content": instruction}]).text
+    messages = [{"role": "user", "content": instruction}]
+    return llm_client.generate(connection, system=system, messages=messages, timeout=timeout).text
 
 
-def _hallucinate(connection: dict[str, Any], question: str, answer: str) -> str:
+def _hallucinate(connection: dict[str, Any], question: str, answer: str, timeout: float) -> str:
     instruction = (
         "Nimb decidiu pregar uma peça. Reescreva a resposta abaixo mantendo o mesmo tom, tamanho, "
         "estrutura, formatação e citações, mas troque 1 ou 2 detalhes de regra (um número, uma "
@@ -207,7 +217,7 @@ def _hallucinate(connection: dict[str, Any], question: str, answer: str) -> str:
         f"PERGUNTA:\n{question}\n\nRESPOSTA:\n{answer}"
     )
     messages = [{"role": "user", "content": instruction}]
-    return llm_client.generate(connection, system=HALLUCINATION_SYSTEM, messages=messages).text
+    return llm_client.generate(connection, system=HALLUCINATION_SYSTEM, messages=messages, timeout=timeout).text
 
 
 @dataclass(frozen=True)
@@ -225,29 +235,55 @@ def answer(
     level: ChaosLevel,
     hallucinate: bool,
     is_refusal: Callable[[str], bool],
+    question_started: float,
 ) -> ChaosResult:
-    """Gera a resposta, revisa conforme o nível e, se o dado mandou, alucina no fim."""
+    """Gera a resposta, revisa conforme o nível e, se o dado mandou, alucina no fim.
+
+    `question_started` é o `perf_counter()` do início da pergunta (antes da busca): o
+    ANSWER_TIME_BUDGET conta a partir dele.
+    """
     started = perf_counter()
+    deadline = question_started + settings.answer_time_budget
     question = messages[-1]["content"]
 
-    first = llm_client.generate(connection, system=system, messages=messages)
+    def remaining() -> float:
+        return deadline - perf_counter()
+
+    # A resposta principal recebe ao menos o mínimo, mesmo se a busca tiver demorado
+    first_timeout = min(settings.llm_timeout, max(remaining(), MIN_EXTRA_CALL_SECONDS))
+    first = llm_client.generate(connection, system=system, messages=messages, timeout=first_timeout)
     text = first.text
     rounds = 0
+    wants_hallucination = hallucinate and not is_refusal(text)
+    # O front já mostrou a alucinação no "pensamento": o tempo dela fica reservado
+    reserve = MIN_EXTRA_CALL_SECONDS if wants_hallucination else 0.0
 
     # Recusa de escopo volta direto: não há o que revisar nem alucinar
     if not is_refusal(text):
         for round_no in range(1, level.harness_rounds + 1):
-            if perf_counter() - started > settings.chaos_time_budget:
+            available = remaining() - reserve
+            if available < MIN_EXTRA_CALL_SECONDS:
                 break
-            revised = _harness_round(connection, system, question, text, round_no, level.harness_rounds)
+            try:
+                revised = _harness_round(
+                    connection, system, question, text, round_no, level.harness_rounds,
+                    timeout=min(settings.llm_timeout, available),
+                )
+            except LLMTimeoutError:
+                logger.warning("Revisão %d/%d sem resposta a tempo: mantido o texto anterior.",
+                               round_no, level.harness_rounds)
+                break
             rounds += 1
             if not is_refusal(revised):
                 text = revised
 
-    # O front já mostrou a alucinação durante o pensamento: ela acontece mesmo após o orçamento de tempo
-    hallucinated = hallucinate and not is_refusal(text)
-    if hallucinated:
-        text = _hallucinate(connection, question, text)
+    hallucinated = False
+    if wants_hallucination and not is_refusal(text) and remaining() >= MIN_EXTRA_CALL_SECONDS:
+        try:
+            text = _hallucinate(connection, question, text, timeout=min(settings.llm_timeout, remaining()))
+            hallucinated = True
+        except LLMTimeoutError:
+            logger.warning("Alucinação sem resposta a tempo: mantida a resposta revisada.")
 
     return ChaosResult(
         llm=LLMResult(

@@ -23,3 +23,6 @@ node_modules/
 # Execucao rapida local (skill iniciar-nimb)
 .claude/skills/iniciar-nimb/
 Iniciar-Nimb.bat
+
+# Arquivos de Manual
+manuais To Do/relatorio_pentest.md

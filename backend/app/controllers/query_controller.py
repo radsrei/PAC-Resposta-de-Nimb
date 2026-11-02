@@ -9,6 +9,7 @@ Fluxo de pergunta -> busca nos livros -> LLM -> resposta.
 5. Persiste pergunta, resposta e fontes na sessão e devolve o resultado.
 """
 
+from time import perf_counter
 from typing import Any
 
 from app.core.config import settings
@@ -85,6 +86,7 @@ def ask(
     connection_id: str | None = None,
     book_ids: list[str] | None = None,
 ) -> dict[str, Any]:
+    question_started = perf_counter()
     prompt = prompt.strip()
     level = chaos.get_level(chaos_level)
     if use_chaos_rule and not roll_token:
@@ -117,6 +119,7 @@ def ask(
         level=level,
         hallucinate=roll["hallucinated"],
         is_refusal=_is_refusal,
+        question_started=question_started,
     )
     result = outcome.llm
     if _is_refusal(result.text):

@@ -4,17 +4,19 @@ Busca dos trechos mais próximos da pergunta nos livros liberados.
 Híbrida: os candidatos da busca vetorial (sentido) e da busca por palavras (BM25:
 nomes, tabelas, termos exatos) são combinados por RRF. Todo trecho passa pelo
 mesmo filtro de similaridade vetorial mínima, que barra perguntas fora do livro.
+Trechos de tabela (a tabela ou uma linha dela) viram a tabela organizada do SQLite
+do livro, com só as linhas encontradas quando a tabela é grande.
 """
 
 import logging
 import time
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 
 from app.core.config import settings
 from app.core.exceptions import RetrievalError
-from app.services import book_catalog, lexical
+from app.services import book_catalog, book_tables, lexical
 from app.services.embeddings import query_embedder
 
 logger = logging.getLogger("nimb.rag")
@@ -33,6 +35,8 @@ class Passage:
     text: str
     similarity: float
     score: float = 0.0
+    table: str = ""
+    rows: tuple[int, ...] = ()
 
     @property
     def label(self) -> str:
@@ -95,9 +99,35 @@ def _search_book(book_id: str, question: str, vectors: dict, hybrid: bool, candi
             text=document,
             similarity=round(sum(a * b for a, b in zip(vector, embedding)), 4),
             score=scores[doc_id],
+            table=meta.get("table") or "",
+            rows=(meta["row"],) if meta.get("row") else (),
         )
         for doc_id, document, meta, embedding in zip(found["ids"], found["documents"], found["metadatas"], found["embeddings"])
     ]
+
+
+def _with_table(passage: Passage) -> Passage:
+    found = book_tables.table_text(passage.book_id, passage.table, set(passage.rows) or None)
+    if found is None:
+        return passage
+    text, page = found
+    return replace(passage, text=text, page=page or passage.page)
+
+
+def _merge_tables(passages: list[Passage]) -> list[Passage]:
+    """Uma passagem por tabela: as linhas achadas se somam; um trecho da tabela inteira vale a tabela toda."""
+    result: list[Passage] = []
+    position: dict[tuple[str, str], int] = {}
+    for passage in passages:
+        key = (passage.book_id, passage.table)
+        if not passage.table or key not in position:
+            position[key] = len(result)
+            result.append(passage)
+            continue
+        first = result[position[key]]
+        rows = first.rows + passage.rows if first.rows and passage.rows else ()
+        result[position[key]] = replace(first, rows=rows)
+    return [_with_table(p) if p.table else p for p in result]
 
 
 def warm_up() -> None:
@@ -123,5 +153,5 @@ def search(book_ids: list[str], question: str, k: int | None = None, hybrid: boo
     candidates = candidates or settings.rag_candidates
     vectors: dict = {}
     passages = [p for book_id in book_ids for p in _search_book(book_id, question, vectors, hybrid, candidates)]
-    relevant = [p for p in passages if p.similarity >= floor]
-    return sorted(relevant, key=lambda p: p.score, reverse=True)[:k]
+    relevant = sorted((p for p in passages if p.similarity >= floor), key=lambda p: p.score, reverse=True)
+    return _merge_tables(relevant[: k * 3])[:k]

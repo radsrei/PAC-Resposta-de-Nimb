@@ -2,7 +2,9 @@
 Regras de negócio da autenticação.
 
 O único método de login é o Google: não há cadastro com e-mail e senha. A conta
-é criada no primeiro login com Google (se REGISTRATION_ENABLED=true). Fluxos:
+é criada no primeiro login com Google (se REGISTRATION_ENABLED=true). Com
+ALLOWLIST_ENABLED=true, só entram os e-mails da lista de acesso (`allowed_emails`),
+preenchida pelos administradores; administradores entram sempre. Fluxos:
 login com Google, logout, edição de perfil e exclusão de conta.
 """
 
@@ -15,10 +17,15 @@ from app.core.config import settings
 from app.core.exceptions import AppError, ForbiddenError, UnauthorizedError
 from app.core.security import generate_token, hash_token
 from app.db.database import now, now_iso
-from app.repositories import auth_repository, user_repository
+from app.repositories import allowlist_repository, auth_repository, user_repository
 from app.services.google_auth import verify_google_credential
 
 logger = logging.getLogger("nimb.auth")
+
+NOT_ALLOWED = (
+    "Seu e-mail ainda não tem acesso ao Respostas de Nimb. "
+    "Peça a um administrador para incluí-lo na lista de acesso."
+)
 
 
 @dataclass(frozen=True)
@@ -57,6 +64,13 @@ def _role_for_new_user(email: str) -> str:
     return "user"
 
 
+def is_allowed(email: str, role: str) -> bool:
+    """Regra da lista de acesso. Vale no login e em cada requisição (core/deps.py)."""
+    if not settings.allowlist_enabled or role == "admin" or email in settings.admin_emails:
+        return True
+    return allowlist_repository.contains(email)
+
+
 def _start_session(user: dict[str, Any], remember: bool, ip: str, user_agent: str | None) -> LoginResult:
     token = generate_token()
     ttl = timedelta(days=settings.remember_me_days) if remember else timedelta(hours=settings.session_ttl_hours)
@@ -82,9 +96,11 @@ def login_google(credential: str, remember: bool, ip: str, user_agent: str | Non
     if user is None:
         if not settings.registration_enabled:
             raise ForbiddenError("O cadastro de novas contas está desativado.")
-        user = user_repository.create(
-            identity.email, identity.name, _role_for_new_user(identity.email), google_sub=identity.sub,
-        )
+        role = _role_for_new_user(identity.email)
+        if not is_allowed(identity.email, role):
+            logger.info("Login recusado (fora da lista de acesso): %s", identity.email)
+            raise ForbiddenError(NOT_ALLOWED)
+        user = user_repository.create(identity.email, identity.name, role, google_sub=identity.sub)
         logger.info("Conta criada via Google: %s (%s)", identity.email, user["role"])
     else:
         if user["google_sub"] and user["google_sub"] != identity.sub:
@@ -98,6 +114,9 @@ def login_google(credential: str, remember: bool, ip: str, user_agent: str | Non
         if user["role"] != "admin" and user["email"] in settings.admin_emails:
             user = user_repository.update(user["email"], {"role": "admin"})
             logger.info("Conta promovida a administradora (ADMIN_EMAILS): %s", user["email"])
+        if not is_allowed(user["email"], user["role"]):
+            logger.info("Login recusado (fora da lista de acesso): %s", user["email"])
+            raise ForbiddenError(NOT_ALLOWED)
     return _start_session(user, remember, ip, user_agent)
 
 

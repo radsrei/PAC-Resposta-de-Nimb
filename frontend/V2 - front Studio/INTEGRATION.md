@@ -149,14 +149,13 @@ sem alterações de código.
 | Rota | Método | Usado por | Body | Resposta |
 |---|---|---|---|---|
 | `/api/health` | GET | monitoramento | — | `{status, service, rag_engine}` |
-| `/api/perguntas` | POST | `frontend/Claude`, `docs/nimb_prototipo/frontend` | `{pergunta, categoria?, sessao_id?}` | `{pergunta, resposta, fontes[], status, tempo_resposta_ms}` |
+| ~~`/api/perguntas`~~ | POST | removida da API em 31/10/2026; existe só no backend do protótipo (`docs/nimb_prototipo/backend`) | — | — |
 | `/api/rag/roll` | POST | `frontend/nimb-os-react` (`ragApi.ts`) | `{prompt, chaosLevel}` (0 Baixo a 3 Louco) | `{rollToken, hallucinated, chaosLevel, chaosLabel, roll}` |
 | `/api/rag/query` | POST | `frontend/nimb-os-react` (`ragApi.ts`) | `{prompt, chaosLevel, useChaosRule, rollToken?, bookIds?}` (`rollToken` obrigatório com `useChaosRule`) | `{answer, bookTitle, page, similarity, chaosApplied, quote?, rollTable?}` |
 | `/api/rag/upload` | POST (multipart) | `frontend/nimb-os-react` (`ragApi.ts`) | `file, chunkSize, model, entropy` | `{id, title, fileName, size, chunks, progress, status, badgeColor?}` |
 
-Os `TODO`s marcados no arquivo indicam onde plugar o pipeline RAG real
-(retrieval no vector DB + chamada ao LLM), reaproveitando o que já existe em
-`backend/RAG_Claude|RAG_GPT|RAG_Gemini/`.
+O pipeline RAG real (busca nos livros + chamada à LLM) está em
+`backend/app/services/retrieval.py` e `backend/app/services/llm_client.py`.
 
 CORS liberado para:
 - `http://localhost:5500` / `http://127.0.0.1:5500` (protótipo estático)
@@ -167,8 +166,6 @@ CORS liberado para:
 - [ ] `npm run lint` (`tsc --noEmit`) sem erros em `frontend/nimb-os-react`
 - [ ] `python -m py_compile main.py` sem erros no backend
 - [ ] Testar os 3 fluxos manualmente: terminal/chat, login, upload de PDF
-- [ ] Confirmar que `frontend/Claude` continua funcionando com `/api/perguntas`
-      (contrato antigo preservado)
 - [ ] Confirmar que `nimb-os-react` funciona com `/api/rag/query` e
       `/api/rag/upload` (contrato novo)
 - [ ] Alinhar na equipe se `frontend/Claude` será descontinuado em favor do

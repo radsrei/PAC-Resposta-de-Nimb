@@ -5,6 +5,7 @@ import { ChatArea } from './components/chat/ChatArea';
 import { AccountScreen } from './components/auth/AccountScreen';
 import { PdfUploadModal } from './components/modals/PdfUploadModal';
 import { LlmConnectionModal } from './components/modals/LlmConnectionModal';
+import { TreasureModal } from './components/modals/TreasureModal';
 import {
   AuthUser,
   ChatMessage,
@@ -133,6 +134,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
+  const [isTreasureModalOpen, setIsTreasureModalOpen] = useState<boolean>(false);
   const operator = toOperator(user);
   const isAdmin = user.role === 'admin';
   const [books, setBooks] = useState<IndexedBook[]>([]);
@@ -416,6 +418,10 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
             onOpenUploadModal={() => setIsUploadModalOpen(true)}
             onNewSession={handleNewSession}
             onNavigateLogin={() => setCurrentScreen('account')}
+            onOpenTreasure={() => {
+              setIsTreasureModalOpen(true);
+              setIsSidebarOpen(false);
+            }}
           />
 
           {/* CHAT BODY */}
@@ -455,6 +461,9 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
           setBooks((prev) => [toIndexedBook(book), ...prev.filter((b) => b.id !== book.id)])
         }
       />
+
+      {/* SCREEN 5: POP-UP DE SORTEIO DE TESOURO */}
+      <TreasureModal isOpen={isTreasureModalOpen} onClose={() => setIsTreasureModalOpen(false)} />
 
       {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}
       <LlmConnectionModal
