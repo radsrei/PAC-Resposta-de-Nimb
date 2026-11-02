@@ -15,6 +15,7 @@ interface SidebarProps {
   onOpenUploadModal: () => void;
   onNewSession: () => void;
   onNavigateLogin: () => void;
+  onOpenTreasure: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,6 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUploadModal,
   onNewSession,
   onNavigateLogin,
+  onOpenTreasure,
 }) => {
   return (
     <>
@@ -44,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Panel */}
       <aside
-        className={`w-72 md:w-80 flex-shrink-0 bg-[#0A0A10]/95 md:bg-[#13131F]/80 border-r border-[rgba(162,89,255,0.25)] flex flex-col justify-between backdrop-blur-xl z-40 transition-all duration-300 fixed md:static inset-y-0 ${
+        className={`chaos-glow-target w-72 md:w-80flex-shrink-0 bg-[#0A0A10]/95 md:bg-[#13131F]/80 border-r border-[rgba(162,89,255,0.25)] flex flex-col justify-between backdrop-blur-xl z-40 transition-all duration-300 fixed md:static inset-y-0 ${
           isOpen ? 'left-0' : '-left-full md:left-0'
         }`}
       >
@@ -86,6 +88,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               add_circle
             </span>
             <span>Nova Sinapse Neural</span>
+          </button>
+
+          {/* Sorteio de Tesouro (pop-up) */}
+          <button
+            onClick={onOpenTreasure}
+            className="w-full py-2.5 px-3 rounded-xl bg-[#181827]/70 hover:bg-[#181827] border border-[#39D98A]/30 hover:border-[#39D98A]/60 text-[#F0EEF8] text-xs font-semibold flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
+            title="Sortear o tesouro das criaturas do combate"
+          >
+            <span className="material-symbols-outlined text-[18px] text-[#39D98A]">
+              diamond
+            </span>
+            <span>Sorteio de Tesouro</span>
           </button>
         </div>
 

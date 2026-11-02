@@ -5,6 +5,7 @@ export interface RagMetadata {
   page?: number | string | null;
   similarity: string;
   chaosApplied: number;
+  harnessRounds?: number;
   // Dados da LLM que gerou a resposta
   provider?: string;
   model?: string;
@@ -94,6 +95,19 @@ export interface AuthUser {
   lastLoginAt: string | null;
 }
 
+/** E-mail da lista de acesso (backend: /api/admin/allowed-emails). */
+export interface AllowedEmail {
+  email: string;
+  addedBy: string;
+  createdAt: string;
+  hasAccount: boolean;
+}
+
+export interface Allowlist {
+  enabled: boolean;
+  emails: AllowedEmail[];
+}
+
 export interface AuthConfig {
   googleClientId: string | null;
 }
@@ -170,4 +184,83 @@ export interface SessionMessage {
 
 export interface ChatSessionDetail extends ChatSession {
   messages: SessionMessage[];
+}
+
+// ---------------------------------------------------------------------------
+// Sorteio de tesouro (backend: /api/tesouro)
+// ---------------------------------------------------------------------------
+export type TreasureType = 'Nenhum' | 'Padrão' | 'Metade' | 'Dobro';
+
+export interface TreasureCreature {
+  name: string;
+  nd: string;
+  treasure: TreasureType;
+  treasureNote: string;
+  page: string;
+}
+
+export interface TreasureReward {
+  kind: string;
+  name: string;
+  details: string[];
+  value?: number | null;
+  options: TreasureReward[];
+  sources: string[];
+}
+
+export interface TreasureColumnRoll {
+  column: 'dinheiro' | 'itens';
+  roll: number;
+  result: string;
+  rewards: TreasureReward[];
+  source: string;
+}
+
+export interface TreasureRollResult {
+  id: string;
+  createdAt: string;
+  bookId: string;
+  nd: string;
+  treasureType: TreasureType;
+  creature: TreasureCreature | null;
+  rolls: TreasureColumnRoll[];
+  totalValue: number;
+  notes: string[];
+}
+
+export interface TreasureGroupItem {
+  creature: string;
+  quantity: number;
+}
+
+/** Rolagem pedida ao jogador: `count`d`sides` (informa a soma) e para que serve. */
+export interface TreasureDiceRequest {
+  dice: string;
+  count: number;
+  sides: number;
+  purpose: string;
+}
+
+export interface TreasureDiceStep extends TreasureDiceRequest {
+  value: number;
+  /** O que o valor encontrou na tabela, ou por que foi descartado ("...: role de novo") */
+  outcome: string;
+}
+
+/** Consulta com resultados rolados na mesa: falta `next` ou o tesouro está em `result`. */
+export interface TreasureLookup {
+  done: boolean;
+  steps: TreasureDiceStep[];
+  next: TreasureDiceRequest | null;
+  result: TreasureRollResult | null;
+}
+
+export interface TreasureGroupResult {
+  groups: {
+    creature: TreasureCreature;
+    quantity: number;
+    totalValue: number;
+    results: TreasureRollResult[];
+  }[];
+  totalValue: number;
 }

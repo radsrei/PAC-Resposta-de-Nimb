@@ -51,7 +51,8 @@ Criar e instalar (primeira vez):
 python -m venv .venv               # Python 3.14
 .venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -U pip
-pip install -r requirements.txt   # tudo: API + RAG + Docling
+pip install -r backend/requirements.txt                   # API
+pip install -r backend/vector_builder/requirements.txt    # construtor do banco dos livros (Ollama)
 ```
 
 Acessar o ambiente:
@@ -59,7 +60,7 @@ Acessar o ambiente:
 .venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 ```
 
-Para subir só a API, `pip install -r backend/requirements.txt` basta (dependências mínimas).
+Para o provedor `sentence-transformers` (PyTorch, ~2 GB), use `backend/vector_builder/requirements-local.txt` no lugar do segundo. O jeito mais simples é o `scripts/setup.ps1` (ou `setup.sh`), que faz tudo isso.
 
 ## Git
 Gerar uma nova Branch para envio de mudanças e PR

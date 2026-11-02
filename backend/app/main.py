@@ -14,11 +14,11 @@ from fastapi.responses import JSONResponse
 from app.controllers import llm_controller
 from app.core.config import settings
 from app.core.exceptions import AppError, TooManyRequestsError
-from app.core.middleware import SecurityMiddleware
+from app.core.middleware import BodyLimitMiddleware, SecurityMiddleware
 from app.db.database import init_db
 from app.repositories import auth_repository, llm_repository
-from app.routers import admin, auth, health, llm, perguntas, rag, sessions
-from app.services import retrieval
+from app.routers import admin, auth, health, llm, rag, sessions, treasure
+from app.services import chaos, retrieval, treasure_store
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:     [%(name)s] %(message)s")
 logger = logging.getLogger("nimb")
@@ -31,8 +31,11 @@ async def lifespan(_: FastAPI):
     auth_repository.purge_expired()
     llm_controller.seed_from_env()
     threading.Thread(target=retrieval.warm_up, name="rag-warm-up", daemon=True).start()
+    threading.Thread(target=treasure_store.prepare_all, name="treasure-prepare", daemon=True).start()
     if not settings.google_client_id:
         logger.info("GOOGLE_CLIENT_ID não definido: login com Google desativado.")
+    for warning in chaos.check_progression():
+        logger.warning(warning)
     yield
 
 
@@ -45,6 +48,9 @@ app = FastAPI(
     openapi_url="/openapi.json" if settings.enable_docs else None,
 )
 
+# O último adicionado roda primeiro: o limite do corpo fica por dentro, e o 413
+# dele ainda recebe os cabeçalhos de segurança e de CORS
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(SecurityMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -82,7 +88,8 @@ async def unhandled_error_handler(request: Request, exc: Exception):
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(admin.allowlist_router)
 app.include_router(llm.router)
 app.include_router(sessions.router)
 app.include_router(rag.router)
-app.include_router(perguntas.router)
+app.include_router(treasure.router)

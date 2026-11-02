@@ -24,8 +24,8 @@ def _bool(name: str, default: bool) -> bool:
 class Settings:
     app_name: str = "Respostas de Nimb API"
     version: str = "0.4.0"
-    # Swagger em /docs (desligue em produção)
-    enable_docs: bool = _bool("ENABLE_DOCS", True)
+    # Swagger em /docs. Desligado por padrão: ligue só localmente (ENABLE_DOCS=true)
+    enable_docs: bool = _bool("ENABLE_DOCS", False)
 
     host: str = os.getenv("API_HOST", "0.0.0.0")
     port: int = int(os.getenv("API_PORT", "8000"))
@@ -51,6 +51,20 @@ class Settings:
     llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "90"))
     # Quantidade de mensagens anteriores da sessão enviadas como contexto
     history_limit: int = int(os.getenv("HISTORY_LIMIT", "10"))
+
+    # Níveis de caos (Baixo, Médio, Alto, Louco), ver app/services/chaos.py:
+    # limite (%) da regra de alucinação e voltas de revisão (harness) de cada nível
+    chaos_hallucination_chances: list[float] = field(
+        default_factory=lambda: [float(v) for v in _csv(os.getenv("CHAOS_HALLUCINATION_CHANCES", "5,15,30,50"))]
+    )
+    chaos_harness_rounds: list[int] = field(
+        default_factory=lambda: [int(v) for v in _csv(os.getenv("CHAOS_HARNESS_ROUNDS", "0,1,2,3"))]
+    )
+    # Fuso do "registro" (data e hora) usado na regra de alucinação
+    chaos_timezone: str = os.getenv("CHAOS_TIMEZONE", "America/Sao_Paulo")
+    # Tempo total (s) da pergunta, da busca à última chamada à LLM. Cada chamada recebe
+    # só o tempo que resta, então a requisição termina antes dos ~100 s do Cloudflare
+    answer_time_budget: float = float(os.getenv("ANSWER_TIME_BUDGET", "85"))
 
     # Conexão LLM padrão (opcional). Se o banco estiver vazio na subida da API e
     # LLM_DEEPSEEK_API estiver definida, uma conexão DeepSeek é criada com estes valores.
@@ -85,6 +99,9 @@ class Settings:
     # A primeira conta criada vira administradora. Desligado por padrão: num
     # domínio público, quem entrar primeiro ganharia o papel de admin
     first_user_is_admin: bool = _bool("FIRST_USER_IS_ADMIN", False)
+    # Lista de acesso: só entram os e-mails cadastrados pelos administradores
+    # (Minha conta → E-mails com acesso). Administradores entram sempre.
+    allowlist_enabled: bool = _bool("ALLOWLIST_ENABLED", True)
 
     # Limite de requisições por minuto, por IP, na rota de login
     auth_rate_limit_per_minute: int = int(os.getenv("AUTH_RATE_LIMIT_PER_MINUTE", "20"))
@@ -122,6 +139,10 @@ class Settings:
     rag_hybrid: bool = _bool("RAG_HYBRID", True)
     rag_candidates: int = int(os.getenv("RAG_CANDIDATES", "20"))
     rag_lexical_weight: float = float(os.getenv("RAG_LEXICAL_WEIGHT", "0.5"))
+
+    # Sorteio de tesouro: cópia própria das tabelas de tesouro e das criaturas de cada livro
+    # (`<livro>.sqlite`), refeita pela API sempre que o banco do livro é reconstruído
+    treasure_dir: Path = Path(os.getenv("TREASURE_DIR", str(BACKEND_DIR / "data" / "tesouro")))
 
 
 settings = Settings()

@@ -1,5 +1,6 @@
 """Prompts de sistema e mensagens de bloqueio usados nas consultas à LLM."""
 
+from app.services.chaos import ChaosLevel
 from app.services.retrieval import Passage
 
 BOOK_REQUIRED = "Adicione um livro antes de perguntar: use o botão 'Subir PDF' para liberar o Tormenta20."
@@ -10,21 +11,11 @@ OUT_OF_SCOPE = (
 )
 
 
-def _chaos_description(chaos_level: int) -> str:
-    if chaos_level < 30:
-        return "Ordem: responda de forma objetiva, precisa e direta, sem floreios."
-    if chaos_level < 70:
-        return "Equilibrado: responda com clareza, com um leve toque da personalidade excêntrica de Nimb."
-    if chaos_level < 90:
-        return "Instável: responda com bastante personalidade caótica e humor, sem perder a informação correta."
-    return "CAOS TOTAL: responda de forma teatral e imprevisível, mas mantenha as regras e fatos corretos."
-
-
 def _sources_block(passages: list[Passage]) -> str:
     return "\n\n".join(f"[{i}] {p.label}\n{p.text}" for i, p in enumerate(passages, start=1))
 
 
-def build_system_prompt(chaos_level: int, passages: list[Passage]) -> str:
+def build_system_prompt(level: ChaosLevel, passages: list[Passage]) -> str:
     return (
         "Você é Nimb, o Deus do Caos e da Sorte do cenário de RPG Tormenta20, atuando "
         "como assistente de consulta para jogadores e mestres.\n"
@@ -36,7 +27,7 @@ def build_system_prompt(chaos_level: int, passages: list[Passage]) -> str:
         "no formato (Livro, p. N), com a página indicada no trecho.\n"
         "- Se os trechos não trazem a resposta, diga que não encontrou nos livros liberados; "
         "não complete com conhecimento próprio nem invente regras, números ou páginas.\n"
-        f"- Nível de caos atual: {chaos_level}%. Tom da resposta -> {_chaos_description(chaos_level)} "
+        f"- Nível de caos atual: {level.label}. Tom da resposta -> {level.tone} "
         "O caos muda só o tom: regras, números e fontes ficam exatamente como nos trechos.\n\n"
         f"TRECHOS DOS LIVROS:\n\n{_sources_block(passages)}"
     )

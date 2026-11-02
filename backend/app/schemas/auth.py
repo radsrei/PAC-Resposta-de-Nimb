@@ -38,3 +38,19 @@ class MessageOut(CamelModel):
 class AdminUserUpdate(CamelModel):
     role: Literal["user", "admin"] | None = None
     is_active: bool | None = None
+
+
+class AllowedEmailOut(CamelModel):
+    email: str
+    added_by: str
+    created_at: str
+    has_account: bool
+
+
+class AllowlistOut(CamelModel):
+    enabled: bool  # ALLOWLIST_ENABLED: com false a lista fica guardada, mas não é aplicada
+    emails: list[AllowedEmailOut]
+
+
+class AllowlistAddPayload(CamelModel):
+    emails: list[str] = Field(..., min_length=1, max_length=200)

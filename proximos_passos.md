@@ -62,14 +62,18 @@ A pergunta precisa ser vetorizada **com o mesmo modelo** usado para construir o 
 | sentence-transformers dentro da API | um processo só | imagem Docker de cerca de 3 GB; mais memória por worker |
 | Embeddings por API (ex.: OpenAI) | sem modelo no servidor | exige reconstruir todos os bancos e adicionar o provedor |
 
-### D4. Direitos dos livros — ALTA (se o sistema for público)
+### D4. Direitos dos livros — MÉDIA (decidido em 29/10/2026)
+**Decisão:** uso em ambiente controlado, por poucos usuários, todos cadastrados pelo administrador na lista de acesso. Com isso, a criticidade cai de alta para média. Reavaliar se o sistema for aberto ao público.
+
 O `catalog.json` guarda frases dos livros, e o banco vetorial guarda o texto completo em trechos. As respostas citam o conteúdo.
 - Decidir: uso restrito (turma, grupo fechado) ou público.
 - Se público: obter autorização da editora (Jambô) ou limitar a aberto/SRD.
 - Relacionado: quem pode entrar (D5).
 
-### D5. Quem pode acessar — ALTA
-Hoje qualquer conta Google cria conta no primeiro login (`REGISTRATION_ENABLED=true`).
+### D5. Quem pode acessar — decidido em 29/10/2026
+**Decisão:** lista de acesso (`ALLOWLIST_ENABLED=true`, padrão). Só entram os e-mails cadastrados pelo administrador em **Minha conta → E-mails com acesso**; os de `ADMIN_EMAILS` entram sempre.
+
+Opções avaliadas (antes da decisão, qualquer conta Google criava conta no primeiro login):
 - Aberto para qualquer conta Google;
 - Restrito: `REGISTRATION_ENABLED=false` e os usuários cadastrados antes. Falta tela ou comando para o admin cadastrar e-mails.
 - Lista de domínios permitidos (ex.: só `@empresa.com.br`): **não implementado**.
@@ -219,10 +223,10 @@ OLLAMA_URL=http://ollama:11434
 |---|---|---|
 | P2.1 | Textos fixos na tela: selo "RAG v2.4", "NEURAL CHAOS RETRIEVAL ENGINE", sugestões fixas do chat | `Header.tsx`, `SuggestionChips.tsx` |
 | P2.2 | Botão **Subir PDF** escondido no celular (`hidden sm:flex`); no celular só abre pela barra lateral | `Header.tsx` |
-| P2.3 | Limpeza do repositório: pipelines antigos `backend/RAG_*`, `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` (`Convert_file/`, `deepseek/` e `estrutura-Exemplo/` já removidas em 25/10/2026) |
-| P2.4 | Rota legada `/api/perguntas` e a docstring desatualizada de `backend/main.py` (cita `frontend/nimb-os-react` e `frontend/Claude`, que não existem mais) | `routers/perguntas.py`, `backend/main.py` |
-| P2.5 | `requirements.txt` da raiz instala tudo (Docling, LangChain), mas o servidor só precisa de `backend/requirements.txt` | raiz |
-| P2.6 | Docs antigas: `resp.md` (cita o venv `nimb` e o "upload como stub"), tutoriais do Docling usando `env` | `resp.md`, `*/TUTORIAL_GIT_E_DOCLING.md` |
+| P2.3 | Limpeza do repositório: `docs/nimb_prototipo/`, `backend/Estrutura_base.py`, `final.ipynb` | raiz e `backend/` (`Convert_file/`, `deepseek/` e `estrutura-Exemplo/` já removidas em 25/10/2026; `backend/RAG_*` em 31/10/2026) |
+| P2.4 | ✅ 31/10/2026: rota `/api/perguntas` removida. Rota legada `/api/perguntas` e a docstring desatualizada de `backend/main.py` (cita `frontend/nimb-os-react` e `frontend/Claude`, que não existem mais) | `routers/perguntas.py`, `backend/main.py` |
+| P2.5 | ✅ 31/10/2026: removido. `requirements.txt` da raiz instala tudo (Docling, LangChain), mas o servidor só precisa de `backend/requirements.txt` | raiz |
+| P2.6 | Docs antigas: `resp.md` (cita o venv `nimb` e o "upload como stub"), tutorial do Docling (apagado com `backend/RAG_Claude` em 31/10/2026) | `resp.md` |
 | P2.7 | Imagens com nomes de pessoas em `PAC-7+8/` (presença, PRs) num repositório público: avaliar se devem continuar versionadas | `PAC-7+8/` |
 | P2.8 | Licença AGPL-3.0: num serviço online, o código-fonte precisa ficar disponível aos usuários (link no rodapé para o GitHub) | `LICENSE`, tela |
 | P2.9 | Comando para cadastrar outra edição do mesmo livro sem refazer as frases (`add-edition`) e uma etapa de OCR automática (`ocrmypdf`) | `vector_builder/` |
