@@ -1,13 +1,13 @@
 # Deploy completo na AWS EC2 — Respostas de Nimb online
 
-Guia único para levar o sistema da máquina local até **https://respostas-nimb.com.br**. Compila e atualiza o [execucao_controlada.md](execucao_controlada.md) e o [banco_vetorial_livros.md](banco_vetorial_livros.md) para o estado de 24/10/2026: busca híbrida nos livros, Ollama obrigatório, pergunta só com livro liberado e só sobre o Tormenta20. Revisado em 31/10/2026 para o branch `feat/tabelas_adicionais` (commit `efe22d8`, API 0.4.0): lista de acesso, Medidor de Caos, tabelas do livro e sorteio de tesouro.
+Guia único para levar o sistema da máquina local até **https://respostas-nimb.com.br**. Compila e atualiza o [execucao_controlada.md](execucao_controlada.md) e o [banco_vetorial_livros.md](banco_vetorial_livros.md) para o estado de 24/10/2026: busca híbrida nos livros, Ollama obrigatório, pergunta só com livro liberado e só sobre o Tormenta20. Revisado em 31/10/2026 para o branch `feat/tabelas_adicionais` (commit `efe22d8`, API 0.4.0): lista de acesso, Medidor de Caos, tabelas do livro e sorteio de tesouro. Comandos validados em 01/11/2026 (commit `1f67aaa`).
 
 Antes de começar, leia os itens **críticos** do [problemas_e_falhas.md](problemas_e_falhas.md):
 - C3 (versões) e C4 (administrador) foram resolvidos no código em 25/10/2026.
 - Este guia contorna o C1 (perfil do Ollama) e o C2 (branch).
 - O C5 (imagens nunca construídas) é verificado no passo 6.
 
-Comandos marcados **(local)** rodam no PowerShell da sua máquina; **(servidor)**, no SSH da EC2 (Ubuntu).
+Comandos marcados **(local)** rodam no PowerShell da sua máquina (Windows PowerShell 5.1), na raiz do projeto, com a `nimb.pem` na mesma pasta; **(servidor)**, no SSH da EC2 (Ubuntu). No PowerShell 5.1, `curl` é apelido do `Invoke-WebRequest`: use **`curl.exe`**.
 
 ```text
 Navegador ──HTTPS──► Cloudflare (DNS, certificado, proteção)
@@ -25,7 +25,7 @@ EC2 (Docker Compose) ── cloudflared ──► web (Caddy :80) ──► fron
 
 | # | Etapa | Onde | Situação em 24/10/2026 |
 |---|---|---|---|
-| 0 | Pré-requisitos: código no `main`, banco dos livros, contas | local | ⚠️ `feat/tabelas_adicionais` 35 commits à frente do `main` (C2); o `main` é ancestral, o merge não tem conflito |
+| 0 | Pré-requisitos: código no `main`, banco dos livros, contas | local | ⚠️ `feat/tabelas_adicionais` 37 commits à frente do `main` em 01/11/2026 (C2); o `main` é ancestral, o merge não tem conflito; há arquivos sem commit (tela de dados do tesouro) |
 | 1 | Criar a EC2 (t3.medium, 30 GB) e o IP elástico | AWS | a fazer |
 | 2 | Preparar o servidor (Docker, swap) | servidor | a fazer |
 | 3 | Configurar `backend/.env` e `deploy/.env` | servidor | a fazer |
@@ -46,11 +46,11 @@ Resumo para quem já leu o guia. Os detalhes e as tabelas de variáveis estão n
 **0. Código no `main`** (local)
 Publicar o branch e levar ao `main`, que é o que o servidor clona.
 ```powershell
-git add .gitignore; git commit -m "Ignora relatório de pentest"; git push
-gh pr create --base main --head feat/tabelas_adicionais --title "Deploy: tabelas e tesouro"
-gh pr merge --merge
+git status                                   # tudo o que vai para o servidor precisa estar commitado
+git add -A; git commit -m "<mensagem>"; git push
 ```
-Resultado: `git log origin/main -1` mostra o `efe22d8` (ou o commit de merge).
+No GitHub: **Pull requests → New pull request**, base `main` ← compare `feat/tabelas_adicionais` → **Create** → **Merge**. (O `gh` não está instalado nesta máquina; com ele: `gh pr create --base main --head feat/tabelas_adicionais` e `gh pr merge --merge`.)
+Resultado: `git fetch; git log origin/main -1` mostra o commit de merge.
 
 **0b. Banco dos livros** (local, em `backend/`)
 Conferir o banco que vai para o servidor.
@@ -62,6 +62,10 @@ Resultado: `t20-basico` pronto, 2.818 trechos; híbrida com r@5 100% e MRR ~0,93
 
 **1. Máquina** (Console AWS)
 Criar a EC2 Ubuntu 24.04, `t3.medium`, 30 GB gp3, key pair `nimb`, security group só com SSH 22 do seu IP; alocar e associar o IP elástico.
+No Windows, o `ssh` recusa a chave se outros usuários puderem lê-la ("UNPROTECTED PRIVATE KEY FILE"). Uma vez, na pasta da chave:
+```powershell
+icacls nimb.pem /inheritance:r; icacls nimb.pem /grant:r "$($env:USERNAME):(R)"
+```
 Resultado: `ssh -i nimb.pem ubuntu@<IP-ELASTICO>` entra.
 
 **2. Servidor** (servidor)
@@ -125,7 +129,7 @@ Resultado: o botão do Google funciona no domínio.
 **9. Fechar e aceitar** (AWS + local)
 Security group só com SSH 22.
 ```powershell
-curl -m 5 http://<IP-ELASTICO>
+curl.exe -m 5 http://<IP-ELASTICO>
 ```
 Resultado: o `curl` falha e o checklist do passo 9 passa em `https://respostas-nimb.com.br`.
 
@@ -141,11 +145,11 @@ Resultado: um `~/backups/nimb-AAAAMMDD-HHMM.tar.gz` por dia.
 ## 0. Pré-requisitos (local)
 
 ### 0.1 Código no branch que o servidor clona
-O servidor clona o branch padrão (`main`), mas tudo o que foi feito está em `feat/tabelas_adicionais`, 35 commits à frente do `main` (item C2). O `main` é ancestral do branch, então o merge não tem conflito. O `develop` não traz nada que falte no branch. Escolha um caminho:
+O servidor clona o branch padrão (`main`), mas tudo o que foi feito está em `feat/tabelas_adicionais`, 37 commits à frente do `main` em 01/11/2026 (item C2). O `main` é ancestral do branch, então o merge não tem conflito. O `develop` não traz nada que falte no branch. Escolha um caminho:
 - **Recomendado:** abrir um PR `feat/tabelas_adicionais` → `main` no GitHub e fazer o merge (ver o roteiro rápido).
 - **Alternativa:** clonar o branch direto no passo 2 (`git clone -b feat/tabelas_adicionais ...`).
 
-Antes do merge, faça o commit do `.gitignore`, que tira o `relatorio_pentest.md` do Git: o repositório é público. Os dois itens Altos do relatório estão tratados (31/10/2026): a chave do LangSmith (V-01) foi revogada, e o corpo das requisições (V-02) passou a ser limitado no `deploy/Caddyfile` (128 KB, ou 100 MB só no upload) e na API (`BodyLimitMiddleware`, que também exige sessão antes de receber o PDF). No passo 6, confira o upload do PDF real (teste 4): é ele que valida o limite do Caddy.
+O `.gitignore` que tira o `relatorio_pentest.md` do Git já está commitado (o repositório é público). Antes do merge, faça o commit do que estiver pendente: em 01/11/2026, a animação dos dados do tesouro (`src/components/dice/`, `TreasureModal.tsx`) e o `public/sounds/LEIAME.md`. Faça o commit dos dois juntos: o `TreasureModal.tsx` novo importa o `DiceRoller`, e sem o `dice/` no Git o build do front no servidor falha. Os dois itens Altos do relatório estão tratados (31/10/2026): a chave do LangSmith (V-01) foi revogada, e o corpo das requisições (V-02) passou a ser limitado no `deploy/Caddyfile` (128 KB, ou 100 MB só no upload) e na API (`BodyLimitMiddleware`, que também exige sessão antes de receber o PDF). No passo 6, confira o upload do PDF real (teste 4): é ele que valida o limite do Caddy.
 
 ```powershell
 git status                 # (local) nada pendente
@@ -360,7 +364,7 @@ O domínio já está delegado ao Cloudflare. Falta:
 
 **EC2 → Security groups**: só SSH 22 do seu IP; sem 80 nem 443.
 ```bash
-curl -m 5 http://<IP-ELASTICO>        # (local) deve falhar: o site só existe pelo Cloudflare
+curl.exe -m 5 http://<IP-ELASTICO>    # (local, PowerShell) deve falhar: o site só existe pelo Cloudflare
 ```
 
 ### Checklist em https://respostas-nimb.com.br
@@ -427,7 +431,9 @@ sudo chown -R 10001:10001 ~/PAC-Resposta-de-Nimb/vector_store && cd ~/PAC-Respos
 | Erro **1033** | `cloudflared` parado ou token errado: `docker compose logs cloudflared` |
 | **502 Bad Gateway** no domínio | hostname do tunnel diferente de `web:80`, ou `web` fora do ar |
 | **ERR_TOO_MANY_REDIRECTS** | `SITE_ADDRESS` com o domínio em vez de `:80` |
-| **524** | resposta passou de ~100 s: `LLM_TIMEOUT=90` e `deepseek-chat` |
+| **524** | resposta passou de ~100 s: manter `ANSWER_TIME_BUDGET=85`, `LLM_TIMEOUT=90` e `deepseek-chat` |
+| `ssh`: "UNPROTECTED PRIVATE KEY FILE" | permissões da `nimb.pem` no Windows: `icacls` do passo 1 |
+| `curl -m 5` dá erro de parâmetro no PowerShell | use `curl.exe` (no 5.1, `curl` é o `Invoke-WebRequest`) |
 | Build da API falha no `pip install` | conflito com o `requirements.lock`: confira se o `requirements.txt` e o lock são do mesmo commit; para mudar uma versão, gere o lock de novo (C3) |
 | Ninguém é administrador | `ADMIN_EMAILS` vazio ou diferente do e-mail da conta Google; corrija o `.env`, `docker compose restart api` e entre de novo |
 | Sem memória no build ou no upload | instância menor que `t3.medium`, ou swap não criado (`swapon --show`) |

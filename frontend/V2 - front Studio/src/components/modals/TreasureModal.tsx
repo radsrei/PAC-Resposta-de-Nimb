@@ -7,6 +7,8 @@ import {
   TreasureReward,
 } from '../../types';
 import { treasureApiService } from '../../services/treasureApi';
+// [DiceRoller] animação de dados (alteração 1/3). Para remover: apague esta linha e os outros blocos [DiceRoller].
+import { DiceRoller, MIN_ROLL_MS, placeholderDice, treasureDice } from '../dice/DiceRoller';
 
 // Mesmos limites do backend (TreasureGroupPayload)
 const MAX_CREATURES = 10;
@@ -287,7 +289,15 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
     setError(null);
     setIsRolling(true);
     try {
-      setResult(await treasureApiService.rollGroup(selected.map((s) => ({ creature: s.creature.name, quantity: s.quantity }))));
+      // [DiceRoller] alteração 2/3: espera ao menos MIN_ROLL_MS para a animação aparecer.
+      // Para remover, volte para:
+      // setResult(await treasureApiService.rollGroup(selected.map((s) => ({ creature: s.creature.name, quantity: s.quantity }))));
+      const [rolled] = await Promise.all([
+        treasureApiService.rollGroup(selected.map((s) => ({ creature: s.creature.name, quantity: s.quantity }))),
+        new Promise((resolve) => setTimeout(resolve, MIN_ROLL_MS)),
+      ]);
+      setResult(rolled);
+      // [DiceRoller] fim da alteração 2/3
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -691,6 +701,19 @@ export const TreasureModal: React.FC<TreasureModalProps> = ({ isOpen, onClose })
                   {isRolling ? 'Sorteando...' : result ? 'Sortear novamente' : 'Sortear tesouro'}
                 </button>
               )}
+
+              {/* [DiceRoller] alteração 3/3: dados animados no sorteio automático. Para remover, apague este bloco. */}
+              {!manualMode && (isRolling || result) && (
+                <DiceRoller
+                  rolling={isRolling}
+                  dice={
+                    isRolling || !result
+                      ? placeholderDice(selected.reduce((n, s) => n + s.quantity * 2 * rollsPerColumn(s.creature), 0))
+                      : treasureDice(result)
+                  }
+                />
+              )}
+              {/* [DiceRoller] fim da alteração 3/3 */}
             </section>
           )}
 
