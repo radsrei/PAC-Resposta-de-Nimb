@@ -18,9 +18,17 @@ export const ACKNOWLEDGMENTS: AcknowledgmentSection[] = [
     names: ['Rafael dos Santos Pereira', 'Claude', 'Chat GPT', 'Gemini'],
   },
   {
+    title: 'Editora Jambô',
+    subtitle: 'Idealizadores do Sistema Tormenta20 e Equipe Editora Jambô',
+    names: ['Guilherme Dei Svaldi', 'J.M. Trevisan', 'Leonel Caldela',
+            'Marcelo Cassaro', 'Rafael Dei Svaldi','Rogerio Saladino', 
+            'Equipe Jambô'],
+  },
+  {
     title: 'Orientação e Ajuda',
-    subtitle: 'Professores, Amigos e Colegas que deram suporte e feedback',
-    names: ['Prof. Diogo','Prof. Darú','Prof. Claudinei','Prof. Camargo'],
+    subtitle: 'Professores, Colegas de PAC',
+    names: ['Prof. Diogo','Prof. Darú','Prof. Claudinei','Prof. Camargo',
+            'Bruno Pereira', 'Bruno Franzoli','Fernando', 'Ramires'],
   },
   {
     title: 'Comunidade',

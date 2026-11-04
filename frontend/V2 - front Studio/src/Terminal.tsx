@@ -37,7 +37,7 @@ const getNow = () => formatTime(new Date());
 const welcomeMessage = (): ChatMessage => ({
   id: 'msg_welcome_' + Date.now(),
   sender: 'nimb',
-  text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o grimório aberto. O que você deseja extrair do tecido da realidade hoje?',
+  text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o Livro aberto. O que você deseja extrair do tecido da realidade hoje?',
   timestamp: getNow(),
   syntaxTag: '#sintaxe-01',
 });
@@ -330,7 +330,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       {
         id: 'msg_fresh_' + Date.now(),
         sender: 'nimb',
-        text: 'Nova sinapse ativada. O tecido temporal foi reiniciado. Consulte os grimórios à vontade.',
+        text: 'Nova sinapse ativada. O tecido temporal foi reiniciado. Consulte o(s) livro(s) à vontade.',
         timestamp: getNow(),
         syntaxTag: '#fluxo-novo',
       },

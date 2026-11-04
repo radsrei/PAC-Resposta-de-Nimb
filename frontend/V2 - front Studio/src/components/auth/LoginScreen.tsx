@@ -41,7 +41,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticate
             <div className="flex items-center gap-3 relative z-10">
               <span className="inline-flex w-3 h-3 rounded-full bg-[#43e090] animate-pulse"></span>
               <span className="font-mono text-xs text-[#43e090] tracking-widest uppercase">
-                NIMB_OS // ACESSO SEGURO
+                Respostas de Nimb
               </span>
             </div>
 
@@ -57,7 +57,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticate
                 />
               </div>
               <h1 className="mt-6 text-2xl font-bold text-[#F0EEF8] tracking-tight uppercase">
-                NIMB_OS <span className="text-[#d8b9ff]">//</span> TERMINAL DO CAOS
+                Respostas de Nimb <span className="text-[#d8b9ff]">//</span> Consultas aos Deuses
               </h1>
               <p className="text-sm text-[#cec2d7] mt-2 max-w-sm leading-relaxed">
                 Consulte regras, magias e monstros de Tormenta20 com a ajuda do deus do caos.
@@ -84,7 +84,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticate
                   <span className="font-mono text-[11px] text-[#d8b9ff] tracking-widest uppercase block mb-1">
                     PROTOCOLO DE ACESSO
                   </span>
-                  <h2 className="text-xl md:text-2xl font-bold text-[#F0EEF8] tracking-tight">ENTRAR NO NIMB_OS</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-[#F0EEF8] tracking-tight">Entrar em Respostas de Nimb</h2>
                 </div>
                 <div className="h-10 w-10 rounded-xl bg-[#2A2931] border border-[#43e090]/40 flex items-center justify-center text-[#43e090]">
                   <span className="material-symbols-outlined text-[22px]">fingerprint</span>
@@ -99,7 +99,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticate
               )}
 
               <p className="mb-5 text-xs text-[#cec2d7] leading-relaxed">
-                Use sua conta Google para entrar. No primeiro acesso, sua conta no Nimb é criada
+                Use sua conta Google para entrar. No primeiro acesso, sua conta no Respostas de Nimb é criada
                 automaticamente.
               </p>
 
