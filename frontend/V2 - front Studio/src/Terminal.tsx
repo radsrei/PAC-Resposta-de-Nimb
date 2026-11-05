@@ -6,6 +6,7 @@ import { AccountScreen } from './components/auth/AccountScreen';
 import { PdfUploadModal } from './components/modals/PdfUploadModal';
 import { LlmConnectionModal } from './components/modals/LlmConnectionModal';
 import { TreasureModal } from './components/modals/TreasureModal';
+import { StoreModal } from './components/modals/StoreModal';
 import {
   AuthUser,
   ChatMessage,
@@ -135,6 +136,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
   const [isTreasureModalOpen, setIsTreasureModalOpen] = useState<boolean>(false);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState<boolean>(false);
   const operator = toOperator(user);
   const isAdmin = user.role === 'admin';
   const [books, setBooks] = useState<IndexedBook[]>([]);
@@ -389,6 +391,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
         useChaosRule={useChaosRule}
         onToggleChaosRule={handleToggleChaosRule}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onOpenStoreModal={() => setIsStoreModalOpen(true)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onOpenLlmModal={() => setIsLlmModalOpen(true)}
         llmConnection={llmConnection}
@@ -464,6 +467,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
 
       {/* SCREEN 5: POP-UP DE SORTEIO DE TESOURO */}
       <TreasureModal isOpen={isTreasureModalOpen} onClose={() => setIsTreasureModalOpen(false)} />
+
+      <StoreModal isOpen={isStoreModalOpen} onClose={() => setIsStoreModalOpen(false)} />
 
       {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}
       <LlmConnectionModal

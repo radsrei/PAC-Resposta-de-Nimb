@@ -8,6 +8,7 @@ interface HeaderProps {
   useChaosRule: boolean;
   onToggleChaosRule: () => void;
   onToggleSidebar: () => void;
+  onOpenStoreModal: () => void;
   onOpenUploadModal: () => void;
   onNavigateLogin: () => void;
   onOpenLlmModal: () => void;
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   useChaosRule,
   onToggleChaosRule,
   onToggleSidebar,
+  onOpenStoreModal,
   onOpenUploadModal,
   onNavigateLogin,
   onOpenLlmModal,
@@ -146,11 +148,21 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Actions, Upload Trigger, Link Status & Auth Button */}
       <div className="flex items-center gap-2.5">
+        {/* Loja (Produtinhos de Nimb) Modal button */}
+        <button
+          onClick={onOpenStoreModal}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#181827] hover:bg-[#222236] border border-[#39D98A]/30 text-xs font-mono text-[#39D98A] transition-all hover:scale-102 active:scale-98 shadow-sm"
+          title="Loja de Produtos de Nimb"
+        >
+          <span className="material-symbols-outlined text-[16px]">store</span>
+          <span className="hidden md:inline">Produtinhos de Nimb</span>
+        </button>
+
         {/* Upload PDF Modal button */}
         <button
           onClick={onOpenUploadModal}
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#181827] hover:bg-[#222236] border border-[#39D98A]/30 text-xs font-mono text-[#39D98A] transition-all hover:scale-102 active:scale-98 shadow-sm"
-          title="Carregar Grimório em PDF"
+          title="Carregar Livro em PDF"
         >
           <span className="material-symbols-outlined text-[16px]">upload_file</span>
           <span className="hidden md:inline">Subir PDF</span>
