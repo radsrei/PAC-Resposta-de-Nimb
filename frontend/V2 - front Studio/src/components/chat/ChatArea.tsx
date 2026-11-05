@@ -61,7 +61,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 rounded bg-[#A259FF]/20 border border-[#A259FF]/30 text-[#d8b9ff] font-mono text-[11px] font-semibold">
-                  PROTOCOLO DE RECUPERAÇÃO RAG
+                  Estrutura de Recuperação RAG
                 </span>
                 <span
                   className={`font-mono text-[10px] ${llmLabel ? 'text-[#39D98A]' : 'text-amber-300'}`}
@@ -141,7 +141,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     isHallucinating ? 'text-[#FFB547]' : 'text-[#d8b9ff]'
                   }`}
                 >
-                  As palvras estão se alinhando
+                  As palavras estão se alinhando
                 </span>
                 <div className="flex gap-1 items-center ml-2">
                   {(isHallucinating

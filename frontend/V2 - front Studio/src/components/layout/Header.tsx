@@ -65,14 +65,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="font-bold text-lg md:text-xl tracking-tight bg-gradient-to-r from-[#d8b9ff] via-[#A259FF] to-[#39D98A] bg-clip-text text-transparent">
-              NIMB_OS
+              Respostas de Nimb
             </span>
             <span className="font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-[#A259FF]/20 text-[#d8b9ff] border border-[#A259FF]/30">
-              RAG v2.4
+              Versão X.Tanto Faz
             </span>
           </div>
           <p className="font-mono text-[10px] text-[#8B87A8] leading-none hidden sm:block">
-            NEURAL CHAOS RETRIEVAL ENGINE
+            Caótico, Formiável, Impreciso e Batata. <span className="text-[#39D98A]">Nimb</span> é um Deus que responde perguntas com base na vontade dele e talvez baseado em livros.
           </p>
         </div>
       </div>
