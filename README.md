@@ -228,7 +228,15 @@ Passo a passo completo: [manuais To Do/deploy_ec2_compilado.md](manuais%20To%20D
 | [backend/vector_builder/README.md](backend/vector_builder/README.md) | construtor do banco vetorial |
 | [Git Diagram](https://gitdiagram.com/radsrei/pac-resposta-de-nimb) | diagrama gerado a partir do repositório |
 
+[![Architecture diagram of radsrei/pac-resposta-de-nimb](https://gitdiagram.com/radsrei/pac-resposta-de-nimb/diagram.png)](https://gitdiagram.com/radsrei/pac-resposta-de-nimb?utm_source=readme&utm_medium=picture)
+
 ## Fluxo de Git
+
+<details>
+<summary>Comentário Off-Topic</summary>
+Usado como cola durante periodo de desenvolvimento<br>
+</details>
+
 
 Branches de trabalho saem do `develop` e voltam por Pull Request. Prefixos: `feat/`, `fix/`, `docs/`.
 
@@ -250,6 +258,11 @@ git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D
 ```
 
 ## Segredos (opcional: Bitwarden)
+
+<details>
+<summary>Comentário Off-Topic</summary>
+Desenvolvida parcialmente a funcionalidade, mas não está em produção.<br>
+</details>
 
 As chaves do `backend/.env` (DeepSeek, Google, `APP_SECRET_KEY`) nunca vão para o Git. Para guardá-las no cofre do Bitwarden:
 
