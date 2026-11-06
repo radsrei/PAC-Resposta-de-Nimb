@@ -14,6 +14,11 @@ export const UNAUTHORIZED_EVENT = 'nimb:unauthorized';
 // 401 nesta rota significa credencial do Google recusada, não sessão expirada
 const AUTH_ATTEMPT_PATHS = ['/api/auth/google'];
 
+// Dica do endereço da API só no `npm run dev`: em produção ela confunde o usuário
+const DEV_HINT = import.meta.env.DEV
+  ? ' Verifique se a API está rodando em http://localhost:8000.'
+  : '';
+
 export class ApiError extends Error {
   status: number;
 
@@ -54,7 +59,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
   } catch {
     throw new ApiError(
-      'Não foi possível conectar ao backend. Verifique se a API está rodando em http://localhost:8000.',
+      `Não foi possível conectar ao servidor. Verifique sua conexão com a internet e tente novamente.${DEV_HINT}`,
       0
     );
   }
@@ -73,10 +78,10 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     if (res.status === 401 && !AUTH_ATTEMPT_PATHS.includes(path)) {
       window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
     }
-    // Proxy do Vite sem backend no ar responde 500/502/504 sem JSON
+    // Proxy (Vite, Caddy ou Cloudflare) sem backend no ar responde 5xx sem JSON
     const fallback =
       res.status >= 500 && !body
-        ? 'Backend indisponível. Verifique se a API está rodando em http://localhost:8000.'
+        ? `Servidor indisponível no momento. Tente novamente em alguns minutos.${DEV_HINT}`
         : `Erro HTTP ${res.status}`;
     throw new ApiError(extractDetail(body) || fallback, res.status);
   }

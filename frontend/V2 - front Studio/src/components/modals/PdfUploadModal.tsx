@@ -105,7 +105,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
               </div>
               <div className="flex flex-col">
                 <h2 className="text-lg md:text-xl font-bold text-[#F0EEF8] tracking-tight uppercase">
-                  CARREGAR GRIMÓRIO // VALIDAÇÃO DE LIVRO
+                  CARREGAR LIVRO // VALIDAÇÃO DE LIVRO
                 </h2>
                 <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
                   ENVIE O PDF DO SEU LIVRO PARA LIBERAR O BANCO VETORIAL DELE

@@ -15,6 +15,7 @@ vector_store
 deploy/.env
 frontend/**/.env
 frontend/**/.env.local
+*.pem
 
 # Pastas que não fazem parte do serviço
 docs
