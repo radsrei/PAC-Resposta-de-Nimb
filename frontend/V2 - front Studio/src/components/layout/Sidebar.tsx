@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Sortear o tesouro das criaturas do combate"
           >
             <span className="material-symbols-outlined text-[18px] text-[#39D98A]">
-              diamond
+              money_bag
             </span>
             <span>Sorteio de Tesouro</span>
           </button>
@@ -244,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ></span>
             Backend: {backendOnline ? 'Online' : 'Offline'}
           </span>
-          <span>RAG: desativado</span>
+          <span>RAG: {backendOnline ? 'Online' : 'Offline'}</span>
         </div>
       </aside>
     </>

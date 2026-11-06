@@ -6,6 +6,7 @@ import { AccountScreen } from './components/auth/AccountScreen';
 import { PdfUploadModal } from './components/modals/PdfUploadModal';
 import { LlmConnectionModal } from './components/modals/LlmConnectionModal';
 import { TreasureModal } from './components/modals/TreasureModal';
+import { StoreModal } from './components/modals/StoreModal';
 import {
   AuthUser,
   ChatMessage,
@@ -22,7 +23,7 @@ import { llmApiService } from './services/llmApi';
 import { sessionApiService } from './services/sessionApi';
 import { DEFAULT_CHAOS_LEVEL } from './chaosLevels';
 import { ConfettiBurst, DURATION_MS as CONFETTI_MS } from './components/chat/ConfettiBurst';
-import { playChaosSound, preloadChaosSounds } from './services/chaosSound';
+import { playChaosSound, preloadChaosSounds, stopChaosSound } from './services/chaosSound';
 import { ApiError } from './services/http';
 
 const formatTime = (date: Date) =>
@@ -37,7 +38,7 @@ const getNow = () => formatTime(new Date());
 const welcomeMessage = (): ChatMessage => ({
   id: 'msg_welcome_' + Date.now(),
   sender: 'nimb',
-  text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o grimório aberto. O que você deseja extrair do tecido da realidade hoje?',
+  text: 'Saudações, mortal ou viajante planar. O dado foi rolado e o Livro aberto. O que você deseja extrair do tecido da realidade hoje?',
   timestamp: getNow(),
   syntaxTag: '#sintaxe-01',
 });
@@ -135,6 +136,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [isLlmModalOpen, setIsLlmModalOpen] = useState<boolean>(false);
   const [isTreasureModalOpen, setIsTreasureModalOpen] = useState<boolean>(false);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState<boolean>(false);
   const operator = toOperator(user);
   const isAdmin = user.role === 'admin';
   const [books, setBooks] = useState<IndexedBook[]>([]);
@@ -218,7 +220,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
   // Giro rápido (SPIRAL_MS) e, ao terminar, confetes; nada disso segura a resposta na tela.
   // O brilho só apaga depois dos confetes, voltando às cores padrão.
   const revealHallucination = () => {
-    playChaosSound('hallucinationReveal');
+    // Começa só depois do fade-out do som do pensamento (sem sobreposição)
+    void playChaosSound('hallucinationReveal');
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       setIsChaosGlowing(false);
       return;
@@ -263,7 +266,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       if (roll?.hallucinated) {
         setIsHallucinating(true);
         setIsChaosGlowing(true);
-        playChaosSound('hallucinationThinking');
+        // Repete enquanto Nimb pensa; para com fade-out quando a espera termina (finally)
+        void playChaosSound('hallucinationThinking', { loop: true });
       }
 
       const response = await ragApiService.queryRag({
@@ -310,6 +314,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
     } finally {
       setIsLoading(false);
       setIsHallucinating(false);
+      void stopChaosSound('hallucinationThinking');
     }
   };
 
@@ -330,7 +335,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
       {
         id: 'msg_fresh_' + Date.now(),
         sender: 'nimb',
-        text: 'Nova sinapse ativada. O tecido temporal foi reiniciado. Consulte os grimórios à vontade.',
+        text: 'Nova sinapse ativada. O tecido temporal foi reiniciado. Consulte o(s) livro(s) à vontade.',
         timestamp: getNow(),
         syntaxTag: '#fluxo-novo',
       },
@@ -389,6 +394,7 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
         useChaosRule={useChaosRule}
         onToggleChaosRule={handleToggleChaosRule}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onOpenStoreModal={() => setIsStoreModalOpen(true)}
         onOpenUploadModal={() => setIsUploadModalOpen(true)}
         onOpenLlmModal={() => setIsLlmModalOpen(true)}
         llmConnection={llmConnection}
@@ -464,6 +470,8 @@ export default function Terminal({ user, onUserChange, onLogout, onSignedOut }: 
 
       {/* SCREEN 5: POP-UP DE SORTEIO DE TESOURO */}
       <TreasureModal isOpen={isTreasureModalOpen} onClose={() => setIsTreasureModalOpen(false)} />
+
+      <StoreModal isOpen={isStoreModalOpen} onClose={() => setIsStoreModalOpen(false)} />
 
       {/* SCREEN 4: CAIXA DE CONEXÃO COM A LLM (API) */}
       <LlmConnectionModal

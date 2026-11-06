@@ -1,5 +1,5 @@
 import { BookValidationResult, CatalogBook, IndexedBook } from '../types';
-import { http } from './http';
+import { ApiError, http } from './http';
 
 /**
  * RAG API Service Layer
@@ -115,6 +115,13 @@ const KNOWLEDGE_RESPONSES = [
 
 let queryCounter = 0;
 
+const FILE_READ_ERROR =
+  'Não foi possível ler o arquivo no aparelho. Se ele está no Google Drive ou em outro app, ' +
+  'baixe o PDF para a memória do aparelho e selecione-o de novo.';
+const UPLOAD_INTERRUPTED_ERROR =
+  'O envio do arquivo foi interrompido. Verifique sua conexão, mantenha a tela ativa ' +
+  'durante o envio e tente novamente.';
+
 export const ragApiService = {
   /** Rola o dado do caos antes da pergunta: diz se Nimb vai alucinar nesta resposta. */
   async rollChaos(prompt: string, chaosLevel: number): Promise<ChaosRoll> {
@@ -187,9 +194,29 @@ export const ragApiService = {
         book: null,
       };
     }
+    // Lê o arquivo antes de enviar. No Android, o PDF escolhido do Drive, dos
+    // Recentes ou de outro app só é lido na hora do envio; se o aparelho não
+    // consegue lê-lo, o fetch falha como erro de rede. Lido aqui, a falha de
+    // leitura tem mensagem própria e o envio usa uma cópia estável em memória.
+    let content: ArrayBuffer;
+    try {
+      content = await file.arrayBuffer();
+    } catch {
+      throw new ApiError(FILE_READ_ERROR, 0);
+    }
+    if (content.byteLength === 0) throw new ApiError(FILE_READ_ERROR, 0);
+
     const formData = new FormData();
-    formData.append('file', file);
-    return http.post<BookValidationResult>('/api/rag/upload', formData);
+    formData.append('file', new Blob([content], { type: 'application/pdf' }), file.name);
+    try {
+      return await http.post<BookValidationResult>('/api/rag/upload', formData);
+    } catch (err) {
+      // status 0 = conexão caiu durante o envio (nenhuma resposta do servidor)
+      if (err instanceof ApiError && err.status === 0) {
+        throw new ApiError(UPLOAD_INTERRUPTED_ERROR, 0);
+      }
+      throw err;
+    }
   },
 };
 

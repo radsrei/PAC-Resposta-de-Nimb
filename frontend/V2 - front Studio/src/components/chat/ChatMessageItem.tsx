@@ -55,9 +55,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       <div className="w-9 h-9 rounded-xl bg-[#13131F] border border-[#A259FF]/50 flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(162,89,255,0.25)] overflow-hidden">
         <img
           alt="Nimb Avatar"
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover"
-          src="https://lh3.googleusercontent.com/aida/AEtjO1VeZBenvo1EbBBHx1FCf1uEDMzj2vDFk-dsyMejBABVcZInwDymH5IfVK8E8VvWse6MmYhip_RjWrR87W_Dka3BxvnTXRfnIoXv16FZpPwGRfcY9UfwbIlgMTKEwOwZp2-4qtEM7vqAzLb_sexGZbohFocz7yo6EyFICdgMUXbnIJV4Nagsih0WZUnDeK60xI03S0lSg68d1qhmwWt2u5kUvh_fWVobKAkLJxhS1zN4-3p5ruEYIDpebZgRiHQC6ShBUloIEoz58w"
+          className="w-full h-full object-contain"
+          src="/Rosto_Nimb.png"
           onError={(e) => {
             (e.target as HTMLElement).style.display = 'none';
           }}
