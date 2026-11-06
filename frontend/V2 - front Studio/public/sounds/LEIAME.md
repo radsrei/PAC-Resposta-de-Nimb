@@ -1,17 +1,19 @@
 # Sons da alucinação de Nimb
 
-Coloque aqui os áudios (mp3, ogg ou wav) e aponte para eles no `.env.local`:
+Coloque aqui os áudios (mp3, ogg ou wav). Cada evento pode ter vários sons: a cada vez,
+um deles é sorteado, sem repetir o último que tocou.
 
-- `VITE_SOUND_HALLUCINATION_THINKING`: toca quando o dado do caos cai (início do "pensamento" laranja).
-- `VITE_SOUND_HALLUCINATION_REVEAL`: toca quando a resposta alucinada aparece (giro + confetes).
+Eventos:
 
-Exemplo: `VITE_SOUND_HALLUCINATION_REVEAL=/sounds/risada-nimb.mp3`. Sem variável, o evento fica em silêncio.
-A lógica fica em `src/services/chaosSound.ts`.
+- `hallucinationThinking`: toca quando o dado do caos cai (início do "pensamento" laranja).
+- `hallucinationReveal`: toca quando a resposta alucinada aparece (giro + confetes).
 
-## Som da rolagem de dados (tela de tesouro)
+Há duas formas de registrar os sons:
 
-- `dice-roll.mp3`: toca quando os dados começam a rolar no sorteio automático. O caminho é fixo no código
-  (`src/components/dice/DiceRoller.tsx`), sem variável de ambiente, e funciona também na imagem Docker.
-  Ideal: MP3 mono de ~1 s, sem silêncio no início. Sem o arquivo, a rolagem fica em silêncio.
+1. Na lista `DEFAULT_SOUNDS` de `src/services/chaosSound.ts`, por exemplo
+   `hallucinationReveal: ['/sounds/risada-1.mp3', '/sounds/risada-2.mp3']`.
+2. No `.env.local`, com os caminhos separados por vírgula:
+   `VITE_SOUND_HALLUCINATION_REVEAL=/sounds/risada-1.mp3,/sounds/risada-2.mp3`.
+   Quando preenchida, a variável substitui a lista do código.
 
-Para remover só o som e manter a animação: apague no DiceRoller.tsx o bloco de DICE_SOUND até playDiceSound e os dois useEffect no início do componente DiceRoller.
+Sem nenhum som registrado, o evento fica em silêncio.

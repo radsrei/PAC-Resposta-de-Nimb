@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { STORE_INTRO, STORE_PRODUCTS, STORE_URL } from '../../data/produtos';
+import { STORE_INTRO, STORE_PRODUCTS, STORE_CUPOM, STORE_URL } from '../../data/produtos';
 
 interface StoreModalProps {
   isOpen: boolean;
@@ -45,14 +45,23 @@ export const StoreModal: React.FC<StoreModalProps> = ({ isOpen, onClose }) => {
                 id="store-title"
                 className="text-lg md:text-xl font-bold text-[#F0EEF8] tracking-tight uppercase"
               >
-                Produtinhos de Nimb
+                Ado Escudos
               </h2>
               <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
-                {STORE_INTRO}
+                {STORE_INTRO}       
               </span>
             </div>
           </div>
-
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-5 h-5 rounded-xl bg-[#1F1F26] border border-[#39D98A]/30 flex items-center justify-center shadow-md flex-shrink-0">
+              <span className="material-symbols-outlined text-[#39D98A] text-2xl">percent_discount</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+                <span className="font-mono text-[11px] text-[#8B87A8] tracking-wider">
+                  {STORE_CUPOM}
+                </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -109,7 +118,7 @@ export const StoreModal: React.FC<StoreModalProps> = ({ isOpen, onClose }) => {
             className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#A259FF] to-[#39D98A] text-[#0D0D14] font-bold text-sm uppercase tracking-wide shadow-[0_0_16px_rgba(162,89,255,0.35)] hover:scale-102 active:scale-98 transition-transform"
           >
             <span className="material-symbols-outlined text-[18px]">storefront</span>
-            Visitar a loja de Nimb
+            Visitar a loja <s>de Nimb</s> da Jambô
           </a>
         </div>
       </div>

@@ -50,9 +50,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ config, onAuthenticate
                 <div className="absolute -inset-4 rounded-2xl bg-gradient-to-tr from-[#ae71ff]/20 to-[#43e090]/20 blur-xl opacity-60"></div>
                 <img
                   alt="Nimb"
-                  referrerPolicy="no-referrer"
                   className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_24px_rgba(174,113,255,0.35)]"
-                  src="https://lh3.googleusercontent.com/aida/AEtjO1VeZBenvo1EbBBHx1FCf1uEDMzj2vDFk-dsyMejBABVcZInwDymH5IfVK8E8VvWse6MmYhip_RjWrR87W_Dka3BxvnTXRfnIoXv16FZpPwGRfcY9UfwbIlgMTKEwOwZp2-4qtEM7vqAzLb_sexGZbohFocz7yo6EyFICdgMUXbnIJV4Nagsih0WZUnDeK60xI03S0lSg68d1qhmwWt2u5kUvh_fWVobKAkLJxhS1zN4-3p5ruEYIDpebZgRiHQC6ShBUloIEoz58w"
+                  src="/Rosto_Nimb.png"
                   onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
                 />
               </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Allowlist, AuthUser } from '../../types';
 import { adminApiService, authApiService } from '../../services/authApi';
 import { AcknowledgmentsModal } from '../modals/AcknowledgmentsModal';
+import { isChaosSoundEnabled, setChaosSoundEnabled } from '../../services/chaosSound';
+import { ToggleSwitch } from '../layout/ToggleSwitch';
 
 interface AccountScreenProps {
   user: AuthUser;
@@ -302,6 +304,7 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
   const [deleteFeedback, setDeleteFeedback] = useState<Feedback>(null);
   const [busy, setBusy] = useState(false);
   const [showAcknowledgments, setShowAcknowledgments] = useState(false);
+  const [soundOn, setSoundOn] = useState(isChaosSoundEnabled);
 
   const run = async (setFeedback: (f: Feedback) => void, action: () => Promise<string>) => {
     setBusy(true);
@@ -384,23 +387,29 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
             </button>
           </form>
 
-          {/* Sessões */}
+          {/* Efeitos sonoros */}
           <section className={cardClass}>
             <h3 className="font-bold text-[#F0EEF8] flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#39D98A]">devices</span> Sessões
+              <span className="material-symbols-outlined text-[#39D98A]">
+                {soundOn ? 'volume_up' : 'volume_off'}
+              </span>{' '}
+              Efeitos sonoros
             </h3>
             <p className="text-xs text-[#8B87A8]">
-              Último acesso: {formatDate(user.lastLoginAt)}. Encerre as sessões abertas em outros
-              navegadores ou dispositivos.
+              Sons tocados quando Nimb decide alucinar: enquanto ele pensa e quando a resposta aparece.
+              A escolha vale para este navegador.
             </p>
-            <FeedbackLine feedback={sessionFeedback} />
-            <button
-              disabled={busy}
-              onClick={() => run(setSessionFeedback, async () => (await authApiService.logoutOtherSessions()).message)}
-              className="self-start px-4 py-2 rounded-lg bg-[#181827] border border-[#34344E] text-[#F0EEF8] text-xs font-semibold cursor-pointer disabled:opacity-40"
-            >
-              Encerrar outras sessões
-            </button>
+            <div className="self-start">
+              <ToggleSwitch
+                checked={soundOn}
+                onToggle={() => {
+                  setChaosSoundEnabled(!soundOn);
+                  setSoundOn(!soundOn);
+                }}
+                label={soundOn ? 'Som ligado' : 'Som desligado'}
+                title={soundOn ? 'Desativar efeitos sonoros' : 'Ativar efeitos sonoros'}
+              />
+            </div>
           </section>
 
           {/* Exclusão */}
@@ -434,6 +443,25 @@ export const AccountScreen: React.FC<AccountScreenProps> = ({
 
           {user.role === 'admin' && <AllowlistPanel />}
           {user.role === 'admin' && <AdminUsersPanel currentEmail={user.email} />}
+
+          {/* Sessões */}
+          <section className={cardClass}>
+            <h3 className="font-bold text-[#F0EEF8] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#39D98A]">devices</span> Sessões
+            </h3>
+            <p className="text-xs text-[#8B87A8]">
+              Último acesso: {formatDate(user.lastLoginAt)}. Encerre as sessões abertas em outros
+              navegadores ou dispositivos.
+            </p>
+            <FeedbackLine feedback={sessionFeedback} />
+            <button
+              disabled={busy}
+              onClick={() => run(setSessionFeedback, async () => (await authApiService.logoutOtherSessions()).message)}
+              className="self-start px-4 py-2 rounded-lg bg-[#181827] border border-[#34344E] text-[#F0EEF8] text-xs font-semibold cursor-pointer disabled:opacity-40"
+            >
+              Encerrar outras sessões
+            </button>
+          </section>
         </div>
       </div>
 

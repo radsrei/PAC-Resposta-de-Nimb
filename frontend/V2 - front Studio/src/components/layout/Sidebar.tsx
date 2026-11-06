@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title="Sortear o tesouro das criaturas do combate"
           >
             <span className="material-symbols-outlined text-[18px] text-[#39D98A]">
-              Money Bag
+              money_bag
             </span>
             <span>Sorteio de Tesouro</span>
           </button>
