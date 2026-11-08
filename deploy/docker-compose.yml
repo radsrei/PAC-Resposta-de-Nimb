@@ -6,7 +6,11 @@
 name: nimb
 
 services:
+  # API_IMAGE / WEB_IMAGE (deploy/.env): imagem publicada no Amazon ECR pelo CD
+  # (.github/workflows/cd.yml, gravadas por deploy/deploy.sh). Sem elas, vale o
+  # build local de sempre: docker compose up -d --build
   api:
+    image: ${API_IMAGE:-nimb-api:local}
     build:
       context: ..
       dockerfile: backend/Dockerfile
@@ -25,6 +29,7 @@ services:
       retries: 3
 
   web:
+    image: ${WEB_IMAGE:-nimb-web:local}
     build:
       context: ..
       dockerfile: deploy/web.Dockerfile
