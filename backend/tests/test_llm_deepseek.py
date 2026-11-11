@@ -21,7 +21,7 @@ CONNECTION = {
     "provider": "deepseek",
     "model": "deepseek-chat",
     "base_url": "https://api.deepseek.com",
-    "api_key": "sk-teste-1234567890",
+    "api_key": "sk-teste-1234567890", # gitleaks:allow
     "temperature": 0.2,
     "max_tokens": 50,
 }
