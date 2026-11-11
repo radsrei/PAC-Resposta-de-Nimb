@@ -58,8 +58,11 @@ cd backend
 ..\.venv\Scripts\python -m pytest                       # suíte padrão (~6 s)
 ..\.venv\Scripts\python -m pytest tests\test_allowlist.py -v
 $env:OLLAMA_TEST_MODEL="bge-m3"; ..\.venv\Scripts\python -m pytest -m live_ollama
-$env:DEEPSEEK_API_KEY="sk-..."; ..\.venv\Scripts\python -m pytest -m live_deepseek
+# DeepSeek real: usa DEEPSEEK_API_KEY, ou o LLM_DEEPSEEK_API do backend\.env (lido pelo python-dotenv)
+..\.venv\Scripts\python -m pytest -m live_deepseek
 ```
+
+No teste ao vivo do DeepSeek: **401** = chave inválida ou revogada; **402** = conta sem saldo. Em caso de falha o teste mostra só a mensagem, sem traceback (que exporia a chave). No secret `DEEPSEEK_API_KEY` do GitHub, cole a chave **sem aspas**.
 
 Resultado esperado em 07/11/2026: `153 passed, 2 deselected`; `live_ollama` passou contra o Ollama local com `bge-m3`.
 

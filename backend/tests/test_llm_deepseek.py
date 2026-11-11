@@ -190,16 +190,31 @@ def test_health_informa_se_ha_llm_conectada(admin_client):
 # ---------------------------------------------------------------------------
 # Ao vivo (não roda por padrão)
 # ---------------------------------------------------------------------------
+def _live_api_key() -> str | None:
+    """DEEPSEEK_API_KEY (CI) ou LLM_DEEPSEEK_API do backend/.env, lido como a API lê (sem aspas/espaços)."""
+    from dotenv import dotenv_values
+
+    from conftest import BACKEND_DIR
+
+    key = os.environ.get("DEEPSEEK_API_KEY") or dotenv_values(BACKEND_DIR / ".env").get("LLM_DEEPSEEK_API")
+    key = (key or "").strip().strip("\"'").strip()
+    return key or None
+
+
 @pytest.mark.live_deepseek
 def test_deepseek_real_responde():
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    api_key = _live_api_key()
     if not api_key:
-        pytest.skip("DEEPSEEK_API_KEY não definida")
-    result = llm_client.generate(
-        {**CONNECTION, "api_key": api_key, "temperature": 0, "max_tokens": 20},
-        "Responda de forma curtíssima.",
-        [{"role": "user", "content": "Responda apenas: ok"}],
-        timeout=60,
-    )
+        pytest.skip("Sem chave: defina DEEPSEEK_API_KEY ou LLM_DEEPSEEK_API no backend/.env")
+    try:
+        result = llm_client.generate(
+            {**CONNECTION, "api_key": api_key, "temperature": 0, "max_tokens": 20},
+            "Responda de forma curtíssima.",
+            [{"role": "user", "content": "Responda apenas: ok"}],
+            timeout=60,
+        )
+    except LLMError as exc:
+        # pytrace=False: o traceback mostraria a chave nos argumentos das funções
+        pytest.fail(f"DeepSeek recusou: {exc.message}", pytrace=False)
     assert result.text
     assert result.latency_ms > 0
