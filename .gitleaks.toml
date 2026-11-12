@@ -1,0 +1,6 @@
+   [extend]
+   useDefault = true
+
+   [allowlist]
+   description = "Chaves fictícias usadas nos testes"
+   regexes = ['''sk-teste-[0-9]+''']
