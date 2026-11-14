@@ -1,0 +1,126 @@
+# CD do Respostas de Nimb: a cada push no main (merge de PR), roda o CI inteiro,
+# publica as imagens no Amazon ECR e atualiza a EC2 pelo AWS Systems Manager
+# (sem SSH e sem chave da AWS guardada no GitHub: autenticação OIDC).
+# Passo a passo da configuração: manuais To Do/ci_cd_github_actions.md
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # OIDC: o GitHub troca um token temporário pela role da AWS
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # nunca interromper um deploy no meio
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  build-push:
+    name: Imagens → Amazon ECR
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      registry: ${{ steps.ecr.outputs.registry }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: meta
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/nimb-api:${{ steps.meta.outputs.tag }}
+            ${{ steps.ecr.outputs.registry }}/nimb-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - name: Web (front + Caddy)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/web.Dockerfile
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/nimb-web:${{ steps.meta.outputs.tag }}
+            ${{ steps.ecr.outputs.registry }}/nimb-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: Deploy na EC2
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_URL }}
+    env:
+      REGISTRY: ${{ needs.build-push.outputs.registry }}
+      TAG: ${{ needs.build-push.outputs.tag }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      APP_DIR: ${{ vars.EC2_APP_DIR || '/home/ubuntu/PAC-Resposta-de-Nimb' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Executar deploy/deploy.sh na EC2 (SSM)
+        run: |
+          script="cd $APP_DIR && bash deploy/deploy.sh $REGISTRY $TAG $GITHUB_SHA"
+          params="$(jq -cn --arg c "runuser -l ubuntu -c '$script'" '{commands: [$c], executionTimeout: ["900"]}')"
+          command_id="$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "nimb deploy $TAG" \
+            --parameters "$params" \
+            --query Command.CommandId --output text)"
+          echo "SSM command: $command_id"
+
+          status=InProgress
+          for _ in $(seq 1 90); do
+            sleep 10
+            status="$(aws ssm get-command-invocation --command-id "$command_id" \
+              --instance-id "$EC2_INSTANCE_ID" --query Status --output text 2>/dev/null || echo Pending)"
+            case "$status" in Pending|InProgress|Delayed) continue ;; *) break ;; esac
+          done
+
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" \
+            --query '[StandardOutputContent, StandardErrorContent]' --output text
+          echo "Status final: $status"
+          [ "$status" = "Success" ]
+
+      - name: Teste de fumaça no domínio público
+        if: vars.PUBLIC_URL != ''
+        run: |
+          for i in $(seq 1 12); do
+            body="$(curl -fsS --max-time 10 "${{ vars.PUBLIC_URL }}/api/health" || true)"
+            echo "$body" | grep -q '"status":"ok"' && { echo "$body"; exit 0; }
+            sleep 5
+          done
+          echo "Health público não respondeu"; exit 1
+
+      - name: CI-08 Exposição da EC2 (security group + varredura)
+        env:
+          EXPECTED_OPEN_PORTS: ${{ vars.EXPECTED_OPEN_PORTS }}
+        run: bash deploy/ci/check-aws-exposure.sh

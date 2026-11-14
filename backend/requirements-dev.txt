@@ -1,0 +1,4 @@
+# Dependências de teste (CI e máquina local). Não entram na imagem Docker.
+#   pip install -r requirements.txt -c requirements.lock -r requirements-dev.txt
+pytest==9.2.0
+pyyaml==6.0.3     # leitura do deploy/docker-compose.yml nos testes de portas expostas

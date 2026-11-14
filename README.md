@@ -224,6 +224,7 @@ Passo a passo completo: [manuais To Do/deploy_ec2_compilado.md](manuais%20To%20D
 | [manuais To Do/banco_vetorial_livros.md](manuais%20To%20Do/banco_vetorial_livros.md) | como o banco vetorial foi construído e o que revisar |
 | [manuais To Do/tabelas_e_tesouro.md](manuais%20To%20Do/tabelas_e_tesouro.md) | tabelas do livro em SQL e sorteio de tesouro |
 | [manuais To Do/deploy_ec2_compilado.md](manuais%20To%20Do/deploy_ec2_compilado.md) | deploy na AWS EC2 com Cloudflare |
+| [manuais To Do/ci_cd_github_actions.md](manuais%20To%20Do/ci_cd_github_actions.md) | CI (testes automatizados) e CD (merge no `main` → ECR → EC2) |
 | [manuais To Do/problemas_e_falhas.md](manuais%20To%20Do/problemas_e_falhas.md) | problemas conhecidos e correções sugeridas |
 | [backend/vector_builder/README.md](backend/vector_builder/README.md) | construtor do banco vetorial |
 | [Git Diagram](https://gitdiagram.com/radsrei/pac-resposta-de-nimb) | diagrama gerado a partir do repositório |
@@ -278,7 +279,7 @@ bw status | jq -r .status               # esperado: unlocked
 
 ## Limitações conhecidas
 
-- Não há testes automatizados nem CI (`backend/tests/` e `.github/workflows/` não existem).
+- Testes automatizados só no backend (`backend/tests/`, rodados pelo CI); o front tem checagem de tipos e build, sem testes de componente. CI/CD: [ci_cd_github_actions.md](manuais%20To%20Do/ci_cd_github_actions.md).
 - Busca validada com o *Tormenta20 — Livro Básico*; outros livros precisam de perfil tipográfico próprio (`backend/vector_builder/profiles/`).
 - Outros itens em aberto: [problemas_e_falhas.md](manuais%20To%20Do/problemas_e_falhas.md).
 

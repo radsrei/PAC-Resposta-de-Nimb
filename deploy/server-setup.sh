@@ -15,6 +15,11 @@ fi
 sudo usermod -aG docker "$USER"
 sudo systemctl enable --now docker
 
+echo "==> AWS CLI e SSM Agent (deploy automático pelo GitHub Actions: login no ECR e comandos via SSM)"
+command -v aws >/dev/null || sudo snap install aws-cli --classic
+snap list amazon-ssm-agent >/dev/null 2>&1 || sudo snap install amazon-ssm-agent --classic
+sudo snap start --enable amazon-ssm-agent || true
+
 echo "==> Swap (evita falta de memória no build e no upload de PDFs grandes)"
 if ! swapon --show | grep -q /swapfile; then
   sudo fallocate -l 2G /swapfile

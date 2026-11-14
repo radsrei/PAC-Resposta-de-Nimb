@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Chaves fictícias dos testes e falsos positivos do protótipo RAG (arquivo já removido)"
+regexes = ['''sk-teste-[0-9]+''']
+paths = ['''backend/RAG_Claude/RAG_Pipeline\(Claude\)\.py''']
